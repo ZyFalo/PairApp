@@ -271,7 +271,7 @@ export async function archivarApunte(mensajeId: string) {
     where: { id: mensajeId, autorId: sesion.usuarioId, destino: DestinoMensaje.SOLO_PARA_MI },
     data: { archivadoEn: new Date() },
   })
-  revalidatePath("/yo")
+  revalidatePath("/cofre")
 }
 
 /** Devuelve un apunte archivado a la lista de cosas por hablar (RF-2.0.9). */
@@ -281,7 +281,7 @@ export async function desarchivarApunte(mensajeId: string) {
     where: { id: mensajeId, autorId: sesion.usuarioId, destino: DestinoMensaje.SOLO_PARA_MI },
     data: { archivadoEn: null },
   })
-  revalidatePath("/yo")
+  revalidatePath("/cofre")
 }
 
 /**
@@ -310,7 +310,7 @@ export async function decirloAhora(mensajeId: string): Promise<Resultado> {
     },
   })
 
-  revalidatePath("/yo")
+  revalidatePath("/cofre")
   revalidatePath("/hoy")
   return { ok: true }
 }
@@ -431,6 +431,6 @@ export async function retirarGuardado(mensajeId: string) {
     },
     data: { destino: DestinoMensaje.SOLO_PARA_MI },
   })
+  // Sale de "enviados" y entra en "por hablar", las dos en el cofre.
   revalidatePath("/cofre")
-  revalidatePath("/yo")
 }

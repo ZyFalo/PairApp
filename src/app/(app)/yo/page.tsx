@@ -1,24 +1,18 @@
 import {
-  RiArchiveLine,
-  RiChatQuoteLine,
   RiHistoryLine,
   RiLogoutBoxLine,
   RiNotification3Line,
   RiSeedlingLine,
   RiSettings3Line,
 } from "@remixicon/react"
-import Link from "next/link"
-import { Apunte, Boton, Insignia, Seccion, Tarjeta, Titulo, Vacio } from "@/componentes/base"
+import { Boton, Insignia, Seccion, Tarjeta, Titulo, Vacio } from "@/componentes/base"
 import { COLOR_GRUPO, ESTILO_GRUPO, ICONO_EMOCION } from "@/componentes/iconos"
 import {
-  AccionesApunte,
-  BotonDesarchivar,
   CambiarVisibilidadCiclo,
   FormularioCiclo,
   InterruptorCiclo,
   PanelPush,
 } from "@/componentes/yo"
-import { DestinoMensaje } from "@/generated/prisma/enums"
 import { salir } from "@/lib/acciones/cuenta"
 import { ETIQUETA_VISIBILIDAD, etiquetaDe, grupoDe } from "@/lib/motor/emociones"
 import { formatoLegible } from "@/lib/motor/tiempo"
@@ -26,30 +20,18 @@ import { dbDeSesion } from "@/lib/sesion"
 
 export const dynamic = "force-dynamic"
 
-/** Mi espacio: historial, mis apuntes privados, mi ciclo y los ajustes (§8.1). */
-export default async function PaginaYo({
-  searchParams,
-}: {
-  searchParams: Promise<{ archivo?: string }>
-}) {
-  const { archivo } = await searchParams
-  const verArchivo = archivo === "1"
+/**
+ * Mi espacio: cómo he estado, mi ciclo y los ajustes (§8.1).
+ * Lo que escribí y aún no he dicho vive en su propia pestaña, no aquí.
+ */
+export default async function PaginaYo() {
   const { db, sesion } = await dbDeSesion()
 
-  const [historial, apuntes, miCiclo] = await Promise.all([
+  const [historial, miCiclo] = await Promise.all([
     db.checkin.findMany({
       where: { autorId: sesion.usuarioId },
       orderBy: { creadoEn: "desc" },
       take: 14,
-    }),
-    db.mensaje.findMany({
-      where: {
-        autorId: sesion.usuarioId,
-        destino: DestinoMensaje.SOLO_PARA_MI,
-        archivadoEn: verArchivo ? { not: null } : null,
-      },
-      orderBy: { creadoEn: "desc" },
-      take: 50,
     }),
     // Solo se consulta si lo llevas: quien no registra su ciclo no tiene por
     // qué ver aparecer la sección, ni siquiera vacía (RF-5.0).
@@ -64,54 +46,6 @@ export default async function PaginaYo({
   return (
     <div className="space-y-8">
       <Titulo>{sesion.nombre}</Titulo>
-
-      {/* Cosas por hablar: sin contador, que sería una deuda (RF-2.0.7) */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <Seccion Icono={verArchivo ? RiArchiveLine : RiChatQuoteLine}>
-            {verArchivo ? "Archivadas" : "Cosas por hablar"}
-          </Seccion>
-          <Link
-            href={verArchivo ? "/yo" : "/yo?archivo=1"}
-            className="pulsable text-[12.5px] text-[var(--color-tinta-tenue)] hover:text-[var(--color-acento)]"
-          >
-            {verArchivo ? "Volver" : "Ver archivadas"}
-          </Link>
-        </div>
-
-        {apuntes.length === 0 ? (
-          <Vacio Icono={verArchivo ? RiArchiveLine : RiChatQuoteLine}>
-            {verArchivo ? "No has archivado nada." : "Nada guardado para ti."}
-          </Vacio>
-        ) : (
-          <ul className="space-y-2">
-            {apuntes.map((a) => {
-              const Icono = ICONO_EMOCION[a.emocion]
-              return (
-                <li key={a.id}>
-                  <Tarjeta className="aparece space-y-3">
-                    <div className="flex items-start gap-2.5">
-                      <Icono
-                        size={16}
-                        className={`mt-1 shrink-0 ${COLOR_GRUPO[grupoDe(a.emocion)]}`}
-                      />
-                      <p className="carta text-[16px] leading-relaxed">{a.texto}</p>
-                    </div>
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <Apunte>{formatoLegible(a.creadoEn, sesion.zonaHoraria)}</Apunte>
-                      {verArchivo ? (
-                        <BotonDesarchivar mensajeId={a.id} />
-                      ) : (
-                        <AccionesApunte mensajeId={a.id} hayPareja={Boolean(sesion.pareja)} />
-                      )}
-                    </div>
-                  </Tarjeta>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </section>
 
       {/* Historial propio. Solo mío por defecto (RF-1.5) */}
       <section className="space-y-3">

@@ -16,6 +16,7 @@ import {
 import { COLOR_GRUPO, ICONO_CIERRE, ICONO_EMOCION, ICONO_NECESIDAD } from "@/componentes/iconos"
 import type { Emocion, Necesidad } from "@/generated/prisma/enums"
 import { avisarNecesitoUnRato, marcarVisto, posponerLectura, responder } from "@/lib/acciones/bucle"
+import { useBorrador } from "@/lib/borrador"
 import {
   CIERRES,
   ETIQUETA_CIERRE,
@@ -60,7 +61,13 @@ function faseInicial(presentacion: Presentacion): Fase {
  * pausa entre leer y responder (§3.3).
  */
 export function MensajeEntrante(props: Props) {
-  const [fase, setFase] = useState<Fase>(() => faseInicial(props.presentacion))
+  // La fase también se recuerda: si te vas a otra pestaña mientras respondes,
+  // al volver sigues respondiendo y no en la pantalla de leer.
+  const [borrador, actualizar] = useBorrador(`hoy:entrega:${props.entregaId}`, {
+    fase: faseInicial(props.presentacion) as Fase,
+  })
+  const fase = borrador.fase
+  const setFase = (siguiente: Fase) => actualizar({ fase: siguiente })
 
   return (
     <AnimatePresence mode="wait">
@@ -321,15 +328,21 @@ const EMOCIONES_ADJUNTAS: Emocion[] = ["APENADO", "INCOMODO", "TRISTE", "AGRADEC
 function FormularioRespuesta({ entregaId, onVolver }: Props & { onVolver: () => void }) {
   const router = useRouter()
   const [estado, accion, pendiente] = useActionState(responder, {})
-  const [emocionAdjunta, setEmocionAdjunta] = useState("")
+
+  // Perder media respuesta escrita por mirar otra pestaña es de las cosas que
+  // más desaniman a volver a escribir.
+  const [borrador, actualizar, olvidar] = useBorrador(`hoy:respuesta:${entregaId}`, {
+    texto: "",
+    emocionAdjunta: "",
+  })
+  const { texto, emocionAdjunta } = borrador
 
   // Navegar es un efecto, no algo que ocurra mientras se pinta.
   useEffect(() => {
-    if (estado.ok) {
-      router.push("/hoy")
-      router.refresh()
-    }
-  }, [estado.ok, router])
+    if (!estado.ok) return
+    olvidar()
+    router.refresh()
+  }, [estado.ok, olvidar, router])
 
   return (
     <section className="space-y-4">
@@ -339,6 +352,8 @@ function FormularioRespuesta({ entregaId, onVolver }: Props & { onVolver: () => 
 
         <textarea
           name="texto"
+          value={texto}
+          onChange={(e) => actualizar({ texto: e.target.value })}
           rows={5}
           maxLength={4000}
           placeholder="Tu respuesta…"
@@ -354,7 +369,7 @@ function FormularioRespuesta({ entregaId, onVolver }: Props & { onVolver: () => 
                 key={e}
                 Icono={ICONO_EMOCION[e]}
                 activa={emocionAdjunta === e}
-                onClick={() => setEmocionAdjunta(emocionAdjunta === e ? "" : e)}
+                onClick={() => actualizar({ emocionAdjunta: emocionAdjunta === e ? "" : e })}
               >
                 {etiquetaDe(e, "NEUTRO")}
               </Pastilla>

@@ -13,6 +13,7 @@ import {
 import { motion } from "motion/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { pedirReinicio } from "@/lib/borrador"
 
 /** Las cuatro pestañas de §8.1. Ninguna lleva contador: un badge es una deuda (RF-2.0.7). */
 const PESTANAS = [
@@ -39,6 +40,14 @@ export function Pestanas() {
                   href={p.href}
                   className="pulsable flex flex-col items-center gap-1 py-3.5"
                   aria-current={activa ? "page" : undefined}
+                  onClick={(evento) => {
+                    // Tocar la pestaña en la que ya estás la devuelve a su vista
+                    // de partida y tira lo que hubiera a medias. Es la salida
+                    // del borrador: la memoria dura hasta este segundo toque.
+                    if (!activa) return
+                    evento.preventDefault()
+                    pedirReinicio(p.href)
+                  }}
                 >
                   <Icono
                     size={21}

@@ -1,8 +1,17 @@
-import { RiBookmarkLine, RiInboxLine, RiSendPlaneLine } from "@remixicon/react"
+import {
+  RiArchiveLine,
+  RiBookmarkLine,
+  RiChatQuoteLine,
+  RiInboxLine,
+  RiSendPlaneLine,
+} from "@remixicon/react"
 import Link from "next/link"
-import { Apunte, Tarjeta, TextoDeCarta, Titulo, Vacio } from "@/componentes/base"
+import { Apunte, Seccion, Tarjeta, TextoDeCarta, Titulo, Vacio } from "@/componentes/base"
 import { BotonGuardar, BotonRetirar } from "@/componentes/boton-guardar"
 import { COLOR_GRUPO, ICONO_CIERRE, ICONO_EMOCION } from "@/componentes/iconos"
+import { AccionesApunte, BotonDesarchivar } from "@/componentes/yo"
+import type { Emocion } from "@/generated/prisma/enums"
+import { DestinoMensaje } from "@/generated/prisma/enums"
 import { loQueLeMande } from "@/lib/acciones/bucle"
 import { ETIQUETA_CIERRE, etiquetaDe, grupoDe } from "@/lib/motor/emociones"
 import { formatoLegible } from "@/lib/motor/tiempo"
@@ -15,23 +24,30 @@ const VISTAS = [
   { clave: "", texto: "Recibidos", Icono: RiInboxLine },
   { clave: "enviados", texto: "Enviados", Icono: RiSendPlaneLine },
   { clave: "guardados", texto: "Guardados", Icono: RiBookmarkLine },
+  { clave: "por-hablar", texto: "Por hablar", Icono: RiChatQuoteLine },
 ] as const
 
 /**
- * El cofre (§3.2.2): todo lo que ha pasado por el vínculo.
+ * El cofre (§3.2.2): todo lo escrito dentro del vínculo, dicho o no.
  *
  * "Enviados" no es un archivo: es la mitad del bucle. Sin saber si lo que
  * dejaste llegó, se vio o se contestó, escribir es hablarle a una pared —
  * y esa incertidumbre es justo lo que la app existe para quitar (§3.17).
+ *
+ * "Por hablar" es la otra mitad, la callada: lo que escribiste para ti y
+ * todavía no has contado. Vive aquí y no en "Yo" porque pertenece al mismo
+ * gesto que el resto —abrir el cofre y ver qué hay— y no a los ajustes.
  */
 export default async function PaginaCofre({
   searchParams,
 }: {
-  searchParams: Promise<{ vista?: string }>
+  searchParams: Promise<{ vista?: string; archivo?: string }>
 }) {
-  const { vista } = await searchParams
+  const { vista, archivo } = await searchParams
   const soloGuardados = vista === "guardados"
   const esEnviados = vista === "enviados"
+  const esPorHablar = vista === "por-hablar"
+  const verArchivo = archivo === "1"
   const { db, sesion } = await dbDeSesion()
 
   const guardados = await db.guardado.findMany({
@@ -40,8 +56,8 @@ export default async function PaginaCofre({
   })
   const idsGuardados = new Set(guardados.map((g) => g.mensajeId))
 
-  const [entregas, enviados] = await Promise.all([
-    esEnviados
+  const [entregas, enviados, apuntes] = await Promise.all([
+    esEnviados || esPorHablar
       ? Promise.resolve([])
       : db.entrega.findMany({
           where: {
@@ -53,13 +69,26 @@ export default async function PaginaCofre({
           include: { mensaje: true, respuesta: true },
         }),
     esEnviados ? loQueLeMande() : Promise.resolve([]),
+    esPorHablar
+      ? db.mensaje.findMany({
+          where: {
+            autorId: sesion.usuarioId,
+            destino: DestinoMensaje.SOLO_PARA_MI,
+            archivadoEn: verArchivo ? { not: null } : null,
+          },
+          orderBy: { creadoEn: "desc" },
+          take: 50,
+        })
+      : Promise.resolve([]),
   ])
 
   return (
     <div className="space-y-6">
       <Titulo>Cofre</Titulo>
 
-      <div className="flex gap-1.5">
+      {/* Se desplaza en horizontal: cuatro vistas no caben a la vez en un
+          teléfono estrecho, y apretarlas las haría ilegibles. */}
+      <div className="-mx-5 flex gap-1.5 overflow-x-auto px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {VISTAS.map((v) => (
           <Pestana
             key={v.clave}
@@ -71,7 +100,14 @@ export default async function PaginaCofre({
         ))}
       </div>
 
-      {esEnviados ? (
+      {esPorHablar ? (
+        <PorHablar
+          apuntes={apuntes}
+          verArchivo={verArchivo}
+          hayPareja={Boolean(sesion.pareja)}
+          zonaHoraria={sesion.zonaHoraria}
+        />
+      ) : esEnviados ? (
         enviados.length === 0 ? (
           <Vacio Icono={RiSendPlaneLine}>Todavía no le has dejado nada.</Vacio>
         ) : (
@@ -182,7 +218,81 @@ function IconoDeCierre({ cierre }: { cierre: keyof typeof ICONO_CIERRE }) {
   return <Icono size={15} className="text-[var(--color-acento-suave)]" />
 }
 
-/** Selector entre las tres vistas del cofre. */
+/**
+ * Lo que escribiste para ti y todavía no has dicho (§2.0).
+ *
+ * Sin contador ni insistencia: una lista de cosas calladas con un número al
+ * lado deja de ser una lista y se convierte en una deuda (RF-2.0.7).
+ */
+function PorHablar({
+  apuntes,
+  verArchivo,
+  hayPareja,
+  zonaHoraria,
+}: {
+  apuntes: { id: string; texto: string; emocion: Emocion; creadoEn: Date }[]
+  verArchivo: boolean
+  hayPareja: boolean
+  zonaHoraria: string
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <Seccion Icono={verArchivo ? RiArchiveLine : RiChatQuoteLine}>
+          {verArchivo ? "Ya no están en la lista" : "Escrito solo para ti"}
+        </Seccion>
+        <Link
+          href={verArchivo ? "/cofre?vista=por-hablar" : "/cofre?vista=por-hablar&archivo=1"}
+          className="pulsable text-[12.5px] text-[var(--color-tinta-tenue)] hover:text-[var(--color-acento)]"
+        >
+          {verArchivo ? "Volver" : "Ver archivadas"}
+        </Link>
+      </div>
+
+      {apuntes.length === 0 ? (
+        <Vacio Icono={verArchivo ? RiArchiveLine : RiChatQuoteLine}>
+          {verArchivo ? "No has archivado nada." : "Lo que escribas «solo para mí» aparecerá aquí."}
+        </Vacio>
+      ) : (
+        <>
+          <ul className="space-y-2">
+            {apuntes.map((a) => {
+              const Icono = ICONO_EMOCION[a.emocion]
+              return (
+                <li key={a.id}>
+                  <Tarjeta className="aparece space-y-3">
+                    <div className="flex items-start gap-2.5">
+                      <Icono
+                        size={16}
+                        className={`mt-1 shrink-0 ${COLOR_GRUPO[grupoDe(a.emocion)]}`}
+                      />
+                      <p className="carta text-[16px] leading-relaxed">{a.texto}</p>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <Apunte>{formatoLegible(a.creadoEn, zonaHoraria)}</Apunte>
+                      {verArchivo ? (
+                        <BotonDesarchivar mensajeId={a.id} />
+                      ) : (
+                        <AccionesApunte mensajeId={a.id} hayPareja={hayPareja} />
+                      )}
+                    </div>
+                  </Tarjeta>
+                </li>
+              )
+            })}
+          </ul>
+          {!verArchivo && (
+            <Apunte>
+              «Decirlo ahora» se lo manda tal cual está escrito. No hay que empezar de cero.
+            </Apunte>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+/** Selector entre las vistas del cofre. */
 function Pestana({
   href,
   activa,
@@ -198,7 +308,7 @@ function Pestana({
     <Link
       href={href}
       aria-current={activa ? "page" : undefined}
-      className={`pulsable inline-flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-pildora)] px-3 py-2 text-[13px] font-medium ${
+      className={`pulsable inline-flex shrink-0 items-center justify-center gap-1.5 rounded-[var(--radius-pildora)] px-3.5 py-2 text-[13px] font-medium ${
         activa
           ? "bg-[var(--color-acento)] text-[#fffcf7] shadow-[var(--sombra-tinta)]"
           : "border border-[var(--color-borde)] bg-[var(--color-papel)] text-[var(--color-tinta-suave)]"

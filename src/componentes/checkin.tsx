@@ -2,11 +2,12 @@
 
 import { RiArrowGoBackLine } from "@remixicon/react"
 import { AnimatePresence, motion } from "motion/react"
-import { useActionState, useState } from "react"
+import { useActionState, useEffect } from "react"
 import { Apunte, Aviso, Boton } from "@/componentes/base"
 import { COLOR_GRUPO, ESTILO_GRUPO, ICONO_EMOCION } from "@/componentes/iconos"
 import type { Emocion, Visibilidad } from "@/generated/prisma/enums"
 import { registrarCheckin } from "@/lib/acciones/bucle"
+import { useBorrador, useReinicio } from "@/lib/borrador"
 import {
   EMOCIONES,
   ETIQUETA_VISIBILIDAD,
@@ -43,26 +44,50 @@ export function Checkin({
   ultimaEmocion: Emocion | null
 }) {
   const [estado, accion, pendiente] = useActionState(registrarCheckin, {})
-  const [intensidad, setIntensidad] = useState(3)
-  const [visibilidad, setVisibilidad] = useState<Visibilidad>("COMPLETO")
-  const [elegida, setElegida] = useState<Emocion | null>(null)
+
+  /**
+   * Lo que llevas hecho, guardado hasta que cierres la app o toques "Hoy"
+   * estando ya en Hoy. Cambiar de pestaña a mitad de un registro y volver a
+   * empezar era la fricción más tonta que tenía la app.
+   *
+   * `registrado` no se lee de `estado.checkinId` porque `useActionState`
+   * conserva ese valor mientras el componente viva: sin una copia propia no
+   * habría forma de volver al principio.
+   */
+  const [borrador, actualizar, olvidar] = useBorrador("hoy", {
+    emocion: null as Emocion | null,
+    intensidad: 3,
+    visibilidad: "COMPLETO" as Visibilidad,
+    registrado: null as string | null,
+  })
+  const { emocion: elegida, intensidad, visibilidad, registrado } = borrador
+
+  useEffect(() => {
+    if (estado.checkinId) actualizar({ registrado: estado.checkinId })
+  }, [estado.checkinId, actualizar])
+
+  // El segundo toque en la pestaña de Hoy tira el borrador (§8.1).
+  useReinicio("/hoy", olvidar)
 
   // Tras registrar, se ofrece dejar algo. Nunca antes: el mensaje es opcional.
-  if (estado.checkinId && elegida) {
+  if (registrado && elegida) {
     return (
       <Compositor
-        checkinId={estado.checkinId}
+        checkinId={registrado}
         emocion={elegida}
         intensidad={intensidad}
         nombrePareja={nombrePareja}
+        onCerrar={olvidar}
       />
     )
   }
 
   /** Al cambiar de emoción, una visibilidad que ya no aplica vuelve a la normal. */
   function elegir(emocion: Emocion) {
-    setElegida(emocion)
-    if (!visibilidadesDe(emocion).includes(visibilidad)) setVisibilidad("COMPLETO")
+    actualizar({
+      emocion,
+      visibilidad: visibilidadesDe(emocion).includes(visibilidad) ? visibilidad : "COMPLETO",
+    })
   }
 
   return (
@@ -163,7 +188,7 @@ export function Checkin({
                     min={1}
                     max={5}
                     value={intensidad}
-                    onChange={(e) => setIntensidad(Number(e.target.value))}
+                    onChange={(e) => actualizar({ intensidad: Number(e.target.value) })}
                     className="w-full"
                     aria-label="Intensidad"
                   />
@@ -182,7 +207,7 @@ export function Checkin({
                         <button
                           key={v}
                           type="button"
-                          onClick={() => setVisibilidad(v)}
+                          onClick={() => actualizar({ visibilidad: v })}
                           aria-pressed={visibilidad === v}
                           className={`pulsable flex-1 rounded-[var(--radius-pildora)] px-2 py-1.5 text-[12.5px] ${
                             visibilidad === v

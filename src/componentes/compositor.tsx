@@ -7,6 +7,7 @@ import { Apunte, Aviso, Boton, Pastilla, Tarjeta } from "@/componentes/base"
 import { ICONO_EMOCION, ICONO_NECESIDAD } from "@/componentes/iconos"
 import type { DestinoMensaje, Emocion } from "@/generated/prisma/enums"
 import { dejarMensaje } from "@/lib/acciones/bucle"
+import { useBorrador } from "@/lib/borrador"
 import {
   admiteNecesidad,
   ETIQUETA_NECESIDAD,
@@ -31,30 +32,45 @@ export function Compositor({
   emocion,
   intensidad,
   nombrePareja,
+  onCerrar,
 }: {
   checkinId: string
   emocion: Emocion
   intensidad: number
   nombrePareja: string | null
+  /**
+   * Volver a la pantalla de Hoy. Es cosa del padre y no una navegación:
+   * el compositor **ya está** dentro de `/hoy`, así que empujar esa misma
+   * ruta no hacía nada y dejaba a la persona encerrada en "Listo."
+   */
+  onCerrar: () => void
 }) {
   const router = useRouter()
   const [estado, accion, pendiente] = useActionState(dejarMensaje, {})
   const [, empezar] = useTransition()
-  const [texto, setTexto] = useState("")
-  const [necesidad, setNecesidad] = useState<string>(necesidadPorDefecto(emocion) ?? "")
-  const [tonoMarcado, setTonoMarcado] = useState(false)
   const [enUmbral, setEnUmbral] = useState(false)
+
+  // Lo escrito sobrevive a cambiar de pestaña. Va atado al check-in para que
+  // un registro nuevo no herede el mensaje a medias del anterior.
+  const [borrador, actualizar, olvidar] = useBorrador(`hoy:mensaje:${checkinId}`, {
+    texto: "",
+    necesidad: (necesidadPorDefecto(emocion) ?? "") as string,
+    tonoMarcado: false,
+  })
+  const { texto, necesidad, tonoMarcado } = borrador
 
   // Refrescar es un efecto, no algo que ocurra mientras se pinta.
   useEffect(() => {
-    if (estado.ok) router.refresh()
-  }, [estado.ok, router])
+    if (!estado.ok) return
+    olvidar()
+    router.refresh()
+  }, [estado.ok, olvidar, router])
 
   if (estado.ok) {
     return (
       <Tarjeta className="aparece space-y-3 text-center">
         <p className="carta text-[19px]">Listo.</p>
-        <Boton variante="texto" onClick={() => router.push("/hoy")}>
+        <Boton variante="texto" onClick={onCerrar}>
           Volver
         </Boton>
       </Tarjeta>
@@ -98,7 +114,7 @@ export function Compositor({
 
       <textarea
         value={texto}
-        onChange={(e) => setTexto(e.target.value)}
+        onChange={(e) => actualizar({ texto: e.target.value })}
         rows={6}
         maxLength={4000}
         placeholder="Lo que quieras decirle…"
@@ -116,7 +132,7 @@ export function Compositor({
                 key={n}
                 Icono={ICONO_NECESIDAD[n]}
                 activa={necesidad === n}
-                onClick={() => setNecesidad(necesidad === n ? "" : n)}
+                onClick={() => actualizar({ necesidad: necesidad === n ? "" : n })}
               >
                 {ETIQUETA_NECESIDAD[n]}
               </Pastilla>
@@ -131,7 +147,7 @@ export function Compositor({
           <input
             type="checkbox"
             checked={tonoMarcado}
-            onChange={(e) => setTonoMarcado(e.target.checked)}
+            onChange={(e) => actualizar({ tonoMarcado: e.target.checked })}
             className="mt-1 accent-[var(--color-acento)]"
           />
           <span>Estoy enojado y quiero que se note</span>
@@ -144,12 +160,7 @@ export function Compositor({
           lo que escribes, y una transición de salida a medias dejaría la
           pantalla sin botones. Una aparición simple no puede atascarse. */}
       {!hayTexto ? (
-        <Boton
-          variante="suave"
-          type="button"
-          onClick={() => router.push("/hoy")}
-          className="w-full"
-        >
+        <Boton variante="suave" type="button" onClick={onCerrar} className="w-full">
           Ahora no
         </Boton>
       ) : enUmbral ? (
