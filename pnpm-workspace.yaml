@@ -3,5 +3,6 @@ allowBuilds:
   prisma: true
   sharp: true
   '@node-rs/argon2': true
+  esbuild: true
 ignoredBuiltDependencies:
   - unrs-resolver

@@ -15,7 +15,8 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:sembrar": "tsx prisma/sembrar.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.0.2",
@@ -42,6 +43,7 @@
     "@types/react-dom": "^19",
     "@types/web-push": "^3.6.4",
     "tailwindcss": "^4",
+    "tsx": "^4.23.1",
     "typescript": "^5",
     "vitest": "^4.1.10"
   }

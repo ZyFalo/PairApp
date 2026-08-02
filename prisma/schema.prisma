@@ -1,6 +1,6 @@
 // Esquema de PairApp.
-// Fuente de verdad de la base de datos: toda tabla cuelga de un Vinculo
-// para que el aislamiento de RNF-4 sea estructural, no una convención.
+// Toda tabla de dominio cuelga de un Vinculo para que el aislamiento de RNF-4
+// sea estructural, no una convención.
 
 generator client {
   provider = "prisma-client"
@@ -12,30 +12,105 @@ datasource db {
   provider = "postgresql"
 }
 
-/// Género gramatical, para concordar las etiquetas de emoción (RF-1.1.9).
-/// No es lo mismo que los pronombres: la interfaz necesita un dato explícito
-/// para escribir "Agradecido" o "Agradecida".
+// ---------------------------------------------------------------------------
+// Vocabulario del dominio (RF-1.1)
+// ---------------------------------------------------------------------------
+
+/// Las nueve emociones. Vocabulario fijo y compartido: el valor está en que
+/// las dos personas usen las mismas palabras (RF-1.1.8).
+enum Emocion {
+  BIEN
+  AGRADECIDO
+  TE_EXTRANO
+  TRISTE
+  ME_SIENTO_SOLO
+  PREOCUPADO
+  INCOMODO
+  APENADO
+  ENOJADO
+}
+
+/// Las tres familias de §M1.1.2. No son solo agrupación visual: gobiernan
+/// el motor de entrega (§3.0.15).
+enum GrupoEmocion {
+  ESTOY_CONTIGO
+  ME_FALTA_ALGO
+  ALGO_PASO
+}
+
+/// Qué necesito ahora (RF-1.2). Única fuente legítima sobre lo que alguien
+/// necesita: ninguna inferencia puede sustituirla.
+enum Necesidad {
+  ESCUCHA
+  ESPACIO
+  DISTRACCION
+  CONTACTO
+  SOLUCIONES
+  NO_SE
+}
+
+/// Cuánto comparto de un check-in (RF-1.3).
+enum Visibilidad {
+  COMPLETO
+  SOLO_COLOR
+  PRIVADO
+}
+
+/// Los que no esperan respuesta y los que sí (§3.2).
+enum ClaseMensaje {
+  PRESENCIA
+  CONVERSACION
+}
+
+/// Cuándo llega el mensaje (§2.0). Tres, no cuatro.
+enum DestinoMensaje {
+  AHORA
+  CUANDO_LE_SIRVA
+  SOLO_PARA_MI
+}
+
+/// Respuestas de un toque para cerrar un hilo (RF-3.19).
+enum CierreHilo {
+  GRACIAS
+  TE_QUIERO
+  HABLARLO_MAS
+  HABLAMOS_LUEGO
+}
+
+/// Franja de entrega de una dedicatoria musical (RF-8.1).
+enum FranjaDia {
+  MANANA
+  TARDE
+  NOCHE
+}
+
+/// Estado de un título en la lista compartida (M9, fase 4).
 enum GeneroGramatical {
   MASCULINO
   FEMENINO
   NEUTRO
 }
 
+// ---------------------------------------------------------------------------
+// Núcleo: personas y vínculo
+// ---------------------------------------------------------------------------
+
 /// Una persona. El acceso es por contraseña con Argon2id (PLAN.md §0.1.2):
 /// no hay correo transaccional ni recuperación automatizada.
 model Usuario {
-  id               String           @id @default(cuid())
-  correo           String           @unique
-  contrasenaHash   String
-  nombre           String
-  genero           GeneroGramatical @default(NEUTRO)
-  pronombres       String?
-  zonaHoraria      String           @default("America/Bogota")
-  fotoUrl          String?
-  creadoEn         DateTime         @default(now())
+  id             String           @id @default(cuid())
+  correo         String           @unique
+  contrasenaHash String
+  nombre         String
+  genero         GeneroGramatical @default(NEUTRO)
+  zonaHoraria    String           @default("America/Bogota")
+  /// Horas locales de la pregunta periódica (RF-1.0). Tres por persona,
+  /// desfasadas una hora respecto a las de la pareja (RF-1.0.3).
+  horasPregunta  Int[]            @default([9, 14, 19])
+  creadoEn       DateTime         @default(now())
 
-  membresia        Membresia?
-  invitacionesHechas Invitacion[]   @relation("InvitacionCreador")
+  membresia          Membresia?
+  invitacionesHechas Invitacion[] @relation("InvitacionCreador")
 
   @@map("usuario")
 }
@@ -44,11 +119,20 @@ model Usuario {
 /// El modelo admite varios vínculos desde el día 1 (D1) aunque la interfaz
 /// solo maneje uno.
 model Vinculo {
-  id        String   @id @default(cuid())
-  creadoEn  DateTime @default(now())
+  id       String   @id @default(cuid())
+  creadoEn DateTime @default(now())
 
-  membresias  Membresia[]
-  invitaciones Invitacion[]
+  membresias    Membresia[]
+  invitaciones  Invitacion[]
+  checkins      Checkin[]
+  mensajes      Mensaje[]
+  entregas      Entrega[]
+  guardados     Guardado[]
+  onceOnces     OnceOnce[]
+  eventos       Evento[]
+  dedicatorias  Dedicatoria[]
+  ciclos        Ciclo[]
+  suscripciones SuscripcionPush[]
 
   @@map("vinculo")
 }
@@ -56,13 +140,13 @@ model Vinculo {
 /// Une a una persona con su vínculo. Un usuario pertenece a un único
 /// vínculo activo (RF-0.3), de ahí que `usuarioId` sea único.
 model Membresia {
-  id         String   @id @default(cuid())
-  usuarioId  String   @unique
-  vinculoId  String
-  unidoEn    DateTime @default(now())
+  id        String   @id @default(cuid())
+  usuarioId String   @unique
+  vinculoId String
+  unidoEn   DateTime @default(now())
 
-  usuario    Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  vinculo    Vinculo  @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  vinculo Vinculo @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
 
   @@index([vinculoId])
   @@map("membresia")
@@ -71,17 +155,238 @@ model Membresia {
 /// Código de un solo uso para que la segunda persona entre al vínculo
 /// (RF-0.2). Caduca a las 72 h.
 model Invitacion {
-  id         String    @id @default(cuid())
-  codigo     String    @unique
-  vinculoId  String
-  creadorId  String
-  expiraEn   DateTime
-  usadoEn    DateTime?
-  creadoEn   DateTime  @default(now())
+  id        String    @id @default(cuid())
+  codigo    String    @unique
+  vinculoId String
+  creadorId String
+  expiraEn  DateTime
+  usadoEn   DateTime?
+  creadoEn  DateTime  @default(now())
 
-  vinculo    Vinculo   @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
-  creador    Usuario   @relation("InvitacionCreador", fields: [creadorId], references: [id], onDelete: Cascade)
+  vinculo Vinculo @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
+  creador Usuario @relation("InvitacionCreador", fields: [creadorId], references: [id], onDelete: Cascade)
 
   @@index([vinculoId])
   @@map("invitacion")
+}
+
+// ---------------------------------------------------------------------------
+// El bucle: cómo estoy → le dejo algo → se entera → me responde
+// ---------------------------------------------------------------------------
+
+/// Registro de cómo estoy (M1). El más reciente es el estado actual, y
+/// caduca a las 8 h (RF-3.0.7.7).
+model Checkin {
+  id          String       @id @default(cuid())
+  vinculoId   String
+  autorId     String
+  emocion     Emocion
+  grupo       GrupoEmocion
+  intensidad  Int          @default(3)
+  necesidad   Necesidad?
+  visibilidad Visibilidad  @default(COMPLETO)
+  creadoEn    DateTime     @default(now())
+
+  vinculo  Vinculo   @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
+  mensajes Mensaje[]
+
+  @@index([vinculoId, autorId, creadoEn])
+  @@map("checkin")
+}
+
+/// Lo que le dejo a mi pareja al registrar cómo estoy (M2).
+/// El destino decide cuándo llega; la clase, si espera respuesta.
+model Mensaje {
+  id        String         @id @default(cuid())
+  vinculoId String
+  autorId   String
+  checkinId String?
+  emocion   Emocion
+  clase     ClaseMensaje
+  destino   DestinoMensaje
+  texto     String         @db.Text
+  necesidad Necesidad?
+  /// "Estoy enojado y quiero que se note" (RF-6.2.1). Contextualiza el
+  /// mensaje para quien lo recibe en vez de suavizarlo.
+  tonoMarcado Boolean      @default(false)
+  /// Solo en destino CUANDO_LE_SIRVA: emociones de la pareja que lo disparan.
+  disparadorEmociones Emocion[] @default([])
+  /// Un apunte de "solo para mí" que ya se habló o dejó de importar (RF-2.0.8).
+  archivadoEn DateTime?
+  creadoEn  DateTime       @default(now())
+
+  vinculo  Vinculo   @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
+  checkin  Checkin?  @relation(fields: [checkinId], references: [id], onDelete: SetNull)
+  entrega  Entrega?
+  guardados Guardado[]
+
+  @@index([vinculoId, autorId, creadoEn])
+  @@index([vinculoId, destino])
+  @@map("mensaje")
+}
+
+/// El acto de hacer llegar un mensaje. Guarda los tres estados de hecho
+/// (RF-3.0.13): enviado, le llegó, visto. Nunca promesas.
+model Entrega {
+  id             String    @id @default(cuid())
+  vinculoId      String
+  mensajeId      String    @unique
+  destinatarioId String
+  entregadaEn    DateTime  @default(now())
+  llegadaEn      DateTime?
+  vistaEn        DateTime?
+  /// "Lo leyó. Necesita un rato" (RF-3.17). Único acuse voluntario, y solo
+  /// después de haber leído.
+  necesitaRatoEn DateTime?
+  /// Mensaje cálido que se puso delante antes de abrir este (RF-3.0.7).
+  amortiguadoConId String?
+  recordatorioEn DateTime?
+
+  vinculo   Vinculo    @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
+  mensaje   Mensaje    @relation(fields: [mensajeId], references: [id], onDelete: Cascade)
+  respuesta Respuesta?
+
+  @@index([vinculoId, destinatarioId, vistaEn])
+  @@map("entrega")
+}
+
+/// La respuesta a un mensaje de conversación (§3.3).
+model Respuesta {
+  id             String      @id @default(cuid())
+  entregaId      String      @unique
+  autorId        String
+  texto          String?     @db.Text
+  /// "Y de paso, cómo me dejó" (RF-3.18). Describe mi estado, no puntúa
+  /// el mensaje ajeno: por eso reutiliza el vocabulario de emociones.
+  emocionAdjunta Emocion?
+  cierre         CierreHilo?
+  creadoEn       DateTime    @default(now())
+
+  entrega Entrega @relation(fields: [entregaId], references: [id], onDelete: Cascade)
+
+  @@map("respuesta")
+}
+
+/// El cofre: mensajes que quien los recibió decidió conservar (§3.2.2).
+/// La señal solo existe en positivo — no hay "no guardado" (RF-3.9.1).
+model Guardado {
+  id        String   @id @default(cuid())
+  vinculoId String
+  mensajeId String
+  usuarioId String
+  creadoEn  DateTime @default(now())
+
+  vinculo Vinculo @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
+  mensaje Mensaje @relation(fields: [mensajeId], references: [id], onDelete: Cascade)
+
+  @@unique([mensajeId, usuarioId])
+  @@index([vinculoId, usuarioId])
+  @@map("guardado")
+}
+
+// ---------------------------------------------------------------------------
+// Los 11:11 (M12)
+// ---------------------------------------------------------------------------
+
+/// Un deseo de las 11:11. Máximo 140 caracteres: es un deseo, no una carta.
+/// Sin rachas ni contadores — un 11:11 perdido no existe (RF-12.7).
+model OnceOnce {
+  id        String   @id @default(cuid())
+  vinculoId String
+  autorId   String
+  texto     String   @db.VarChar(140)
+  /// Fecha local (YYYY-MM-DD) y si fue el de la mañana o el de la noche.
+  /// Sirve para saber si los dos pidieron en la misma ventana (RF-12.4).
+  dia       String
+  esNoche   Boolean  @default(false)
+  creadoEn  DateTime @default(now())
+
+  vinculo Vinculo @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
+
+  @@index([vinculoId, dia])
+  @@map("once_once")
+}
+
+// ---------------------------------------------------------------------------
+// La vida en común
+// ---------------------------------------------------------------------------
+
+/// Evento del calendario compartido (M7). Uno solo para los dos; un evento
+/// puede ser de pareja o individual.
+model Evento {
+  id          String   @id @default(cuid())
+  vinculoId   String
+  creadorId   String
+  titulo      String
+  tipo        String   @default("cita")
+  inicio      DateTime
+  fin         DateTime?
+  todoElDia   Boolean  @default(false)
+  esDePareja  Boolean  @default(true)
+  notas       String?  @db.Text
+  /// Aviso previo en horas. Null = sin recordatorio.
+  avisoHoras  Int?
+  avisadoEn   DateTime?
+  creadoEn    DateTime @default(now())
+
+  vinculo Vinculo @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
+
+  @@index([vinculoId, inicio])
+  @@map("evento")
+}
+
+/// Canción dedicada (M8). Solo enlace pegado: sin API de Spotify, sin OAuth
+/// (D28, D30).
+model Dedicatoria {
+  id          String    @id @default(cuid())
+  vinculoId   String
+  autorId     String
+  url         String
+  titulo      String?
+  miniaturaUrl String?
+  mensaje     String?   @db.Text
+  franja      FranjaDia
+  entregadaEn DateTime?
+  creadoEn    DateTime  @default(now())
+
+  vinculo Vinculo @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
+
+  @@index([vinculoId, franja, entregadaEn])
+  @@map("dedicatoria")
+}
+
+/// Registro de periodo (M5). El diseño está invertido a propósito: la app no
+/// le dice a nadie cómo está la otra persona; ella decide qué comparte
+/// (RF-5.3), y nunca se correlaciona ánimo con ciclo (RF-5.6).
+model Ciclo {
+  id        String    @id @default(cuid())
+  vinculoId String
+  usuarioId String
+  inicio    DateTime  @db.Date
+  fin       DateTime? @db.Date
+  /// Nada / solo fechas / fechas + nota (RF-5.3).
+  nivelVisibilidad String @default("SOLO_FECHAS")
+  notaParaPareja   String? @db.Text
+  creadoEn  DateTime  @default(now())
+
+  vinculo Vinculo @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
+
+  @@index([vinculoId, usuarioId, inicio])
+  @@map("ciclo")
+}
+
+/// Suscripción del navegador a Web Push (M4). Una por dispositivo.
+model SuscripcionPush {
+  id        String   @id @default(cuid())
+  vinculoId String
+  usuarioId String
+  endpoint  String   @unique @db.Text
+  p256dh    String
+  auth      String
+  creadoEn  DateTime @default(now())
+
+  vinculo Vinculo @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
+
+  @@index([vinculoId, usuarioId])
+  @@map("suscripcion_push")
 }

@@ -1,26 +1,80 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * Sistema visual de PairApp (§8.2 de REQUISITOS).
+ * Paleta tierra/atardecer: ningún estado emocional debe verse "mal".
+ * Nada de semáforos — el rojo genera juicio, y aquí no se juzga a nadie.
+ */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@theme {
+  /* Fondos cálidos, nunca blanco puro ni gris neutro */
+  --color-lienzo: #faf6f0;
+  --color-lienzo-hondo: #f2ebe1;
+  --color-papel: #fffdfa;
+  --color-borde: #e6dbcc;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Tinta: marrón muy oscuro en lugar de negro */
+  --color-tinta: #2e2620;
+  --color-tinta-suave: #6b5d51;
+  --color-tinta-tenue: #9c8d80;
+
+  /* Un solo acento en toda la app: terracota */
+  --color-acento: #b8654a;
+  --color-acento-suave: #d99e88;
+  --color-acento-tenue: #f4e3db;
+
+  /* Las tres familias de emociones (§M1.1.2).
+     Distintas en temperatura, ninguna en alarma. */
+  --color-contigo: #d9a441;
+  --color-contigo-fondo: #fbf2df;
+  --color-falta: #7d8fa3;
+  --color-falta-fondo: #eef1f5;
+  --color-paso: #b07c68;
+  --color-paso-fondo: #f7ece7;
+
+  /* Serif para el contenido íntimo: una carta, no una notificación */
+  --font-carta: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  --font-interfaz: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --radius-suave: 0.75rem;
+  --radius-tarjeta: 1.25rem;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-lienzo);
+  color: var(--color-tinta);
+  font-family: var(--font-interfaz);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Transiciones lentas y sin rebote: nada salta (§8.2) */
+@media (prefers-reduced-motion: no-preference) {
+  .aparece {
+    animation: aparece 420ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+  .revela {
+    animation: revela 700ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+}
+
+@keyframes aparece {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes revela {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
