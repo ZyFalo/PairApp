@@ -1,13 +1,14 @@
 import { Apunte, Tarjeta } from "@/componentes/base"
 import { Checkin } from "@/componentes/checkin"
+import { RevisionEnFrio } from "@/componentes/en-frio"
 import { COLOR_GRUPO, ICONO_EMOCION } from "@/componentes/iconos"
 import { MensajeEntrante } from "@/componentes/mensaje-entrante"
 import { VentanaOnceOnce } from "@/componentes/nosotros"
 import { ClaseMensaje, Visibilidad } from "@/generated/prisma/enums"
-import { loQueHayParaMi } from "@/lib/acciones/bucle"
+import { loQueEsperaEnFrio, loQueHayParaMi } from "@/lib/acciones/bucle"
 import { etiquetaDe, grupoDe } from "@/lib/motor/emociones"
 import { estadoVigente } from "@/lib/motor/entrega"
-import { diaLocal, formatoLegible, ventanaOnceOnce } from "@/lib/motor/tiempo"
+import { diaLocal, formatoLegible, haceEnPalabras, ventanaOnceOnce } from "@/lib/motor/tiempo"
 import { dbDeSesion } from "@/lib/sesion"
 
 export const dynamic = "force-dynamic"
@@ -20,7 +21,7 @@ export default async function PaginaHoy() {
   const { db, sesion } = await dbDeSesion()
   const ahora = new Date()
 
-  const [miUltimo, suUltimo, pendiente] = await Promise.all([
+  const [miUltimo, suUltimo, pendiente, enFrio] = await Promise.all([
     db.checkin.findFirst({
       where: { autorId: sesion.usuarioId },
       orderBy: { creadoEn: "desc" },
@@ -32,6 +33,7 @@ export default async function PaginaHoy() {
         })
       : null,
     loQueHayParaMi(),
+    loQueEsperaEnFrio(),
   ])
 
   // Un mensaje pendiente manda sobre todo lo demás.
@@ -54,6 +56,20 @@ export default async function PaginaHoy() {
               }
             : null
         }
+      />
+    )
+  }
+
+  // Después de lo que llega, lo que dejaste a medias: algo escrito en caliente
+  // que lleva doce horas esperando decisión pesa más que un check-in nuevo (§6.3).
+  if (enFrio[0]) {
+    return (
+      <RevisionEnFrio
+        mensajeId={enFrio[0].id}
+        texto={enFrio[0].texto}
+        emocion={enFrio[0].emocion}
+        cuandoLoEscribiste={haceEnPalabras(enFrio[0].creadoEn, ahora, sesion.zonaHoraria)}
+        hayPareja={Boolean(sesion.pareja)}
       />
     )
   }

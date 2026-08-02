@@ -39,6 +39,34 @@ export function ventanaOnceOnce(
 }
 
 /**
+ * Cuánto hace de algo, dicho como lo diría una persona: "ayer", "hace 3 días".
+ *
+ * Cuenta **días de calendario** en la zona de quien mira, no horas sueltas.
+ * Escribir a las 23:00 y releer a las 10:00 son once horas, pero fue "ayer";
+ * escribir a las 9:00 y releer a las 22:00 son trece y sigue siendo hoy. La
+ * diferencia importa: la frase la lee alguien decidiendo qué hacer con algo
+ * que escribió enojado (§6.3).
+ *
+ * Mira al pasado a propósito. Nunca dice cuánto falta (RF-3.0.13.1).
+ */
+export function haceEnPalabras(cuando: Date, ahoraUtc: Date, zonaHoraria: string): string {
+  const dias = Math.round(
+    -DateTime.fromJSDate(cuando, { zone: "utc" })
+      .setZone(zonaHoraria)
+      .startOf("day")
+      .diff(
+        DateTime.fromJSDate(ahoraUtc, { zone: "utc" }).setZone(zonaHoraria).startOf("day"),
+        "days",
+      ).days,
+  )
+
+  if (dias <= 0) return "hace unas horas"
+  if (dias === 1) return "ayer"
+  if (dias < 7) return `hace ${dias} días`
+  return "hace más de una semana"
+}
+
+/**
  * Si esta persona ha pedido que la app se calle (§12.2, modo pausa).
  * Silencia avisos, no entregas: lo que le manden sigue llegando y la espera.
  */

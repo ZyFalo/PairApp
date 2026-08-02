@@ -12,6 +12,7 @@ import {
 } from "@/generated/prisma/enums"
 import { claseDe, grupoDe, puedeGuardarseParaDespues } from "@/lib/motor/emociones"
 import { decidirPresentacion, topeDePosponer } from "@/lib/motor/entrega"
+import { finDelFrio, HORAS_EN_FRIO, sePuedeRetirar } from "@/lib/motor/frio"
 import { dbDeSesion } from "@/lib/sesion"
 
 const enumDe = <T extends Record<string, string>>(e: T) =>
@@ -29,6 +30,8 @@ const esquemaMensaje = z.object({
   destino: enumDe(DestinoMensaje),
   necesidad: z.string().optional(),
   tonoMarcado: z.coerce.boolean().default(false),
+  /** Guardado desde el umbral para decidir en frío (§6.3). */
+  enFrio: z.coerce.boolean().default(false),
 })
 
 export type Resultado = { error?: string; ok?: boolean; checkinId?: string }
@@ -68,7 +71,7 @@ export async function dejarMensaje(_previo: Resultado, datos: FormData): Promise
   if (!analizado.success) {
     return { error: analizado.error.issues[0]?.message ?? "Revisa el mensaje" }
   }
-  const { checkinId, texto, destino, necesidad, tonoMarcado } = analizado.data
+  const { checkinId, texto, destino, necesidad, tonoMarcado, enFrio } = analizado.data
 
   const { db, sesion } = await dbDeSesion()
 
@@ -99,6 +102,12 @@ export async function dejarMensaje(_previo: Resultado, datos: FormData): Promise
       texto,
       necesidad: (necesidad as Necesidad) || null,
       tonoMarcado,
+      // Guardado desde el umbral: espera en frío y ella no sabe que existe
+      // (RF-6.3.1). Bloquea por tiempo, jamás por contenido.
+      enFrioHasta:
+        enFrio && destinoFinal === DestinoMensaje.SOLO_PARA_MI
+          ? finDelFrio(HORAS_EN_FRIO, new Date())
+          : null,
       disparadorEmociones:
         destinoFinal === DestinoMensaje.CUANDO_LE_SIRVA
           ? [Emocion.TRISTE, Emocion.ME_SIENTO_SOLO, Emocion.PREOCUPADO]
@@ -330,6 +339,9 @@ export async function loQueHayParaMi() {
     where: {
       destinatarioId: sesion.usuarioId,
       vistaEn: null,
+      // Un mensaje eliminado por quien lo escribió ya no se abre; en el cofre
+      // queda su rastro y nada más (RF-6.4.2).
+      mensaje: { eliminadoEn: null },
       OR: [{ pospuestaHasta: null }, { pospuestaHasta: { lte: ahora } }],
     },
     orderBy: { entregadaEn: "asc" },
@@ -407,6 +419,8 @@ export async function loQueLeMande(busqueda = "") {
     include: { entrega: { include: { respuesta: true } } },
   })
 
+  const ahora = new Date()
+
   return mensajes.map((m) => ({
     id: m.id,
     texto: m.texto,
@@ -417,7 +431,131 @@ export async function loQueLeMande(busqueda = "") {
     vistaEn: m.entrega?.vistaEn ?? null,
     necesitaRatoEn: m.entrega?.necesitaRatoEn ?? null,
     respuesta: m.entrega?.respuesta ?? null,
+    eliminado: m.eliminadoEn !== null,
+    // La ventana de arrepentimiento se calcula aquí, con la hora del servidor:
+    // el reloj del teléfono podría ir adelantado (RF-6.4.1).
+    puedeRetirar:
+      m.entrega !== null &&
+      m.eliminadoEn === null &&
+      sePuedeRetirar(m.entrega.entregadaEn, m.entrega.vistaEn, ahora),
   }))
+}
+
+/**
+ * Lo que espera en frío y ya cumplió su plazo (§6.3).
+ * Solo lo mío, solo lo no archivado, y de lo más antiguo a lo más nuevo.
+ */
+export async function loQueEsperaEnFrio() {
+  const { db, sesion } = await dbDeSesion()
+
+  return db.mensaje.findMany({
+    where: {
+      autorId: sesion.usuarioId,
+      destino: DestinoMensaje.SOLO_PARA_MI,
+      archivadoEn: null,
+      enFrioHasta: { lte: new Date() },
+    },
+    orderBy: { enFrioHasta: "asc" },
+    take: 5,
+  })
+}
+
+/**
+ * Enviar por fin lo que se escribió en caliente, con o sin retoques (RF-6.3.2).
+ * La edición nace de quien escribe, nunca de la app (RF-6.3.4).
+ */
+export async function enviarDelFrio(mensajeId: string, texto?: string): Promise<Resultado> {
+  const { db, sesion } = await dbDeSesion()
+
+  const mensaje = await db.mensaje.findFirst({
+    where: { id: mensajeId, autorId: sesion.usuarioId, enFrioHasta: { not: null } },
+  })
+  if (!mensaje) return { error: "No encontramos ese mensaje" }
+  if (!sesion.pareja) return { error: "Todavía no hay nadie más en el vínculo" }
+
+  const limpio = texto?.trim()
+  if (texto !== undefined && !limpio) return { error: "Escribe algo o déjalo ir" }
+
+  await db.mensaje.update({
+    where: { id: mensaje.id },
+    data: {
+      destino: DestinoMensaje.AHORA,
+      clase: claseDe(mensaje.emocion),
+      enFrioHasta: null,
+      ...(limpio ? { texto: limpio.slice(0, 4000) } : {}),
+    },
+  })
+  await db.entrega.create({
+    data: {
+      vinculoId: sesion.vinculoId,
+      mensajeId: mensaje.id,
+      destinatarioId: sesion.pareja.id,
+      llegadaEn: new Date(),
+    },
+  })
+
+  revalidatePath("/hoy")
+  revalidatePath("/cofre")
+  return { ok: true }
+}
+
+/**
+ * Dejarlo ir (RF-6.3.3). Lo archiva y no lo borra: a veces escribirlo ya era
+ * el punto, y las tres salidas del frío pesan lo mismo.
+ */
+export async function dejarloIr(mensajeId: string) {
+  const { db, sesion } = await dbDeSesion()
+  await db.mensaje.updateMany({
+    where: { id: mensajeId, autorId: sesion.usuarioId, enFrioHasta: { not: null } },
+    data: { archivadoEn: new Date(), enFrioHasta: null },
+  })
+  revalidatePath("/hoy")
+  revalidatePath("/cofre")
+}
+
+/**
+ * Retirar algo recién enviado que la otra persona aún no ha abierto (RF-6.4.1).
+ * Vuelve a tus apuntes, como si no hubiera salido — porque no lo ha visto nadie.
+ */
+export async function retirarEnviado(mensajeId: string): Promise<Resultado> {
+  const { db, sesion } = await dbDeSesion()
+
+  const mensaje = await db.mensaje.findFirst({
+    where: { id: mensajeId, autorId: sesion.usuarioId },
+    include: { entrega: true },
+  })
+  if (!mensaje?.entrega) return { error: "No encontramos ese mensaje" }
+
+  if (!sePuedeRetirar(mensaje.entrega.entregadaEn, mensaje.entrega.vistaEn, new Date())) {
+    return { error: "Ya no se puede retirar" }
+  }
+
+  await db.entrega.delete({ where: { id: mensaje.entrega.id } })
+  await db.mensaje.update({
+    where: { id: mensaje.id },
+    data: { destino: DestinoMensaje.SOLO_PARA_MI },
+  })
+
+  revalidatePath("/cofre")
+  revalidatePath("/hoy")
+  return { ok: true }
+}
+
+/**
+ * Eliminar un mensaje que la otra persona ya puede haber leído (RF-6.4.2).
+ *
+ * Deja rastro a propósito: donde estaba el texto queda dicho que hubo un
+ * mensaje y que ya no está. Borrarlo en silencio sería reescribir una historia
+ * que es de los dos, no solo de quien la escribió.
+ */
+export async function eliminarConRastro(mensajeId: string) {
+  const { db, sesion } = await dbDeSesion()
+  await db.mensaje.updateMany({
+    where: { id: mensajeId, autorId: sesion.usuarioId, eliminadoEn: null },
+    data: { eliminadoEn: new Date() },
+  })
+  revalidatePath("/cofre")
+  revalidatePath("/hoy")
 }
 
 /** Retira un mensaje guardado que todavía no se ha entregado (RF-2.2.4). */

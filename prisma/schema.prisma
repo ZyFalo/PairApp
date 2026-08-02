@@ -229,6 +229,19 @@ model Mensaje {
   disparadorEmociones Emocion[] @default([])
   /// Un apunte de "solo para mí" que ya se habló o dejó de importar (RF-2.0.8).
   archivadoEn DateTime?
+  /// Buzón en frío (§6.3): cuándo toca volver a mirar esto con la cabeza fría.
+  ///
+  /// El mensaje **no se ha enviado** y la otra persona no sabe que existe
+  /// (RF-6.3.1). Al cumplirse la hora, la app pregunta qué hacer con él y las
+  /// tres salidas pesan lo mismo: enviarlo, editarlo o dejarlo ir (RF-6.3.3).
+  ///
+  /// Es el guardarraíl de verdad del módulo, y bloquea por **tiempo**, nunca
+  /// por contenido (P9).
+  enFrioHasta DateTime?
+  /// Borrado con rastro (RF-6.4.2). Un mensaje ya abierto no se puede retirar;
+  /// se puede eliminar, pero queda dicho que existió. Nunca se reescribe la
+  /// historia en silencio.
+  eliminadoEn DateTime?
   creadoEn  DateTime       @default(now())
 
   vinculo  Vinculo   @relation(fields: [vinculoId], references: [id], onDelete: Cascade)

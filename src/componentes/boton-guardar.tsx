@@ -1,8 +1,19 @@
 "use client"
 
-import { RiBookmarkFill, RiBookmarkLine, RiInboxUnarchiveLine } from "@remixicon/react"
+import {
+  RiArrowGoBackLine,
+  RiBookmarkFill,
+  RiBookmarkLine,
+  RiDeleteBin6Line,
+  RiInboxUnarchiveLine,
+} from "@remixicon/react"
 import { useState, useTransition } from "react"
-import { alternarGuardado, retirarGuardado } from "@/lib/acciones/bucle"
+import {
+  alternarGuardado,
+  eliminarConRastro,
+  retirarEnviado,
+  retirarGuardado,
+} from "@/lib/acciones/bucle"
 
 /**
  * Guardar un mensaje en el cofre. La señal solo existe en positivo: no hay
@@ -51,5 +62,72 @@ export function BotonRetirar({ mensajeId }: { mensajeId: string }) {
       <RiInboxUnarchiveLine size={15} />
       Retirarlo
     </button>
+  )
+}
+
+/**
+ * Deshacer un envío (§6.4). Dos botones distintos porque son dos cosas
+ * distintas:
+ *
+ * - **Retirar** solo existe los dos primeros minutos y solo si aún no lo abrió.
+ *   Vuelve a tus apuntes sin dejar nada, porque no lo ha visto nadie.
+ * - **Eliminar** es lo que queda después, y **deja rastro** (RF-6.4.2): ella
+ *   verá que hubo un mensaje y que ya no está. Borrarlo en silencio sería
+ *   reescribir una historia que es de los dos.
+ */
+export function DeshacerEnvio({
+  mensajeId,
+  puedeRetirar,
+}: {
+  mensajeId: string
+  puedeRetirar: boolean
+}) {
+  const [confirmando, setConfirmando] = useState(false)
+  const [, empezar] = useTransition()
+
+  if (puedeRetirar) {
+    return (
+      <button
+        type="button"
+        onClick={() => empezar(() => void retirarEnviado(mensajeId))}
+        className="pulsable inline-flex items-center gap-1.5 text-[13px] text-[var(--color-acento)]"
+      >
+        <RiArrowGoBackLine size={15} />
+        Retirarlo
+      </button>
+    )
+  }
+
+  if (!confirmando) {
+    return (
+      <button
+        type="button"
+        onClick={() => setConfirmando(true)}
+        className="pulsable inline-flex items-center gap-1.5 text-[13px] text-[var(--color-tinta-tenue)] hover:text-[var(--color-acento)]"
+      >
+        <RiDeleteBin6Line size={15} />
+        Eliminar
+      </button>
+    )
+  }
+
+  return (
+    <span className="inline-flex flex-wrap items-center gap-2">
+      <span className="text-[12.5px] text-[var(--color-tinta-tenue)]">Verá que lo borraste.</span>
+      <button
+        type="button"
+        onClick={() => empezar(() => void eliminarConRastro(mensajeId))}
+        className="pulsable rounded-[var(--radius-pildora)] bg-[var(--color-acento-tenue)] px-2.5 py-1 text-[12px] font-medium text-[var(--color-acento-hondo)]"
+      >
+        Eliminar igual
+      </button>
+      <button
+        type="button"
+        onClick={() => setConfirmando(false)}
+        className="pulsable text-[12.5px] text-[var(--color-tinta-tenue)]"
+      >
+        No
+      </button>
+    </span>
   )
 }

@@ -2,12 +2,13 @@ import {
   RiArchiveLine,
   RiBookmarkLine,
   RiChatQuoteLine,
+  RiDeleteBin6Line,
   RiInboxLine,
   RiSendPlaneLine,
 } from "@remixicon/react"
 import Link from "next/link"
 import { Apunte, Seccion, Tarjeta, TextoDeCarta, Titulo, Vacio } from "@/componentes/base"
-import { BotonGuardar, BotonRetirar } from "@/componentes/boton-guardar"
+import { BotonGuardar, BotonRetirar, DeshacerEnvio } from "@/componentes/boton-guardar"
 import { COLOR_GRUPO, ICONO_CIERRE, ICONO_EMOCION } from "@/componentes/iconos"
 import { AccionesApunte, BotonDesarchivar } from "@/componentes/yo"
 import type { Emocion } from "@/generated/prisma/enums"
@@ -81,6 +82,9 @@ export default async function PaginaCofre({
             autorId: sesion.usuarioId,
             destino: DestinoMensaje.SOLO_PARA_MI,
             archivadoEn: verArchivo ? { not: null } : null,
+            // Lo que espera en frío todavía no es un apunte: es una decisión
+            // pendiente, y se pregunta en Hoy (§6.3).
+            enFrioHasta: null,
             ...(contiene ? { texto: contiene } : {}),
           },
           orderBy: { creadoEn: "desc" },
@@ -140,16 +144,27 @@ export default async function PaginaCofre({
                       </span>
                     </div>
 
-                    <TextoDeCarta>{m.texto}</TextoDeCarta>
+                    {m.eliminado ? (
+                      <Apunte>Lo eliminaste. Ella vio que hubo algo aquí.</Apunte>
+                    ) : (
+                      <TextoDeCarta>{m.texto}</TextoDeCarta>
+                    )}
 
-                    <div className="flex flex-wrap items-center gap-2">
-                      <EstadoEnvio
-                        esperando={m.esperando}
-                        vista={m.vistaEn !== null}
-                        necesitaRato={m.necesitaRatoEn !== null}
-                        respondido={m.respuesta !== null}
-                      />
+                    <div className="flex flex-wrap items-center gap-3">
+                      {!m.eliminado && (
+                        <EstadoEnvio
+                          esperando={m.esperando}
+                          vista={m.vistaEn !== null}
+                          necesitaRato={m.necesitaRatoEn !== null}
+                          respondido={m.respuesta !== null}
+                        />
+                      )}
                       {m.esperando && <BotonRetirar mensajeId={m.id} />}
+                      {/* Deshacer solo mientras tenga sentido: ni en lo que aún
+                          no ha salido ni en lo que ya se eliminó (§6.4). */}
+                      {!m.esperando && !m.eliminado && (
+                        <DeshacerEnvio mensajeId={m.id} puedeRetirar={m.puedeRetirar} />
+                      )}
                     </div>
 
                     {m.respuesta && (m.respuesta.texto || m.respuesta.cierre) && (
@@ -195,7 +210,16 @@ export default async function PaginaCofre({
                     </span>
                   </div>
 
-                  <TextoDeCarta>{e.mensaje.texto}</TextoDeCarta>
+                  {/* El rastro de lo eliminado (RF-6.4.2): se dice que hubo un
+                      mensaje y que ya no está. La historia es de los dos. */}
+                  {e.mensaje.eliminadoEn ? (
+                    <p className="flex items-center gap-2 text-[15px] text-[var(--color-tinta-tenue)] italic">
+                      <RiDeleteBin6Line size={15} />
+                      Mensaje eliminado
+                    </p>
+                  ) : (
+                    <TextoDeCarta>{e.mensaje.texto}</TextoDeCarta>
+                  )}
 
                   {/* Una respuesta de un toque cuenta igual que una escrita: si
                       no dejara rastro, parecería que no contestaste (§3.3). */}

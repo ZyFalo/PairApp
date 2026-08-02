@@ -81,13 +81,14 @@ export function Compositor({
   const hayTexto = texto.trim().length > 0
 
   /** Arma los datos con lo que hay en pantalla ahora mismo y los despacha. */
-  function enviar(destino: DestinoMensaje) {
+  function enviar(destino: DestinoMensaje, enFrio = false) {
     const datos = new FormData()
     datos.set("checkinId", checkinId)
     datos.set("texto", texto)
     datos.set("destino", destino)
     datos.set("necesidad", necesidad)
     datos.set("tonoMarcado", tonoMarcado ? "true" : "")
+    datos.set("enFrio", enFrio ? "true" : "")
     empezar(() => accion(datos))
   }
 
@@ -167,7 +168,7 @@ export function Compositor({
         <UmbralEnojo
           pendiente={pendiente}
           onEnviarAhora={() => enviar("AHORA")}
-          onGuardarParaMi={() => enviar("SOLO_PARA_MI")}
+          onGuardarParaMi={() => enviar("SOLO_PARA_MI", true)}
           onVolver={() => setEnUmbral(false)}
         />
       ) : (
@@ -239,8 +240,10 @@ function UmbralEnojo({
         <Boton variante="suave" onClick={onEnviarAhora} disabled={pendiente}>
           {pendiente ? "Enviando…" : "Enviar ahora"}
         </Boton>
+        {/* No es "solo para mí" sin más: se guarda en frío y la app vuelve a
+            preguntar dentro de doce horas (§6.3). */}
         <Boton variante="suave" onClick={onGuardarParaMi} disabled={pendiente}>
-          Guardarlo y decidir después
+          Guardarlo y decidir mañana
         </Boton>
         <Boton variante="texto" onClick={onVolver} disabled={pendiente}>
           Seguir escribiendo
