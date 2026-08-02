@@ -16,7 +16,7 @@ export function VentanaOnceOnce() {
 
   return (
     <Tarjeta className="aparece space-y-3">
-      <p className="text-center font-[family-name:--font-carta] text-[19px]">11:11</p>
+      <p className="text-center carta text-[19px]">11:11</p>
       <form action={accion} className="space-y-3">
         <textarea
           name="texto"
@@ -24,7 +24,7 @@ export function VentanaOnceOnce() {
           onChange={(e) => setTexto(e.target.value.slice(0, 140))}
           rows={2}
           placeholder="Pide un deseo…"
-          className="w-full resize-none rounded-[--radius-suave] border border-[--color-borde] bg-[--color-lienzo] p-3 font-[family-name:--font-carta] text-[16px] outline-none"
+          className="w-full resize-none rounded-[var(--radius-suave)] border border-[var(--color-borde)] bg-[var(--color-lienzo)] p-3 carta text-[16px] outline-none"
         />
         <div className="flex items-center justify-between">
           <Apunte>{140 - texto.length} caracteres</Apunte>
@@ -56,13 +56,13 @@ export function FormularioEvento() {
       <form action={accion} className="space-y-3">
         <Campo etiqueta="Qué" name="titulo" required maxLength={120} />
         <Campo etiqueta="Cuándo" name="inicio" type="datetime-local" required />
-        <label className="flex items-center gap-2 text-[14px] text-[--color-tinta-suave]">
+        <label className="flex items-center gap-2 text-[14px] text-[var(--color-tinta-suave)]">
           <input
             type="checkbox"
             name="esDePareja"
             value="true"
             defaultChecked
-            className="accent-[--color-acento]"
+            className="accent-[var(--color-acento)]"
           />
           Es un plan de los dos
         </label>
@@ -105,13 +105,13 @@ export function FormularioCancion() {
         />
         <Campo etiqueta="Dedicatoria (opcional)" name="mensaje" maxLength={500} />
         <label className="block">
-          <span className="mb-1.5 block text-[13px] text-[--color-tinta-suave]">
+          <span className="mb-1.5 block text-[13px] text-[var(--color-tinta-suave)]">
             ¿Cuándo le llega?
           </span>
           <select
             name="franja"
             defaultValue="TARDE"
-            className="w-full rounded-[--radius-suave] border border-[--color-borde] bg-[--color-papel] px-4 py-3 text-[16px] outline-none"
+            className="w-full rounded-[var(--radius-suave)] border border-[var(--color-borde)] bg-[var(--color-papel)] px-4 py-3 text-[16px] outline-none"
           >
             <option value="MANANA">Por la mañana</option>
             <option value="TARDE">Media tarde</option>

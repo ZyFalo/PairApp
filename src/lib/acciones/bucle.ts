@@ -175,6 +175,7 @@ export async function responder(_previo: Resultado, datos: FormData): Promise<Re
   await db.respuesta.upsert({
     where: { entregaId },
     create: {
+      vinculoId: sesion.vinculoId,
       entregaId,
       autorId: sesion.usuarioId,
       texto: texto || null,

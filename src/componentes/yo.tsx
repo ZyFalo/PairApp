@@ -26,7 +26,7 @@ export function AccionesApunte({
         <button
           type="button"
           onClick={() => empezar(() => void decirloAhora(mensajeId))}
-          className="text-[--color-acento]"
+          className="text-[var(--color-acento)]"
         >
           Decirlo ahora
         </button>
@@ -34,7 +34,7 @@ export function AccionesApunte({
       <button
         type="button"
         onClick={() => empezar(() => void archivarApunte(mensajeId))}
-        className="text-[--color-tinta-tenue]"
+        className="text-[var(--color-tinta-tenue)]"
       >
         Archivar
       </button>
@@ -65,13 +65,13 @@ export function FormularioCiclo() {
         <Campo etiqueta="Último día (opcional)" name="fin" type="date" />
 
         <label className="block">
-          <span className="mb-1.5 block text-[13px] text-[--color-tinta-suave]">
+          <span className="mb-1.5 block text-[13px] text-[var(--color-tinta-suave)]">
             ¿Qué compartes?
           </span>
           <select
             name="nivelVisibilidad"
             defaultValue="SOLO_FECHAS"
-            className="w-full rounded-[--radius-suave] border border-[--color-borde] bg-[--color-papel] px-4 py-3 text-[16px] outline-none"
+            className="w-full rounded-[var(--radius-suave)] border border-[var(--color-borde)] bg-[var(--color-papel)] px-4 py-3 text-[16px] outline-none"
           >
             <option value="NADA">Nada</option>
             <option value="SOLO_FECHAS">Solo las fechas</option>
@@ -80,7 +80,7 @@ export function FormularioCiclo() {
         </label>
 
         <label className="block">
-          <span className="mb-1.5 block text-[13px] text-[--color-tinta-suave]">
+          <span className="mb-1.5 block text-[13px] text-[var(--color-tinta-suave)]">
             Qué te sirve estos días (lo verá solo si eliges compartirlo)
           </span>
           <textarea
@@ -88,7 +88,7 @@ export function FormularioCiclo() {
             rows={3}
             maxLength={1000}
             placeholder="Por ejemplo: no me preguntes si estoy bien, solo trae té y pon una peli."
-            className="w-full resize-none rounded-[--radius-suave] border border-[--color-borde] bg-[--color-papel] p-3 font-[family-name:--font-carta] text-[16px] outline-none"
+            className="w-full resize-none rounded-[var(--radius-suave)] border border-[var(--color-borde)] bg-[var(--color-papel)] p-3 carta text-[16px] outline-none"
           />
         </label>
 

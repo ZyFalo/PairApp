@@ -1,66 +1,185 @@
 @import "tailwindcss";
 
 /*
- * Sistema visual de PairApp (§8.2 de REQUISITOS).
- * Paleta tierra/atardecer: ningún estado emocional debe verse "mal".
- * Nada de semáforos — el rojo genera juicio, y aquí no se juzga a nadie.
+ * Sistema visual de PairApp — "papel y tinta" (§8.2 de REQUISITOS).
+ *
+ * La app debe sentirse como un cuaderno compartido, no como software: papel
+ * cálido con grano, tinta terracota, serif con carácter para lo íntimo.
+ * Paleta tierra/atardecer: ningún estado emocional se ve "mal" — nada de
+ * semáforos, porque el rojo juzga y aquí no se juzga a nadie.
  */
 
 @theme {
-  /* Fondos cálidos, nunca blanco puro ni gris neutro */
-  --color-lienzo: #faf6f0;
-  --color-lienzo-hondo: #f2ebe1;
-  --color-papel: #fffdfa;
-  --color-borde: #e6dbcc;
+  /* ---- Papel ------------------------------------------------------------ */
+  --color-lienzo: #f7f2ea;
+  --color-lienzo-hondo: #efe7db;
+  --color-papel: #fffcf7;
+  --color-papel-alto: #fffefb;
+  --color-borde: #e4d8c6;
+  --color-borde-suave: #efe6d8;
 
-  /* Tinta: marrón muy oscuro en lugar de negro */
-  --color-tinta: #2e2620;
-  --color-tinta-suave: #6b5d51;
-  --color-tinta-tenue: #9c8d80;
+  /* ---- Tinta ------------------------------------------------------------ */
+  --color-tinta: #2b231d;
+  --color-tinta-suave: #6a5b4e;
+  --color-tinta-tenue: #9d8d7c;
 
-  /* Un solo acento en toda la app: terracota */
+  /* ---- Acento: terracota, un solo acento en toda la app ----------------- */
   --color-acento: #b8654a;
+  --color-acento-hondo: #96503a;
   --color-acento-suave: #d99e88;
-  --color-acento-tenue: #f4e3db;
+  --color-acento-tenue: #f6e6de;
 
-  /* Las tres familias de emociones (§M1.1.2).
-     Distintas en temperatura, ninguna en alarma. */
-  --color-contigo: #d9a441;
-  --color-contigo-fondo: #fbf2df;
-  --color-falta: #7d8fa3;
-  --color-falta-fondo: #eef1f5;
-  --color-paso: #b07c68;
-  --color-paso-fondo: #f7ece7;
+  /* ---- Las tres familias de emociones (§M1.1.2) ------------------------- */
+  --color-contigo: #cf9a3c;
+  --color-contigo-fondo: #fbf3e2;
+  --color-contigo-borde: #eddcb8;
 
-  /* Serif para el contenido íntimo: una carta, no una notificación */
-  --font-carta: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
-  --font-interfaz: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --color-falta: #74879c;
+  --color-falta-fondo: #edf1f5;
+  --color-falta-borde: #d6dfe9;
 
-  --radius-suave: 0.75rem;
-  --radius-tarjeta: 1.25rem;
+  --color-paso: #ab7561;
+  --color-paso-fondo: #f8ece6;
+  --color-paso-borde: #ecd8cd;
+
+  /* ---- Tipografía ------------------------------------------------------- */
+  --font-carta: var(--fuente-fraunces), Georgia, serif;
+  --font-interfaz: var(--fuente-dm-sans), ui-sans-serif, system-ui, sans-serif;
+
+  /* ---- Forma ------------------------------------------------------------ */
+  --radius-suave: 0.875rem;
+  --radius-tarjeta: 1.5rem;
+  --radius-pildora: 999px;
+
+  /* ---- Profundidad: sombras en capas, nunca una sola dura --------------- */
+  --sombra-papel:
+    0 1px 2px -1px rgb(74 54 38 / 0.06), 0 2px 6px -2px rgb(74 54 38 / 0.05),
+    0 8px 20px -8px rgb(74 54 38 / 0.06);
+  --sombra-alzada:
+    0 1px 2px -1px rgb(74 54 38 / 0.08), 0 4px 12px -4px rgb(74 54 38 / 0.08),
+    0 16px 32px -12px rgb(74 54 38 / 0.1);
+  --sombra-tinta: 0 2px 8px -2px rgb(184 101 74 / 0.35), 0 6px 20px -6px rgb(184 101 74 / 0.25);
+}
+
+/* --------------------------------------------------------------------------
+   Base
+   -------------------------------------------------------------------------- */
+
+html {
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  background: var(--color-lienzo);
+  /* Degradado muy tenue en vez de color plano: el papel nunca es uniforme */
+  background:
+    radial-gradient(120% 80% at 50% 0%, #fbf7f0 0%, var(--color-lienzo) 55%, #f2ebe0 100%)
+    fixed;
   color: var(--color-tinta);
   font-family: var(--font-interfaz);
+  font-feature-settings: "ss01", "cv01";
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  min-height: 100dvh;
 }
 
-/* Transiciones lentas y sin rebote: nada salta (§8.2) */
+/* Grano de papel. Es el detalle que más aleja la app de sentirse plana. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.4;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23g)' opacity='0.22'/%3E%3C/svg%3E");
+}
+
+/* Halo terracota muy tenue arriba: da atmósfera sin llamar la atención */
+body::after {
+  content: "";
+  position: fixed;
+  top: -30%;
+  left: 50%;
+  width: 140vw;
+  height: 60vh;
+  transform: translateX(-50%);
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(50% 50% at 50% 50%, rgb(184 101 74 / 0.07) 0%, transparent 70%);
+}
+
+/* Todo el contenido va por encima de las capas de atmósfera */
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
+::selection {
+  background: var(--color-acento-tenue);
+  color: var(--color-acento-hondo);
+}
+
+/* Tipografía de las cartas: serif variable, con los ejes suavizados */
+.carta {
+  font-family: var(--font-carta);
+  font-variation-settings: "SOFT" 40, "WONK" 1;
+  letter-spacing: -0.006em;
+}
+
+/* --------------------------------------------------------------------------
+   Superficies
+   -------------------------------------------------------------------------- */
+
+/* Una tarjeta es una hoja de papel: luz arriba, sombra abajo, nunca un rectángulo plano */
+.hoja {
+  position: relative;
+  background: linear-gradient(180deg, var(--color-papel-alto) 0%, var(--color-papel) 100%);
+  border: 1px solid var(--color-borde-suave);
+  border-radius: var(--radius-tarjeta);
+  box-shadow: var(--sombra-papel);
+}
+
+/* El filo de luz que hace que el papel parezca tener grosor */
+.hoja::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  border-radius: var(--radius-tarjeta) var(--radius-tarjeta) 0 0;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.9) 20%, rgb(255 255 255 / 0.9) 80%, transparent);
+  pointer-events: none;
+}
+
+.hoja-alzada {
+  box-shadow: var(--sombra-alzada);
+}
+
+/* --------------------------------------------------------------------------
+   Movimiento — lento y sin rebote (§8.2). Nada salta.
+   -------------------------------------------------------------------------- */
+
 @media (prefers-reduced-motion: no-preference) {
   .aparece {
-    animation: aparece 420ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+    animation: aparece 500ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
   }
   .revela {
-    animation: revela 700ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+    animation: revela 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
+  .escalonado > * {
+    animation: aparece 500ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+  .escalonado > *:nth-child(1) { animation-delay: 40ms; }
+  .escalonado > *:nth-child(2) { animation-delay: 100ms; }
+  .escalonado > *:nth-child(3) { animation-delay: 160ms; }
+  .escalonado > *:nth-child(4) { animation-delay: 220ms; }
+  .escalonado > *:nth-child(5) { animation-delay: 280ms; }
+  .escalonado > *:nth-child(6) { animation-delay: 340ms; }
 }
 
 @keyframes aparece {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -68,13 +187,94 @@ body {
   }
 }
 
+/* La revelación de un mensaje es el momento clave de la app: merece ceremonia */
 @keyframes revela {
-  from {
+  0% {
     opacity: 0;
-    transform: translateY(14px) scale(0.99);
+    transform: translateY(22px) scale(0.97);
+    filter: blur(6px);
   }
-  to {
+  100% {
     opacity: 1;
     transform: none;
+    filter: blur(0);
   }
+}
+
+/* Respuesta táctil: todo lo pulsable cede un poco */
+@media (prefers-reduced-motion: no-preference) {
+  .pulsable {
+    transition:
+      transform 220ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      box-shadow 220ms ease,
+      background-color 220ms ease,
+      border-color 220ms ease,
+      color 220ms ease;
+  }
+  .pulsable:active {
+    transform: scale(0.975);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Formularios
+   -------------------------------------------------------------------------- */
+
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-tinta-tenue);
+}
+
+/* El autocompletado de Chrome pinta los campos de azul y rompe la paleta.
+   No hay forma de cambiar el fondo directamente: se tapa con una sombra
+   interior del color del papel. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 100px var(--color-papel) inset;
+  -webkit-text-fill-color: var(--color-tinta);
+  caret-color: var(--color-tinta);
+  transition: background-color 100000s ease-in-out 0s;
+}
+
+/* Foco visible pero cálido, nunca el azul del sistema */
+:where(input, textarea, select, button, a):focus-visible {
+  outline: 2px solid var(--color-acento-suave);
+  outline-offset: 2px;
+}
+
+/* Deslizador de intensidad, con el acento de la app */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--color-borde);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-acento);
+  box-shadow: var(--sombra-tinta);
+  cursor: pointer;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-acento);
+  box-shadow: var(--sombra-tinta);
+  cursor: pointer;
 }

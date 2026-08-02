@@ -57,11 +57,11 @@ export default async function PaginaCofre({
             <li key={e.id}>
               <Tarjeta className="aparece space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[13px] text-[--color-tinta-suave]">
+                  <span className="text-[13px] text-[var(--color-tinta-suave)]">
                     {ficha(e.mensaje.emocion).icono}{" "}
                     {etiquetaDe(e.mensaje.emocion, "NEUTRO").toLowerCase()}
                   </span>
-                  <span className="text-[12px] text-[--color-tinta-tenue]">
+                  <span className="text-[12px] text-[var(--color-tinta-tenue)]">
                     {formatoLegible(e.entregadaEn, sesion.zonaHoraria)}
                   </span>
                 </div>
@@ -69,9 +69,11 @@ export default async function PaginaCofre({
                 <TextoDeCarta>{e.mensaje.texto}</TextoDeCarta>
 
                 {e.respuesta?.texto && (
-                  <div className="border-l-2 border-[--color-borde] pl-3">
+                  <div className="border-l-2 border-[var(--color-borde)] pl-3">
                     <Apunte>Le respondiste:</Apunte>
-                    <p className="text-[15px] text-[--color-tinta-suave]">{e.respuesta.texto}</p>
+                    <p className="text-[15px] text-[var(--color-tinta-suave)]">
+                      {e.respuesta.texto}
+                    </p>
                   </div>
                 )}
 
@@ -92,8 +94,8 @@ function Pestana({ href, activa, texto }: { href: string; activa: boolean; texto
       href={href}
       className={`rounded-full px-4 py-1.5 text-[13px] ${
         activa
-          ? "bg-[--color-acento] text-[#fffdfa]"
-          : "border border-[--color-borde] bg-[--color-papel] text-[--color-tinta-suave]"
+          ? "bg-[var(--color-acento)] text-[#fffdfa]"
+          : "border border-[var(--color-borde)] bg-[var(--color-papel)] text-[var(--color-tinta-suave)]"
       }`}
     >
       {texto}

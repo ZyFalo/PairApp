@@ -6,7 +6,7 @@ import type { ComponentProps, ReactNode } from "react"
  * propia, y un kit genérico haría que la app se pareciera a cualquier otra.
  */
 
-/** Botón principal de una pantalla. Nunca más de uno visible a la vez. */
+/** Botón. Uno principal por pantalla; el resto en suave o texto. */
 export function Boton({
   children,
   variante = "solido",
@@ -14,15 +14,16 @@ export function Boton({
   ...props
 }: ComponentProps<"button"> & { variante?: "solido" | "suave" | "texto" }) {
   const estilos = {
-    solido: "bg-[--color-acento] text-[#fffdfa] hover:opacity-90",
+    solido:
+      "text-[#fffcf7] bg-gradient-to-b from-[var(--color-acento)] to-[var(--color-acento-hondo)] shadow-[var(--sombra-tinta)] hover:brightness-[1.06]",
     suave:
-      "bg-[--color-papel] text-[--color-tinta] border border-[--color-borde] hover:bg-[--color-lienzo-hondo]",
-    texto: "text-[--color-tinta-suave] hover:text-[--color-tinta]",
+      "text-[var(--color-tinta)] bg-gradient-to-b from-[var(--color-papel-alto)] to-[var(--color-papel)] border border-[var(--color-borde)] shadow-[var(--sombra-papel)] hover:border-[var(--color-acento-suave)]",
+    texto: "text-[var(--color-tinta-suave)] hover:text-[var(--color-acento)]",
   }[variante]
 
   return (
     <button
-      className={`rounded-[--radius-suave] px-5 py-3 text-[15px] transition-opacity duration-200 disabled:opacity-50 ${estilos} ${className}`}
+      className={`pulsable rounded-[var(--radius-suave)] px-5 py-3.5 text-[15px] font-medium disabled:opacity-40 ${estilos} ${className}`}
       {...props}
     >
       {children}
@@ -42,12 +43,12 @@ export function BotonEnlace({
 }) {
   const estilos =
     variante === "solido"
-      ? "bg-[--color-acento] text-[#fffdfa]"
-      : "bg-[--color-papel] text-[--color-tinta] border border-[--color-borde]"
+      ? "text-[#fffcf7] bg-gradient-to-b from-[var(--color-acento)] to-[var(--color-acento-hondo)] shadow-[var(--sombra-tinta)]"
+      : "text-[var(--color-tinta)] bg-[var(--color-papel)] border border-[var(--color-borde)]"
   return (
     <Link
       href={href}
-      className={`inline-block rounded-[--radius-suave] px-5 py-3 text-center text-[15px] ${estilos}`}
+      className={`pulsable inline-block rounded-[var(--radius-suave)] px-5 py-3.5 text-center text-[15px] font-medium ${estilos}`}
     >
       {children}
     </Link>
@@ -58,30 +59,34 @@ export function BotonEnlace({
 export function Campo({ etiqueta, ...props }: ComponentProps<"input"> & { etiqueta: string }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[13px] text-[--color-tinta-suave]">{etiqueta}</span>
+      <span className="mb-2 block text-[12.5px] font-medium uppercase tracking-[0.08em] text-[var(--color-tinta-tenue)]">
+        {etiqueta}
+      </span>
       <input
-        className="w-full rounded-[--radius-suave] border border-[--color-borde] bg-[--color-papel] px-4 py-3 text-[16px] text-[--color-tinta] outline-none focus:border-[--color-acento-suave]"
+        className="w-full rounded-[var(--radius-suave)] border border-[var(--color-borde)] bg-[var(--color-papel)] px-4 py-3.5 text-[16px] text-[var(--color-tinta)] shadow-[inset_0_1px_2px_rgb(74_54_38_/_0.04)] outline-none transition-colors duration-200 focus:border-[var(--color-acento-suave)]"
         {...props}
       />
     </label>
   )
 }
 
-/** Superficie de contenido. La base visual de casi todo. */
-export function Tarjeta({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return (
-    <div
-      className={`rounded-[--radius-tarjeta] border border-[--color-borde] bg-[--color-papel] p-5 ${className}`}
-    >
-      {children}
-    </div>
-  )
+/** Superficie de contenido: una hoja de papel con grosor, no un rectángulo plano. */
+export function Tarjeta({
+  children,
+  className = "",
+  alzada = false,
+}: {
+  children: ReactNode
+  className?: string
+  alzada?: boolean
+}) {
+  return <div className={`hoja ${alzada ? "hoja-alzada" : ""} p-5 ${className}`}>{children}</div>
 }
 
 /** Texto de un mensaje. Serif: se lee como una carta, no como una notificación. */
 export function TextoDeCarta({ children }: { children: ReactNode }) {
   return (
-    <p className="whitespace-pre-wrap font-[family-name:--font-carta] text-[17px] leading-relaxed text-[--color-tinta]">
+    <p className="carta whitespace-pre-wrap text-[18px] leading-[1.65] text-[var(--color-tinta)]">
       {children}
     </p>
   )
@@ -90,22 +95,48 @@ export function TextoDeCarta({ children }: { children: ReactNode }) {
 /** Aviso de error de formulario. Sin iconos de alarma (§1.2). */
 export function Aviso({ children }: { children: ReactNode }) {
   if (!children) return null
-  return <p className="text-[14px] text-[--color-acento]">{children}</p>
+  return (
+    <p className="rounded-[var(--radius-suave)] bg-[var(--color-acento-tenue)] px-3.5 py-2.5 text-[14px] text-[var(--color-acento-hondo)]">
+      {children}
+    </p>
+  )
 }
 
 /** Encabezado de pantalla. */
 export function Titulo({ children }: { children: ReactNode }) {
+  return <h1 className="carta text-[30px] leading-tight text-[var(--color-tinta)]">{children}</h1>
+}
+
+/** Encabezado de sección, discreto y en mayúsculas espaciadas. */
+export function Seccion({ children }: { children: ReactNode }) {
   return (
-    <h1 className="font-[family-name:--font-carta] text-[26px] text-[--color-tinta]">{children}</h1>
+    <h2 className="text-[12px] font-medium uppercase tracking-[0.12em] text-[var(--color-tinta-tenue)]">
+      {children}
+    </h2>
   )
 }
 
 /** Texto secundario, para contexto que no compite con lo principal. */
 export function Apunte({ children }: { children: ReactNode }) {
-  return <p className="text-[14px] leading-relaxed text-[--color-tinta-suave]">{children}</p>
+  return <p className="text-[14px] leading-relaxed text-[var(--color-tinta-suave)]">{children}</p>
 }
 
 /** Cuando no hay nada que mostrar. "Nada" es una respuesta válida (RF-3.6). */
 export function Vacio({ children }: { children: ReactNode }) {
-  return <p className="py-10 text-center text-[15px] text-[--color-tinta-tenue]">{children}</p>
+  return (
+    <div className="rounded-[var(--radius-tarjeta)] border border-dashed border-[var(--color-borde)] px-6 py-10 text-center">
+      <p className="text-[15px] text-[var(--color-tinta-tenue)]">{children}</p>
+    </div>
+  )
+}
+
+/** Separador con un punto: más suave que una línea de lado a lado. */
+export function Separador() {
+  return (
+    <div className="flex items-center gap-3 py-1" aria-hidden>
+      <span className="h-px flex-1 bg-gradient-to-r from-transparent to-[var(--color-borde)]" />
+      <span className="size-1 rounded-full bg-[var(--color-borde)]" />
+      <span className="h-px flex-1 bg-gradient-to-l from-transparent to-[var(--color-borde)]" />
+    </div>
+  )
 }

@@ -23,9 +23,7 @@ export function PanelInvitacion() {
     <div className="aparece space-y-5">
       {codigo ? (
         <Tarjeta className="space-y-3 text-center">
-          <p className="font-[family-name:--font-carta] text-[34px] tracking-[0.2em] text-[--color-acento]">
-            {codigo}
-          </p>
+          <p className="carta text-[34px] tracking-[0.2em] text-[var(--color-acento)]">{codigo}</p>
           <Apunte>
             Que lo escriba al crear su cuenta. Cuando entre, esta pantalla desaparece sola.
           </Apunte>

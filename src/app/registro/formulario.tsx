@@ -25,13 +25,13 @@ export function FormularioRegistro({ codigoInicial }: { codigoInicial: string })
       />
 
       <label className="block">
-        <span className="mb-1.5 block text-[13px] text-[--color-tinta-suave]">
+        <span className="mb-1.5 block text-[13px] text-[var(--color-tinta-suave)]">
           ¿Cómo te nombramos?
         </span>
         <select
           name="genero"
           defaultValue="NEUTRO"
-          className="w-full rounded-[--radius-suave] border border-[--color-borde] bg-[--color-papel] px-4 py-3 text-[16px] text-[--color-tinta] outline-none"
+          className="w-full rounded-[var(--radius-suave)] border border-[var(--color-borde)] bg-[var(--color-papel)] px-4 py-3 text-[16px] text-[var(--color-tinta)] outline-none"
         >
           <option value="FEMENINO">En femenino — agradecida, sola</option>
           <option value="MASCULINO">En masculino — agradecido, solo</option>

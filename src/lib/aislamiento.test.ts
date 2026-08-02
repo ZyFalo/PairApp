@@ -83,4 +83,42 @@ describe("aislamiento entre vínculos", () => {
     const todos = await prismaCrudo.checkin.count()
     expect(total).toBeLessThan(todos)
   })
+
+  it("updateMany no toca filas de la otra pareja", async () => {
+    const db = dbDelVinculo(vinculoA)
+    const tocadas = await db.mensaje.updateMany({ data: { tonoMarcado: true } })
+    const ajeno = await prismaCrudo.mensaje.findFirst({ where: { vinculoId: vinculoB } })
+    expect(ajeno?.tonoMarcado).toBe(false)
+    expect(tocadas.count).toBe(0) // el vínculo A no tiene mensajes
+  })
+
+  /**
+   * Las operaciones de identificador único no llevan el filtro inyectado
+   * (ver `dbDelVinculo`). Esta prueba fija ese contrato: si alguien lo cambiara
+   * para inyectarlo también aquí, Prisma rechazaría el `where` y esto fallaría.
+   */
+  it("upsert funciona: su where único no lleva el filtro inyectado", async () => {
+    const db = dbDelVinculo(vinculoA)
+    const mensaje = await prismaCrudo.mensaje.create({
+      data: {
+        vinculoId: vinculoA,
+        autorId: "x",
+        emocion: "BIEN",
+        clase: "PRESENCIA",
+        destino: "AHORA",
+        texto: "prueba de upsert",
+      },
+    })
+    const entrega = await prismaCrudo.entrega.create({
+      data: { vinculoId: vinculoA, mensajeId: mensaje.id, destinatarioId: "y" },
+    })
+
+    await expect(
+      db.respuesta.upsert({
+        where: { entregaId: entrega.id },
+        create: { vinculoId: vinculoA, entregaId: entrega.id, autorId: "y", texto: "ok" },
+        update: { texto: "ok" },
+      }),
+    ).resolves.toBeTruthy()
+  })
 })

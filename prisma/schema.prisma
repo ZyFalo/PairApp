@@ -127,6 +127,7 @@ model Vinculo {
   checkins      Checkin[]
   mensajes      Mensaje[]
   entregas      Entrega[]
+  respuestas    Respuesta[]
   guardados     Guardado[]
   onceOnces     OnceOnce[]
   eventos       Evento[]
@@ -251,8 +252,13 @@ model Entrega {
 }
 
 /// La respuesta a un mensaje de conversación (§3.3).
+///
+/// Lleva `vinculoId` aunque podría deducirse de la entrega: el cliente acotado
+/// de RNF-4 inyecta ese campo en **toda** consulta, así que un modelo de dominio
+/// sin él revienta al usarse. La regla del esquema no admite excepciones.
 model Respuesta {
   id             String      @id @default(cuid())
+  vinculoId      String
   entregaId      String      @unique
   autorId        String
   texto          String?     @db.Text
@@ -263,7 +269,9 @@ model Respuesta {
   creadoEn       DateTime    @default(now())
 
   entrega Entrega @relation(fields: [entregaId], references: [id], onDelete: Cascade)
+  vinculo Vinculo @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
 
+  @@index([vinculoId])
   @@map("respuesta")
 }
 

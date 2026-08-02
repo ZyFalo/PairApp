@@ -46,7 +46,7 @@ export function Compositor({
     router.refresh()
     return (
       <Tarjeta className="aparece space-y-3 text-center">
-        <p className="font-[family-name:--font-carta] text-[19px]">Listo.</p>
+        <p className="carta text-[19px]">Listo.</p>
         <Boton variante="texto" onClick={() => router.push("/hoy")}>
           Volver
         </Boton>
@@ -69,7 +69,7 @@ export function Compositor({
   return (
     <section className="aparece space-y-5">
       <div className="space-y-1">
-        <h2 className="font-[family-name:--font-carta] text-[21px]">Registrado.</h2>
+        <h2 className="carta text-[21px]">Registrado.</h2>
         <Apunte>
           {nombrePareja
             ? `¿Quieres dejarle algo a ${nombrePareja}?`
@@ -89,7 +89,7 @@ export function Compositor({
           onChange={(e) => setTexto(e.target.value)}
           rows={6}
           placeholder="Lo que quieras decirle…"
-          className="w-full resize-none rounded-[--radius-tarjeta] border border-[--color-borde] bg-[--color-papel] p-4 font-[family-name:--font-carta] text-[17px] leading-relaxed text-[--color-tinta] outline-none focus:border-[--color-acento-suave]"
+          className="w-full resize-none rounded-[var(--radius-tarjeta)] border border-[var(--color-borde)] bg-[var(--color-papel)] p-4 carta text-[17px] leading-relaxed text-[var(--color-tinta)] outline-none focus:border-[var(--color-acento-suave)]"
         />
 
         {/* La necesidad es un chip, nunca una pantalla propia (RF-1.2) */}
@@ -104,8 +104,8 @@ export function Compositor({
                   onClick={() => setNecesidad(necesidad === n ? "" : n)}
                   className={`rounded-full px-3 py-1.5 text-[13px] transition-colors duration-200 ${
                     necesidad === n
-                      ? "bg-[--color-acento] text-[#fffdfa]"
-                      : "bg-[--color-papel] text-[--color-tinta-suave] border border-[--color-borde]"
+                      ? "bg-[var(--color-acento)] text-[#fffdfa]"
+                      : "bg-[var(--color-papel)] text-[var(--color-tinta-suave)] border border-[var(--color-borde)]"
                   }`}
                 >
                   {ETIQUETA_NECESIDAD[n]}
@@ -117,12 +117,12 @@ export function Compositor({
 
         {/* Marcar el tono a propósito: contextualiza en vez de suavizar (RF-6.2) */}
         {hayTexto && emocion === "ENOJADO" && (
-          <label className="flex items-start gap-2.5 text-[14px] text-[--color-tinta-suave]">
+          <label className="flex items-start gap-2.5 text-[14px] text-[var(--color-tinta-suave)]">
             <input
               type="checkbox"
               checked={tonoMarcado}
               onChange={(e) => setTonoMarcado(e.target.checked)}
-              className="mt-1 accent-[--color-acento]"
+              className="mt-1 accent-[var(--color-acento)]"
             />
             <span>Estoy enojado y quiero que se note</span>
           </label>
@@ -200,10 +200,8 @@ function UmbralEnojo({
   onGuardarParaMi: () => void
 }) {
   return (
-    <div className="aparece space-y-3 rounded-[--radius-tarjeta] border border-[--color-borde] bg-[--color-paso-fondo] p-4">
-      <p className="text-center font-[family-name:--font-carta] text-[17px]">
-        Escribiste esto enojado.
-      </p>
+    <div className="aparece space-y-3 rounded-[var(--radius-tarjeta)] border border-[var(--color-borde)] bg-[var(--color-paso-fondo)] p-4">
+      <p className="text-center carta text-[17px]">Escribiste esto enojado.</p>
       <div className="grid gap-2">
         <Boton type="submit" variante="suave" onClick={onEnviarAhora} disabled={pendiente}>
           Enviar ahora

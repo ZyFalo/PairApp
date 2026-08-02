@@ -21,7 +21,7 @@ export function BotonGuardar({ mensajeId, guardado }: { mensajeId: string; guard
         })
       }}
       className={`text-[13px] transition-colors duration-200 ${
-        activo ? "text-[--color-acento]" : "text-[--color-tinta-tenue]"
+        activo ? "text-[var(--color-acento)]" : "text-[var(--color-tinta-tenue)]"
       }`}
     >
       {activo ? "♥ Guardado" : "♡ Guardar"}

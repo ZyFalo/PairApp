@@ -38,7 +38,8 @@ export const EMOCIONES: FichaEmocion[] = [
   {
     emocion: Emocion.ME_SIENTO_SOLO,
     grupo: GrupoEmocion.ME_FALTA_ALGO,
-    icono: "🌑",
+    // Cara que se desvanece: "estás aquí, pero no te siento" (RF-1.1)
+    icono: "🫥",
     etiqueta: {
       masculino: "Me siento solo",
       femenino: "Me siento sola",

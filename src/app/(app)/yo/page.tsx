@@ -38,7 +38,7 @@ export default async function PaginaYo() {
 
       {/* Cosas por hablar: sin contador, que sería una deuda (RF-2.0.7) */}
       <section className="space-y-3">
-        <h2 className="text-[15px] text-[--color-tinta-suave]">Cosas por hablar</h2>
+        <h2 className="text-[15px] text-[var(--color-tinta-suave)]">Cosas por hablar</h2>
         {apuntes.length === 0 ? (
           <Vacio>Nada guardado para ti.</Vacio>
         ) : (
@@ -46,7 +46,7 @@ export default async function PaginaYo() {
             {apuntes.map((a) => (
               <li key={a.id}>
                 <Tarjeta className="aparece space-y-3">
-                  <p className="font-[family-name:--font-carta] text-[16px]">{a.texto}</p>
+                  <p className="carta text-[16px]">{a.texto}</p>
                   <div className="flex items-center justify-between">
                     <Apunte>{formatoLegible(a.creadoEn, sesion.zonaHoraria)}</Apunte>
                     <AccionesApunte mensajeId={a.id} hayPareja={Boolean(sesion.pareja)} />
@@ -60,7 +60,7 @@ export default async function PaginaYo() {
 
       {/* Historial propio. Solo mío por defecto (RF-1.5) */}
       <section className="space-y-3">
-        <h2 className="text-[15px] text-[--color-tinta-suave]">Cómo he estado</h2>
+        <h2 className="text-[15px] text-[var(--color-tinta-suave)]">Cómo he estado</h2>
         {historial.length === 0 ? (
           <Vacio>Aún no has registrado nada.</Vacio>
         ) : (
@@ -68,8 +68,10 @@ export default async function PaginaYo() {
             {historial.map((c) => (
               <li key={c.id} className="flex items-center gap-3 text-[14px]">
                 <span className="text-[17px]">{ficha(c.emocion).icono}</span>
-                <span className="text-[--color-tinta]">{etiquetaDe(c.emocion, sesion.genero)}</span>
-                <span className="ml-auto text-[12px] text-[--color-tinta-tenue]">
+                <span className="text-[var(--color-tinta)]">
+                  {etiquetaDe(c.emocion, sesion.genero)}
+                </span>
+                <span className="ml-auto text-[12px] text-[var(--color-tinta-tenue)]">
                   {formatoLegible(c.creadoEn, sesion.zonaHoraria)}
                 </span>
               </li>
@@ -80,7 +82,7 @@ export default async function PaginaYo() {
 
       {/* Ciclo: ella decide qué comparte (RF-5.3) */}
       <section className="space-y-3">
-        <h2 className="text-[15px] text-[--color-tinta-suave]">Mi ciclo</h2>
+        <h2 className="text-[15px] text-[var(--color-tinta-suave)]">Mi ciclo</h2>
         {miCiclo && (
           <Tarjeta>
             <p className="text-[15px]">
@@ -99,7 +101,7 @@ export default async function PaginaYo() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-[15px] text-[--color-tinta-suave]">Avisos</h2>
+        <h2 className="text-[15px] text-[var(--color-tinta-suave)]">Avisos</h2>
         <PanelPush />
       </section>
 

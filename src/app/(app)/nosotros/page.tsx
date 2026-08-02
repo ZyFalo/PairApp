@@ -41,10 +41,10 @@ export default async function PaginaNosotros() {
       {/* Los 11:11 — la única función simultánea de la app (RF-12.9) */}
       {(ventana.abierta || onceHoy.length > 0) && (
         <section className="space-y-3">
-          <h2 className="text-[15px] text-[--color-tinta-suave]">11:11</h2>
+          <h2 className="text-[15px] text-[var(--color-tinta-suave)]">11:11</h2>
           {ventana.abierta && !yaPedi && <VentanaOnceOnce />}
           {losDos && (
-            <p className="text-center font-[family-name:--font-carta] text-[17px] text-[--color-acento]">
+            <p className="text-center carta text-[17px] text-[var(--color-acento)]">
               Los dos pidieron a la vez.
             </p>
           )}
@@ -53,7 +53,7 @@ export default async function PaginaNosotros() {
               {onceHoy.map((o) => (
                 <li key={o.id}>
                   <Tarjeta className="aparece">
-                    <p className="font-[family-name:--font-carta] text-[16px]">{o.texto}</p>
+                    <p className="carta text-[16px]">{o.texto}</p>
                     <Apunte>
                       {o.autorId === sesion.usuarioId ? "Tú" : (sesion.pareja?.nombre ?? "Ella")}
                     </Apunte>
@@ -68,20 +68,18 @@ export default async function PaginaNosotros() {
       {/* Nota de ciclo, si ella eligió compartirla (RF-5.4) */}
       {ciclosPareja[0]?.notaParaPareja && (
         <section className="space-y-2">
-          <h2 className="text-[15px] text-[--color-tinta-suave]">
+          <h2 className="text-[15px] text-[var(--color-tinta-suave)]">
             Lo que {sesion.pareja?.nombre} necesita estos días
           </h2>
           <Tarjeta>
-            <p className="font-[family-name:--font-carta] text-[16px]">
-              {ciclosPareja[0].notaParaPareja}
-            </p>
+            <p className="carta text-[16px]">{ciclosPareja[0].notaParaPareja}</p>
           </Tarjeta>
         </section>
       )}
 
       {/* Calendario compartido */}
       <section className="space-y-3">
-        <h2 className="text-[15px] text-[--color-tinta-suave]">Próximos planes</h2>
+        <h2 className="text-[15px] text-[var(--color-tinta-suave)]">Próximos planes</h2>
         {eventos.length === 0 ? (
           <Vacio>Nada apuntado todavía.</Vacio>
         ) : (
@@ -106,7 +104,7 @@ export default async function PaginaNosotros() {
 
       {/* Dedicatorias musicales */}
       <section className="space-y-3">
-        <h2 className="text-[15px] text-[--color-tinta-suave]">Nuestra banda sonora</h2>
+        <h2 className="text-[15px] text-[var(--color-tinta-suave)]">Nuestra banda sonora</h2>
         {dedicatorias.length === 0 ? (
           <Vacio>Ninguna canción dedicada aún.</Vacio>
         ) : (
