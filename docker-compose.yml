@@ -1,0 +1,32 @@
+# Solo para desarrollo local: levanta el Postgres.
+# La app corre fuera de Docker con `pnpm dev`, que es mucho más rápido
+# para desarrollar (PLAN.md §0.8).
+#
+#   pnpm db:up     levanta la base de datos
+#   pnpm db:down   la para
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: pairapp-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pairapp
+      POSTGRES_PASSWORD: pairapp
+      POSTGRES_DB: pairapp
+      TZ: UTC
+    # 5433 en el host a propósito: el 5432 suele estar ocupado por un Postgres
+    # instalado en el sistema, y las conexiones a localhost irían a ese en vez
+    # de al contenedor.
+    ports:
+      - "5433:5432"
+    volumes:
+      - pairapp-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pairapp -d pairapp"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pairapp-pgdata:

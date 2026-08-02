@@ -1,0 +1,87 @@
+// Esquema de PairApp.
+// Fuente de verdad de la base de datos: toda tabla cuelga de un Vinculo
+// para que el aislamiento de RNF-4 sea estructural, no una convención.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+// La URL de conexión vive en `prisma.config.ts` (Prisma 7).
+datasource db {
+  provider = "postgresql"
+}
+
+/// Género gramatical, para concordar las etiquetas de emoción (RF-1.1.9).
+/// No es lo mismo que los pronombres: la interfaz necesita un dato explícito
+/// para escribir "Agradecido" o "Agradecida".
+enum GeneroGramatical {
+  MASCULINO
+  FEMENINO
+  NEUTRO
+}
+
+/// Una persona. El acceso es por contraseña con Argon2id (PLAN.md §0.1.2):
+/// no hay correo transaccional ni recuperación automatizada.
+model Usuario {
+  id               String           @id @default(cuid())
+  correo           String           @unique
+  contrasenaHash   String
+  nombre           String
+  genero           GeneroGramatical @default(NEUTRO)
+  pronombres       String?
+  zonaHoraria      String           @default("America/Bogota")
+  fotoUrl          String?
+  creadoEn         DateTime         @default(now())
+
+  membresia        Membresia?
+  invitacionesHechas Invitacion[]   @relation("InvitacionCreador")
+
+  @@map("usuario")
+}
+
+/// El espacio compartido entre dos personas. Contiene todos los datos.
+/// El modelo admite varios vínculos desde el día 1 (D1) aunque la interfaz
+/// solo maneje uno.
+model Vinculo {
+  id        String   @id @default(cuid())
+  creadoEn  DateTime @default(now())
+
+  membresias  Membresia[]
+  invitaciones Invitacion[]
+
+  @@map("vinculo")
+}
+
+/// Une a una persona con su vínculo. Un usuario pertenece a un único
+/// vínculo activo (RF-0.3), de ahí que `usuarioId` sea único.
+model Membresia {
+  id         String   @id @default(cuid())
+  usuarioId  String   @unique
+  vinculoId  String
+  unidoEn    DateTime @default(now())
+
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  vinculo    Vinculo  @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
+
+  @@index([vinculoId])
+  @@map("membresia")
+}
+
+/// Código de un solo uso para que la segunda persona entre al vínculo
+/// (RF-0.2). Caduca a las 72 h.
+model Invitacion {
+  id         String    @id @default(cuid())
+  codigo     String    @unique
+  vinculoId  String
+  creadorId  String
+  expiraEn   DateTime
+  usadoEn    DateTime?
+  creadoEn   DateTime  @default(now())
+
+  vinculo    Vinculo   @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
+  creador    Usuario   @relation("InvitacionCreador", fields: [creadorId], references: [id], onDelete: Cascade)
+
+  @@index([vinculoId])
+  @@map("invitacion")
+}

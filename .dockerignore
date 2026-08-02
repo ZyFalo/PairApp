@@ -1,0 +1,28 @@
+# Lo que NO entra en la imagen de producción (PLAN.md §0.8).
+# Distinto de .gitignore: aquí se excluye también lo que sí se versiona
+# pero no hace falta en runtime.
+
+node_modules
+.next
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+
+# Documentación y desarrollo
+docs
+README.md
+docker-compose.yml
+.dockerignore
+
+# Pruebas
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+vitest.config.ts
+coverage
+
+# Sistema
+.DS_Store
+*.log
