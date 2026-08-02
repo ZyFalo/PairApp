@@ -151,6 +151,9 @@ model Vinculo {
   adjuntos      Adjunto[]
   conflictos    Conflicto[]
   acuerdos      Acuerdo[]
+  titulos       Titulo[]
+  votosTitulo   VotoTitulo[]
+  recuerdos     Recuerdo[]
   suscripciones SuscripcionPush[]
 
   @@map("vinculo")
@@ -396,6 +399,96 @@ model Acuerdo {
 
   @@index([vinculoId, archivadoEn])
   @@map("acuerdo")
+}
+
+// ---------------------------------------------------------------------------
+// Series y películas (M9) y recuerdos (M11)
+// ---------------------------------------------------------------------------
+
+enum TipoTitulo {
+  SERIE
+  PELICULA
+}
+
+/// En qué punto está un título de la lista compartida (RF-9.1).
+enum EstadoTitulo {
+  POR_VER
+  VIENDO
+  VISTA
+  ABANDONADA
+}
+
+/// Algo que quieren ver, están viendo o ya vieron (M9).
+model Titulo {
+  id            String       @id @default(cuid())
+  vinculoId     String
+  nombre        String
+  tipo          TipoTitulo   @default(PELICULA)
+  estado        EstadoTitulo @default(POR_VER)
+  propuestoPorId String
+  /// "No la veas sin mí" (RF-9.5). Suena tonto y es una fuente real de
+  /// conflicto: verse un capítulo solo, en una serie que era de los dos, duele
+  /// más de lo que parece. Poder decirlo antes evita tener que reprocharlo
+  /// después.
+  soloJuntos    Boolean      @default(false)
+  /// Por dónde van, para no perder el hilo (RF-9.4).
+  temporada     Int?
+  episodio      Int?
+  /// Metadatos de TMDB, si hubo búsqueda (RF-9.6). Nulos si se escribió a mano.
+  anio          Int?
+  posterUrl     String?      @db.Text
+  sinopsis      String?      @db.Text
+  /// Minutos aproximados, para el selector al azar por duración (RF-9.7).
+  minutos       Int?
+  creadoEn      DateTime     @default(now())
+
+  vinculo Vinculo @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
+  votos   VotoTitulo[]
+
+  @@index([vinculoId, estado])
+  @@map("titulo")
+}
+
+/// Lo que le pareció a cada uno (RF-9.3). Uno por persona y título: la gracia
+/// es justo que puedan no coincidir.
+model VotoTitulo {
+  id         String   @id @default(cuid())
+  vinculoId  String
+  tituloId   String
+  usuarioId  String
+  puntuacion Int
+  comentario String?  @db.Text
+  creadoEn   DateTime @default(now())
+
+  vinculo Vinculo @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
+  titulo  Titulo  @relation(fields: [tituloId], references: [id], onDelete: Cascade)
+
+  @@unique([tituloId, usuarioId])
+  @@index([vinculoId])
+  @@map("voto_titulo")
+}
+
+/// Un momento de la relación que merece quedarse (M11).
+///
+/// La fecha es la del recuerdo, no la del día en que se escribió: sirve para
+/// ordenar la línea de tiempo y para que "hace un año" tenga sentido (RF-11.2).
+model Recuerdo {
+  id        String   @id @default(cuid())
+  vinculoId String
+  autorId   String
+  titulo    String
+  nota      String?  @db.Text
+  /// Cuándo pasó. Solo el día: la hora exacta de un recuerdo no le importa a nadie.
+  ocurrioEl DateTime @db.Date
+  /// Foto, si hay. Vive en Cloudinary como el resto de adjuntos.
+  fotoUrl   String?  @db.Text
+  fotoPublicId String?
+  creadoEn  DateTime @default(now())
+
+  vinculo Vinculo @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
+
+  @@index([vinculoId, ocurrioEl])
+  @@map("recuerdo")
 }
 
 /// El cofre: mensajes que quien los recibió decidió conservar (§3.2.2).

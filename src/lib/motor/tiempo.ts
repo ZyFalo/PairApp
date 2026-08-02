@@ -39,6 +39,18 @@ export function ventanaOnceOnce(
 }
 
 /**
+ * Una fecha sin hora: "2 de agosto de 2025".
+ *
+ * Para las columnas que guardan un día suelto (recuerdos, ciclos). Se lee en
+ * UTC **a propósito**: esas fechas se guardan a medianoche UTC, y pasarlas por
+ * una zona con desfase negativo las retrasa un día entero. Un recuerdo del 2
+ * de agosto no puede aparecer como el 1 por vivir en Bogotá.
+ */
+export function fechaSuelta(dia: Date): string {
+  return DateTime.fromJSDate(dia, { zone: "utc" }).setLocale("es").toFormat("d 'de' LLLL 'de' yyyy")
+}
+
+/**
  * Cuánto hace de algo, dicho como lo diría una persona: "ayer", "hace 3 días".
  *
  * Cuenta **días de calendario** en la zona de quien mira, no horas sueltas.

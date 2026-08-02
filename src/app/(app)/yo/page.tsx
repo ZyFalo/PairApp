@@ -17,7 +17,7 @@ import {
 import { salir } from "@/lib/acciones/cuenta"
 import { CICLOS_PARA_ESTIMAR, estimarProximoCiclo } from "@/lib/motor/ciclo"
 import { ETIQUETA_VISIBILIDAD, etiquetaDe, grupoDe } from "@/lib/motor/emociones"
-import { diaRelativo, formatoLegible } from "@/lib/motor/tiempo"
+import { diaRelativo, fechaSuelta, formatoLegible } from "@/lib/motor/tiempo"
 import { dbDeSesion } from "@/lib/sesion"
 
 export const dynamic = "force-dynamic"
@@ -101,9 +101,7 @@ export default async function PaginaYo() {
           <Seccion Icono={RiSeedlingLine}>Mi ciclo</Seccion>
           {miCiclo && (
             <Tarjeta className="space-y-2">
-              <p className="text-[15px]">
-                Último registro: {formatoLegible(miCiclo.inicio, sesion.zonaHoraria)}
-              </p>
+              <p className="text-[15px]">Último registro: {fechaSuelta(miCiclo.inicio)}</p>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <Insignia>
                   {miCiclo.nivelVisibilidad === "NADA"
