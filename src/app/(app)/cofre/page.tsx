@@ -147,11 +147,17 @@ export default async function PaginaCofre({
 
                   <TextoDeCarta>{e.mensaje.texto}</TextoDeCarta>
 
-                  {e.respuesta?.texto && (
+                  {/* Una respuesta de un toque cuenta igual que una escrita: si
+                      no dejara rastro, parecería que no contestaste (§3.3). */}
+                  {(e.respuesta?.texto || e.respuesta?.cierre) && (
                     <div className="border-l-2 border-[var(--color-borde)] pl-3">
                       <Apunte>Le respondiste:</Apunte>
-                      <p className="text-[15px] text-[var(--color-tinta-suave)]">
-                        {e.respuesta.texto}
+                      <p className="flex items-center gap-2 text-[15px] text-[var(--color-tinta-suave)]">
+                        {!e.respuesta.texto && e.respuesta.cierre && (
+                          <IconoDeCierre cierre={e.respuesta.cierre} />
+                        )}
+                        {e.respuesta.texto ??
+                          (e.respuesta.cierre ? ETIQUETA_CIERRE[e.respuesta.cierre] : "")}
                       </p>
                     </div>
                   )}
@@ -168,6 +174,12 @@ export default async function PaginaCofre({
       )}
     </div>
   )
+}
+
+/** El icono de una respuesta de un toque, en el color del acento. */
+function IconoDeCierre({ cierre }: { cierre: keyof typeof ICONO_CIERRE }) {
+  const Icono = ICONO_CIERRE[cierre]
+  return <Icono size={15} className="text-[var(--color-acento-suave)]" />
 }
 
 /** Selector entre las tres vistas del cofre. */

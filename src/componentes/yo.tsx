@@ -12,7 +12,11 @@ import { useActionState, useCallback, useEffect, useState, useTransition } from 
 import { Apunte, Aviso, Boton, Campo, Tarjeta } from "@/componentes/base"
 import { Seleccion } from "@/componentes/nosotros"
 import { archivarApunte, decirloAhora, desarchivarApunte } from "@/lib/acciones/bucle"
-import { cambiarVisibilidadCiclo, registrarCiclo } from "@/lib/acciones/nosotros"
+import {
+  cambiarRegistroCiclo,
+  cambiarVisibilidadCiclo,
+  registrarCiclo,
+} from "@/lib/acciones/nosotros"
 import { desuscribirDePush, suscribirAPush } from "@/lib/acciones/push"
 
 /**
@@ -91,6 +95,46 @@ export function BotonDesarchivar({ mensajeId }: { mensajeId: string }) {
       <RiInboxUnarchiveLine size={14} />
       Recuperarlo
     </button>
+  )
+}
+
+/**
+ * Encender o apagar el registro de ciclo (RF-5.0).
+ *
+ * Es un interruptor propio y explícito. La app **no** decide quién menstrúa a
+ * partir de cómo alguien eligió que la nombren: "agradecido" o "agradecida" es
+ * una cuestión de gramática, no del cuerpo, y confundir las dos cosas sería
+ * exactamente la inferencia que RF-5.3 prohíbe.
+ */
+export function InterruptorCiclo({ activo }: { activo: boolean }) {
+  const [puesto, setPuesto] = useState(activo)
+  const [, empezar] = useTransition()
+
+  function alternar() {
+    const siguiente = !puesto
+    setPuesto(siguiente)
+    empezar(() => void cambiarRegistroCiclo(siguiente))
+  }
+
+  return (
+    <label className="flex cursor-pointer items-center justify-between gap-4">
+      <span className="text-[14.5px] text-[var(--color-tinta)]">
+        Llevar el registro de mi ciclo
+      </span>
+      <input type="checkbox" checked={puesto} onChange={alternar} className="sr-only" />
+      <span
+        aria-hidden
+        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors duration-300 ${
+          puesto ? "bg-[var(--color-acento)]" : "bg-[var(--color-borde)]"
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 size-5 rounded-full bg-[var(--color-papel-alto)] shadow-[var(--sombra-papel)] transition-[left] duration-300 ${
+            puesto ? "left-[22px]" : "left-0.5"
+          }`}
+        />
+      </span>
+    </label>
   )
 }
 

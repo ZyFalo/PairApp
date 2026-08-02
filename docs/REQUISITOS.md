@@ -775,6 +775,12 @@ Aquí hay que tener cuidado. La intención (*"saber cuándo está más sensible 
 
 **El diseño que propongo invierte la dirección:** la app no le dice a él cómo está ella. Ella le dice qué necesita.
 
+**RF-5.0 El módulo se enciende a mano, y solo lo enciende quien lo va a usar.** Es un interruptor propio en «Yo», apagado de partida.
+
+Deducirlo del género gramatical del perfil sería un error de categoría: ese campo existe para escribir «agradecido» o «agradecida», y no dice nada sobre el cuerpo de nadie. La app no adivina quién menstrúa — sería la misma clase de inferencia que RF-5.3 prohíbe, solo que aplicada un paso antes.
+
+Apagarlo no borra lo registrado: vuelve intacto al encenderlo. Mientras esté apagado, la pareja no ve nada.
+
 **RF-5.1** Registro de días de periodo, con síntomas opcionales (dolor, energía, sueño, antojos).
 **RF-5.2** Predicción de próximo ciclo basada en el historial. Etiquetada siempre como *estimación*.
 **RF-5.3 Control total de la titular.** Ella elige qué comparte, con tres niveles:
@@ -1503,6 +1509,7 @@ Cuidado aquí: medir una relación es peligroso. Estas métricas son **privadas,
 | D40 | **shadcn/ui con *tokens* personalizados antes de la primera pantalla** (`PLAN.md` §0.4). Aporta accesibilidad resuelta; su aspecto por defecto es incompatible con §8.2 y se cambia de entrada. Los componentes con carga emocional se escriben a mano | 2026-08-01 |
 | D41 | **Prisma nunca se usa crudo** (`PLAN.md` §0.1.1). Todo acceso pasa por un cliente extendido acotado al vínculo; R4 lo verifica con un test que intenta leer datos ajenos | 2026-08-01 |
 | D42 | **Cero emojis; iconos de trazo coloreados por familia** (RF-8.2.2). Las nueve emociones son clima, no caras (RF-8.2.3): un estado de ánimo no es un defecto de carácter, y una tormenta lo dice mejor que un ceño fruncido | 2026-08-02 |
+| D44 | **El módulo de ciclo se enciende a mano** (RF-5.0), nunca se deduce del género gramatical del perfil. «Agradecido» o «agradecida» es gramática; menstruar no. La app no adivina cuerpos | 2026-08-02 |
 | D43 | **Aplazar leer no es haber leído** (RF-3.0.11). Un mensaje pospuesto desde "nombrar y elegir" guarda su hora de vuelta y sigue sin leer; el que se aplaza *después* de abrirlo sí queda visto, porque leerlo es un hecho que no se puede deshacer (RF-3.17.4) | 2026-08-02 |
 
 ### 12.2 Preguntas abiertas

@@ -5,6 +5,7 @@ import {
   RiLogoutBoxLine,
   RiNotification3Line,
   RiSeedlingLine,
+  RiSettings3Line,
 } from "@remixicon/react"
 import Link from "next/link"
 import { Apunte, Boton, Insignia, Seccion, Tarjeta, Titulo, Vacio } from "@/componentes/base"
@@ -14,6 +15,7 @@ import {
   BotonDesarchivar,
   CambiarVisibilidadCiclo,
   FormularioCiclo,
+  InterruptorCiclo,
   PanelPush,
 } from "@/componentes/yo"
 import { DestinoMensaje } from "@/generated/prisma/enums"
@@ -49,10 +51,14 @@ export default async function PaginaYo({
       orderBy: { creadoEn: "desc" },
       take: 50,
     }),
-    db.ciclo.findFirst({
-      where: { usuarioId: sesion.usuarioId },
-      orderBy: { inicio: "desc" },
-    }),
+    // Solo se consulta si lo llevas: quien no registra su ciclo no tiene por
+    // qué ver aparecer la sección, ni siquiera vacía (RF-5.0).
+    sesion.llevaCiclo
+      ? db.ciclo.findFirst({
+          where: { usuarioId: sesion.usuarioId },
+          orderBy: { inicio: "desc" },
+        })
+      : Promise.resolve(null),
   ])
 
   return (
@@ -149,36 +155,45 @@ export default async function PaginaYo({
         )}
       </section>
 
-      {/* Ciclo: ella decide qué comparte (RF-5.3) */}
-      <section className="space-y-3">
-        <Seccion Icono={RiSeedlingLine}>Mi ciclo</Seccion>
-        {miCiclo && (
-          <Tarjeta className="space-y-2">
-            <p className="text-[15px]">
-              Último registro: {formatoLegible(miCiclo.inicio, sesion.zonaHoraria)}
-            </p>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <Insignia>
-                {miCiclo.nivelVisibilidad === "NADA"
-                  ? "No compartes nada"
-                  : miCiclo.nivelVisibilidad === "SOLO_FECHAS"
-                    ? "Compartes solo las fechas"
-                    : "Compartes fechas y tu nota"}
-              </Insignia>
-              <CambiarVisibilidadCiclo
-                cicloId={miCiclo.id}
-                nivelActual={miCiclo.nivelVisibilidad}
-                notaActual={miCiclo.notaParaPareja}
-              />
-            </div>
-          </Tarjeta>
-        )}
-        <FormularioCiclo />
-      </section>
+      {/* Ciclo: solo para quien lo lleva, y ella decide qué comparte (RF-5.3) */}
+      {sesion.llevaCiclo && (
+        <section className="space-y-3">
+          <Seccion Icono={RiSeedlingLine}>Mi ciclo</Seccion>
+          {miCiclo && (
+            <Tarjeta className="space-y-2">
+              <p className="text-[15px]">
+                Último registro: {formatoLegible(miCiclo.inicio, sesion.zonaHoraria)}
+              </p>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Insignia>
+                  {miCiclo.nivelVisibilidad === "NADA"
+                    ? "No compartes nada"
+                    : miCiclo.nivelVisibilidad === "SOLO_FECHAS"
+                      ? "Compartes solo las fechas"
+                      : "Compartes fechas y tu nota"}
+                </Insignia>
+                <CambiarVisibilidadCiclo
+                  cicloId={miCiclo.id}
+                  nivelActual={miCiclo.nivelVisibilidad}
+                  notaActual={miCiclo.notaParaPareja}
+                />
+              </div>
+            </Tarjeta>
+          )}
+          <FormularioCiclo />
+        </section>
+      )}
 
       <section className="space-y-3">
         <Seccion Icono={RiNotification3Line}>Avisos</Seccion>
         <PanelPush />
+      </section>
+
+      <section className="space-y-3">
+        <Seccion Icono={RiSettings3Line}>Ajustes</Seccion>
+        <Tarjeta>
+          <InterruptorCiclo activo={sesion.llevaCiclo} />
+        </Tarjeta>
       </section>
 
       <form action={salir}>

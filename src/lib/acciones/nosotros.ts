@@ -153,6 +153,31 @@ export async function dedicarCancion(_previo: Resultado, datos: FormData): Promi
 // Ciclo menstrual (M5)
 // ---------------------------------------------------------------------------
 
+/**
+ * Enciende o apaga el registro de ciclo para quien lo pide (RF-5.0).
+ *
+ * Nunca se deduce del género gramatical: ese campo dice cómo conjugar las
+ * etiquetas, no qué le pasa a nadie en el cuerpo. Apagarlo no borra lo ya
+ * registrado —volver a encenderlo lo devuelve intacto—, pero mientras esté
+ * apagado la pareja no ve nada.
+ *
+ * Usa `update` y no `updateMany` a propósito: `Usuario` no tiene `vinculoId`,
+ * así que el cliente acotado reventaría al inyectarlo (ver `lib/db.ts`). Aquí
+ * el identificador sale de la sesión, de modo que la pertenencia ya está
+ * comprobada por quien haya iniciado sesión.
+ */
+export async function cambiarRegistroCiclo(activo: boolean): Promise<Resultado> {
+  const { db, sesion } = await dbDeSesion()
+  await db.usuario.update({
+    where: { id: sesion.usuarioId },
+    data: { llevaCiclo: activo },
+  })
+
+  revalidatePath("/yo")
+  revalidatePath("/nosotros")
+  return { ok: true }
+}
+
 const esquemaCiclo = z.object({
   inicio: z.string().min(1, "Falta la fecha"),
   fin: z.string().optional(),

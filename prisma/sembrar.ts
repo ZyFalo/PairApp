@@ -51,6 +51,8 @@ async function main() {
       contrasenaHash,
       nombre: "Ana",
       genero: "FEMENINO",
+      // Lo enciende ella, no lo deduce la app de su género (RF-5.0)
+      llevaCiclo: true,
       zonaHoraria: "America/Bogota",
       // Desfasadas una hora exacta respecto a las de Will (RF-1.0.3)
       horasPregunta: [10, 15, 20],
@@ -193,7 +195,8 @@ async function main() {
     data: {
       vinculoId: vinculo.id,
       usuarioId: ana.id,
-      inicio: new Date(Date.now() - 5 * 24 * 3_600_000),
+      // Empezó anteayer: así la nota se ve al entrar, que es lo que hay que probar
+      inicio: new Date(Date.now() - 2 * 24 * 3_600_000),
       nivelVisibilidad: "FECHAS_Y_NOTA",
       notaParaPareja:
         "Estos días agradezco que no me preguntes si estoy bien. Un té y una peli valen más.",

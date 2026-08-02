@@ -18,6 +18,22 @@ import { dbDeSesion } from "@/lib/sesion"
 
 export const dynamic = "force-dynamic"
 
+/** Cuánto se asume que dura un periodo si no se marcó el último día (RF-5.1). */
+const DIAS_DE_PERIODO = 5
+
+/**
+ * Cuándo deja de estar en curso un periodo.
+ *
+ * Las fechas se guardan como días sueltos, sin hora. El último día tiene que
+ * contar entero: un periodo que acaba "el día 2" no termina a las 00:00 de ese
+ * día, así que el corte va al comenzar el siguiente.
+ */
+function finDelPeriodo(ciclo: { inicio: Date; fin: Date | null }): Date {
+  const ultimoDia =
+    ciclo.fin ?? new Date(ciclo.inicio.getTime() + (DIAS_DE_PERIODO - 1) * 86_400_000)
+  return new Date(ultimoDia.getTime() + 86_400_000)
+}
+
 /** Calendario, canciones, 11:11 y el ciclo compartido: la vida en común (§8.1). */
 export default async function PaginaNosotros() {
   const { db, sesion } = await dbDeSesion()
@@ -33,7 +49,9 @@ export default async function PaginaNosotros() {
     }),
     db.dedicatoria.findMany({ orderBy: { creadoEn: "desc" }, take: 20 }),
     db.onceOnce.findMany({ where: { dia: hoy }, orderBy: { creadoEn: "asc" } }),
-    sesion.pareja
+    // Apagar el registro apaga también lo que se ve: lo ya guardado sigue ahí
+    // para cuando ella vuelva a encenderlo, pero mientras tanto no sale (RF-5.0).
+    sesion.pareja?.llevaCiclo
       ? db.ciclo.findMany({
           where: { usuarioId: sesion.pareja.id, nivelVisibilidad: { not: "NADA" } },
           orderBy: { inicio: "desc" },
@@ -45,10 +63,7 @@ export default async function PaginaNosotros() {
   // Ella decide cuánto se ve, y "las fechas" no incluye su nota (RF-5.3).
   const suCiclo = ciclosPareja[0] ?? null
   const suNota = suCiclo?.nivelVisibilidad === "FECHAS_Y_NOTA" ? suCiclo.notaParaPareja : null
-  const enSusDias =
-    suCiclo !== null &&
-    suCiclo.inicio <= ahora &&
-    (suCiclo.fin ?? new Date(suCiclo.inicio.getTime() + 5 * 86_400_000)) >= ahora
+  const enSusDias = suCiclo !== null && suCiclo.inicio <= ahora && ahora < finDelPeriodo(suCiclo)
 
   const yaPedi = onceHoy.some(
     (o) => o.autorId === sesion.usuarioId && o.esNoche === ventana.esNoche,
