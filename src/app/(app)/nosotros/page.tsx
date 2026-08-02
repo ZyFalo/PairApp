@@ -1,7 +1,9 @@
 import {
   RiCalendarCheckLine,
   RiCalendarEventLine,
+  RiChatHistoryLine,
   RiExternalLinkLine,
+  RiHandHeartLine,
   RiHeartsLine,
   RiMusic2Line,
   RiSeedlingLine,
@@ -9,12 +11,18 @@ import {
 } from "@remixicon/react"
 import { Apunte, Insignia, Seccion, Tarjeta, Titulo, Vacio } from "@/componentes/base"
 import {
+  BotonArchivarAcuerdo,
+  EstadoConflicto,
+  FormularioAcuerdo,
+  FormularioConflicto,
+} from "@/componentes/conflicto"
+import {
   BotonBorrarEvento,
   FormularioCancion,
   FormularioEvento,
   VentanaOnceOnce,
 } from "@/componentes/nosotros"
-import { diaLocal, diaRelativo, ventanaOnceOnce } from "@/lib/motor/tiempo"
+import { diaLocal, diaRelativo, formatoLegible, ventanaOnceOnce } from "@/lib/motor/tiempo"
 import { dbDeSesion } from "@/lib/sesion"
 
 export const dynamic = "force-dynamic"
@@ -42,7 +50,7 @@ export default async function PaginaNosotros() {
   const ventana = ventanaOnceOnce(sesion.zonaHoraria, ahora)
   const hoy = diaLocal(sesion.zonaHoraria, ahora)
 
-  const [eventos, dedicatorias, onceHoy, ciclosPareja] = await Promise.all([
+  const [eventos, dedicatorias, onceHoy, ciclosPareja, acuerdos, relatos] = await Promise.all([
     db.evento.findMany({
       where: { inicio: { gte: new Date(ahora.getTime() - 12 * 3_600_000) } },
       orderBy: { inicio: "asc" },
@@ -59,6 +67,15 @@ export default async function PaginaNosotros() {
           take: 1,
         })
       : Promise.resolve([]),
+    db.acuerdo.findMany({ where: { archivadoEn: null }, orderBy: { creadoEn: "desc" }, take: 20 }),
+    // Los míos, más los suyos que ella haya decidido compartir (RF-6.6.1).
+    db.conflicto.findMany({
+      where: {
+        OR: [{ autorId: sesion.usuarioId }, { compartidoEn: { not: null } }],
+      },
+      orderBy: { creadoEn: "desc" },
+      take: 10,
+    }),
   ])
 
   // Ella decide cuánto se ve, y "las fechas" no incluye su nota (RF-5.3).
@@ -208,6 +225,74 @@ export default async function PaginaNosotros() {
           </ul>
         )}
         <FormularioCancion />
+      </section>
+
+      {/* Después de una discusión (§6.6, §6.7). Va al final a propósito: es lo
+          que menos se abre y lo que no debe estar delante en un día normal. */}
+      <section className="space-y-3">
+        <Seccion Icono={RiHandHeartLine}>Lo que acordamos</Seccion>
+        {acuerdos.length === 0 ? (
+          <Vacio Icono={RiHandHeartLine}>
+            Nada apuntado. Aquí van esas cosas que se dicen después y luego se olvidan.
+          </Vacio>
+        ) : (
+          <ul className="space-y-2">
+            {acuerdos.map((a) => (
+              <li key={a.id}>
+                <Tarjeta className="aparece flex items-start justify-between gap-3">
+                  <p className="carta text-[16px] leading-relaxed">{a.texto}</p>
+                  <BotonArchivarAcuerdo id={a.id} />
+                </Tarjeta>
+              </li>
+            ))}
+          </ul>
+        )}
+        <FormularioAcuerdo />
+      </section>
+
+      <section className="space-y-3">
+        <Seccion Icono={RiChatHistoryLine}>Cuando algo pasó</Seccion>
+        {relatos.length === 0 ? (
+          <Apunte>
+            Cuatro preguntas para ordenar una discusión: qué pasó, qué sentiste, qué necesitabas y
+            qué harías distinto. Lo escribes para ti; compartirlo se decide después.
+          </Apunte>
+        ) : (
+          <ul className="space-y-2">
+            {relatos.map((r) => {
+              const esMio = r.autorId === sesion.usuarioId
+              return (
+                <li key={r.id}>
+                  <Tarjeta className="aparece space-y-2.5">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <Apunte>
+                        {esMio ? "Tú" : (sesion.pareja?.nombre ?? "Ella")} ·{" "}
+                        {formatoLegible(r.creadoEn, sesion.zonaHoraria)}
+                      </Apunte>
+                      {esMio && <EstadoConflicto id={r.id} compartido={r.compartidoEn !== null} />}
+                    </div>
+                    <dl className="space-y-2">
+                      {[
+                        ["Qué pasó", r.quePaso],
+                        ["Qué sentí", r.queSenti],
+                        ["Qué necesitaba", r.queNecesitaba],
+                        ["Qué haría distinto", r.queHariaDistinto],
+                      ].map(([titulo, cuerpo]) => (
+                        <div key={titulo}>
+                          <dt className="text-[11.5px] font-medium uppercase tracking-[0.1em] text-[var(--color-tinta-tenue)]">
+                            {titulo}
+                          </dt>
+                          <dd className="carta text-[15.5px] leading-relaxed">{cuerpo}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </Tarjeta>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+        <FormularioConflicto />
       </section>
 
       {!sesion.pareja && (

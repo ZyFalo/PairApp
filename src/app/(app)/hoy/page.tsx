@@ -1,5 +1,6 @@
 import { Apunte, Tarjeta } from "@/componentes/base"
 import { Checkin } from "@/componentes/checkin"
+import { Reparacion } from "@/componentes/conflicto"
 import { RevisionEnFrio } from "@/componentes/en-frio"
 import { COLOR_GRUPO, ICONO_EMOCION } from "@/componentes/iconos"
 import { MensajeEntrante } from "@/componentes/mensaje-entrante"
@@ -8,6 +9,7 @@ import { ClaseMensaje, Visibilidad } from "@/generated/prisma/enums"
 import { loQueEsperaEnFrio, loQueHayParaMi } from "@/lib/acciones/bucle"
 import { etiquetaDe, grupoDe } from "@/lib/motor/emociones"
 import { estadoVigente } from "@/lib/motor/entrega"
+import { tocaOfrecerReparacion } from "@/lib/motor/reparacion"
 import { diaLocal, formatoLegible, haceEnPalabras, ventanaOnceOnce } from "@/lib/motor/tiempo"
 import { dbDeSesion } from "@/lib/sesion"
 
@@ -103,9 +105,29 @@ export default async function PaginaHoy() {
       ahora,
     )
 
+  // Reparar solo se ofrece cuando los dos están en "algo pasó" (§6.8). En
+  // cualquier otro momento la app estaría dando por hecho que hay una pelea.
+  const hayQueReparar =
+    sesion.pareja !== null &&
+    tocaOfrecerReparacion(
+      miUltimo && {
+        emocion: miUltimo.emocion,
+        intensidad: miUltimo.intensidad,
+        creadoEn: miUltimo.creadoEn,
+      },
+      suUltimo && {
+        emocion: suUltimo.emocion,
+        intensidad: suUltimo.intensidad,
+        creadoEn: suUltimo.creadoEn,
+      },
+      ahora,
+    )
+
   return (
     <div className="space-y-7">
       {ventana.abierta && !yaPedi && <VentanaOnceOnce />}
+
+      {hayQueReparar && sesion.pareja && <Reparacion nombrePareja={sesion.pareja.nombre} />}
 
       {/* Cómo está ella. La ausencia nunca se enuncia (RF-3.0.2). */}
       {sesion.pareja &&

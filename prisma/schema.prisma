@@ -149,6 +149,8 @@ model Vinculo {
   dedicatorias  Dedicatoria[]
   ciclos        Ciclo[]
   adjuntos      Adjunto[]
+  conflictos    Conflicto[]
+  acuerdos      Acuerdo[]
   suscripciones SuscripcionPush[]
 
   @@map("vinculo")
@@ -340,6 +342,60 @@ model Adjunto {
 
   @@index([vinculoId])
   @@map("adjunto")
+}
+
+// ---------------------------------------------------------------------------
+// Después de una discusión (M6, fase 3)
+// ---------------------------------------------------------------------------
+
+/// Un conflicto contado en cuatro campos (§6.6), en el formato de la
+/// Comunicación No Violenta: hechos, sentimiento, necesidad, y qué haría
+/// distinto.
+///
+/// **Nace privado.** `compartidoEn` es null hasta que su autor decide que la
+/// otra persona lo vea (RF-6.6.1). Escribirlo ya sirve aunque no se comparta
+/// nunca: ordenar lo que pasó es la mitad del trabajo.
+model Conflicto {
+  id        String @id @default(cuid())
+  vinculoId String
+  autorId   String
+  /// Hechos observables, sin interpretación. El campo más difícil y el que
+  /// más ayuda: "llegaste a las diez" no admite discusión; "no te importó" sí.
+  quePaso           String @db.Text
+  queSenti          String @db.Text
+  queNecesitaba     String @db.Text
+  queHariaDistinto  String @db.Text
+  /// Cuándo se compartió, si se compartió (RF-6.6.1).
+  compartidoEn DateTime?
+  /// Si es la respuesta al relato de la otra persona, en el mismo formato.
+  respondeAId  String?
+  creadoEn     DateTime @default(now())
+
+  vinculo   Vinculo     @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
+  respondeA Conflicto?  @relation("RelatoYRespuesta", fields: [respondeAId], references: [id], onDelete: SetNull)
+  respuestas Conflicto[] @relation("RelatoYRespuesta")
+
+  @@index([vinculoId, autorId, creadoEn])
+  @@map("conflicto")
+}
+
+/// Un acuerdo breve al que llegaron los dos (§6.7).
+///
+/// Editable por ambos a propósito: un acuerdo del que solo uno es dueño no es
+/// un acuerdo. Archivar en vez de borrar, porque saber qué se acordó y se dejó
+/// de cumplir también es información.
+model Acuerdo {
+  id          String    @id @default(cuid())
+  vinculoId   String
+  texto       String    @db.Text
+  creadorId   String
+  archivadoEn DateTime?
+  creadoEn    DateTime  @default(now())
+
+  vinculo Vinculo @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
+
+  @@index([vinculoId, archivadoEn])
+  @@map("acuerdo")
 }
 
 /// El cofre: mensajes que quien los recibió decidió conservar (§3.2.2).
