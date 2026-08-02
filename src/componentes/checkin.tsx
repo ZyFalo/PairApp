@@ -155,7 +155,11 @@ export function Checkin({
                         size={22}
                         className={`relative ${activa ? "text-[var(--color-acento)]" : COLOR_GRUPO[grupo]}`}
                       />
-                      <span className="relative">{etiquetaDe(f.emocion, genero)}</span>
+                      {/* Alto fijo de dos líneas: sin él, "Me siento solo"
+                          parte en dos y deja su fila más alta que las otras. */}
+                      <span className="relative flex min-h-[2.1em] items-center text-center">
+                        {etiquetaDe(f.emocion, genero)}
+                      </span>
                     </motion.button>
                   )
                 })}

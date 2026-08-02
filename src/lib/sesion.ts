@@ -11,6 +11,8 @@ export type Sesion = {
   zonaHoraria: string
   /** Si llevo el registro de mi ciclo. Es mi decisión, no se deduce del género (RF-5.0). */
   llevaCiclo: boolean
+  /** Hasta cuándo he pedido que la app no me hable. Null si no hay pausa (§12.2). */
+  pausaHasta: Date | null
   /** La otra persona del vínculo. Null mientras nadie haya canjeado la invitación. */
   pareja: { id: string; nombre: string; zonaHoraria: string; llevaCiclo: boolean } | null
 }
@@ -47,6 +49,7 @@ export async function exigirSesion(): Promise<Sesion> {
     genero: yo.usuario.genero,
     zonaHoraria: yo.usuario.zonaHoraria,
     llevaCiclo: yo.usuario.llevaCiclo,
+    pausaHasta: yo.usuario.pausaHasta,
     pareja: otra
       ? {
           id: otra.usuario.id,

@@ -178,24 +178,40 @@ export async function cambiarRegistroCiclo(activo: boolean): Promise<Resultado> 
   return { ok: true }
 }
 
+/** Un síntoma del 1 al 5, o nada. Vacío es una respuesta legítima (RF-5.1). */
+const escala = z.preprocess(
+  (v) => (v === "" || v === undefined ? undefined : v),
+  z.coerce.number().int().min(1).max(5).optional(),
+)
+
 const esquemaCiclo = z.object({
   inicio: z.string().min(1, "Falta la fecha"),
   fin: z.string().optional(),
   nivelVisibilidad: z.enum(["NADA", "SOLO_FECHAS", "FECHAS_Y_NOTA"]),
   notaParaPareja: z.string().trim().max(1000).optional(),
+  dolor: escala,
+  energia: escala,
+  sueno: escala,
+  antojos: z.coerce.boolean().default(false),
 })
 
 /**
  * Registra un periodo (RF-5.1). El diseño está invertido a propósito: la app
  * no le dice a nadie cómo está la otra persona — ella decide qué comparte
  * (RF-5.3) y escribe con sus palabras qué le sirve.
+ *
+ * Los síntomas se guardan pero **no se comparten nunca**, ni con el nivel más
+ * abierto: son para mirar el propio historial. Dárselos a la pareja convertiría
+ * esto en un panel desde el que deducir cómo está ella, que es exactamente lo
+ * que §M5 existe para evitar.
  */
 export async function registrarCiclo(_previo: Resultado, datos: FormData): Promise<Resultado> {
   const analizado = esquemaCiclo.safeParse(Object.fromEntries(datos))
   if (!analizado.success) {
     return { error: analizado.error.issues[0]?.message ?? "Revisa los datos" }
   }
-  const { inicio, fin, nivelVisibilidad, notaParaPareja } = analizado.data
+  const { inicio, fin, nivelVisibilidad, notaParaPareja, dolor, energia, sueno, antojos } =
+    analizado.data
 
   const { db, sesion } = await dbDeSesion()
   await db.ciclo.create({
@@ -206,6 +222,10 @@ export async function registrarCiclo(_previo: Resultado, datos: FormData): Promi
       fin: fin ? new Date(fin) : null,
       nivelVisibilidad,
       notaParaPareja: notaParaPareja || null,
+      dolor: dolor ?? null,
+      energia: energia ?? null,
+      sueno: sueno ?? null,
+      antojos,
     },
   })
 

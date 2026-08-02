@@ -781,8 +781,8 @@ Deducirlo del género gramatical del perfil sería un error de categoría: ese c
 
 Apagarlo no borra lo registrado: vuelve intacto al encenderlo. Mientras esté apagado, la pareja no ve nada.
 
-**RF-5.1** Registro de días de periodo, con síntomas opcionales (dolor, energía, sueño, antojos).
-**RF-5.2** Predicción de próximo ciclo basada en el historial. Etiquetada siempre como *estimación*.
+**RF-5.1** Registro de días de periodo, con síntomas opcionales (dolor, energía, sueño, antojos). **Los síntomas no se comparten nunca**, ni con el nivel más abierto de RF-5.3: son para mirar el propio historial. Dárselos a la pareja convertiría el módulo en un panel desde el que deducir cómo está ella — exactamente lo que M5 evita.
+**RF-5.2** Predicción de próximo ciclo basada en el historial. Etiquetada siempre como *estimación*. Se descartan las separaciones imposibles (menos de 15 días o más de 60) antes de promediar: una fecha mal tecleada no puede arrastrar toda la media. Con menos de dos registros no se dice nada.
 **RF-5.3 Control total de la titular.** Ella elige qué comparte, con tres niveles:
 - Nada.
 - Solo las fechas previstas.
@@ -1299,6 +1299,8 @@ Cuatro pestañas, nada más:
 
 **RF-8.2.2 Sin emojis en ninguna pantalla. Iconos de trazo, coloreados por familia.** Un emoji lo dibuja cada sistema operativo a su manera, no se puede teñir del color que le toca, y su registro gráfico —caras amarillas— choca con el papel y la tinta. Todos los iconos salen de un único archivo, y una prueba automática falla si alguno se cuela.
 
+**RF-8.2.4 Modo oscuro por preferencia del sistema, sin ajuste que tocar.** No es la paleta invertida: es el mismo cuaderno bajo una lámpara. Ni negro puro ni blanco puro — a las dos de la mañana un blanco del 100 % sobre negro del 100 % deslumbra, y esta app se usa a esas horas. Un interruptor de tema sería maquinaria a la vista, y P10 pide lo contrario.
+
 **RF-8.2.3 Las nueve emociones se dibujan como clima, no como caras.** Es la traducción visual de §1.2: un estado de ánimo pasa, viene de fuera y no es culpa de nadie. Una cara enfadada señala a una persona; una tormenta solo describe el día. Las dos emociones que hablan de la otra persona —gratitud y añoranza— sí llevan manos y corazones, porque no describen mi clima sino el vínculo.
 
 ### 8.3 La mascota mensajera
@@ -1509,18 +1511,15 @@ Cuidado aquí: medir una relación es peligroso. Estas métricas son **privadas,
 | D40 | **shadcn/ui con *tokens* personalizados antes de la primera pantalla** (`PLAN.md` §0.4). Aporta accesibilidad resuelta; su aspecto por defecto es incompatible con §8.2 y se cambia de entrada. Los componentes con carga emocional se escriben a mano | 2026-08-01 |
 | D41 | **Prisma nunca se usa crudo** (`PLAN.md` §0.1.1). Todo acceso pasa por un cliente extendido acotado al vínculo; R4 lo verifica con un test que intenta leer datos ajenos | 2026-08-01 |
 | D42 | **Cero emojis; iconos de trazo coloreados por familia** (RF-8.2.2). Las nueve emociones son clima, no caras (RF-8.2.3): un estado de ánimo no es un defecto de carácter, y una tormenta lo dice mejor que un ceño fruncido | 2026-08-02 |
+| D45 | **Modo pausa: silencia avisos, no entregas** (§12.2). Lo que te manden sigue llegando y te espera al abrir. Retener las entregas haría que el cofre de la otra persona dijera "le llegó" siendo mentira, y un estado de entrega es un hecho que no se puede falsear (RF-3.17.4) | 2026-08-02 |
 | D44 | **El módulo de ciclo se enciende a mano** (RF-5.0), nunca se deduce del género gramatical del perfil. «Agradecido» o «agradecida» es gramática; menstruar no. La app no adivina cuerpos | 2026-08-02 |
 | D43 | **Aplazar leer no es haber leído** (RF-3.0.11). Un mensaje pospuesto desde "nombrar y elegir" guarda su hora de vuelta y sigue sin leer; el que se aplaza *después* de abrirlo sí queda visto, porque leerlo es un hecho que no se puede deshacer (RF-3.17.4) | 2026-08-02 |
 
 ### 12.2 Preguntas abiertas
 
-1. **Modo pausa** — silenciar todas las entregas durante N días sin borrar nada. *(propuesta: sí)*
-3. **¿Un mensaje de "cuando le sirva" se consume al entregarse o puede repetirse?** *(propuesta: se consume, con opción de marcarlo reutilizable + cooldown de 60 días)*
-4. **¿Sincronización con Google Calendar?** *(propuesta: no en el MVP; exportar `.ics` por evento)*
-5. **¿Vercel o Railway?**
-7. **Nombre de la app.** *(propuesta: Faro)*
-4. **Las seis necesidades de RF-1.2** (*escucha · espacio · distracción · contacto · soluciones · no sé*) — ¿son las suyas? El vocabulario emocional ya quedó cerrado en D11, pero este no se ha revisado.
+1. **Las seis necesidades de RF-1.2** (*escucha · espacio · distracción · contacto · soluciones · no sé*) — ¿son las suyas? El vocabulario emocional quedó cerrado en D11; este no se ha revisado con nadie. Se ven al escribir un mensaje.
+2. **¿Un mensaje de "cuando le sirva" puede volver a entregarse?** Hoy se consume al entregarse, que era la propuesta. Falta decidir si merece la pena poder marcarlo reutilizable con una espera de 60 días.
 
-> ✅ **Resueltas:** vocabulario emocional (D11) · música (D28) · calendario (D29) · OAuth (D30) · IA fuera del MVP (D31) · hosting (D32) · horarios (D33) · **cifrado (D34)** · **alcance del MVP (D36)** · **nombre (D38)**.
+> ✅ **Resueltas:** vocabulario emocional (D11) · música (D28) · calendario (D29) · OAuth (D30) · IA fuera del MVP (D31) · hosting (D32) · horarios (D33) · **cifrado (D34)** · **alcance del MVP (D36)** · **nombre (D38)** · **modo pausa (D45)** · **exportar `.ics` en vez de sincronizar (D29)**.
 >
-> Quedan **cuatro**, y **ninguna bloquea la construcción**. Todas se pueden resolver mientras se desarrolla.
+> Quedan **dos**, las dos de vocabulario o matiz, y **ninguna bloquea nada**.

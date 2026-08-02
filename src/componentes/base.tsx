@@ -16,7 +16,7 @@ export function Boton({
 }: ComponentProps<"button"> & { variante?: "solido" | "suave" | "texto" }) {
   const estilos = {
     solido:
-      "text-[#fffcf7] bg-gradient-to-b from-[var(--color-acento)] to-[var(--color-acento-hondo)] shadow-[var(--sombra-tinta)] hover:brightness-[1.06]",
+      "text-[var(--color-sobre-acento)] bg-gradient-to-b from-[var(--color-acento)] to-[var(--color-acento-hondo)] shadow-[var(--sombra-tinta)] hover:brightness-[1.06]",
     suave:
       "text-[var(--color-tinta)] bg-gradient-to-b from-[var(--color-papel-alto)] to-[var(--color-papel)] border border-[var(--color-borde)] shadow-[var(--sombra-papel)] hover:border-[var(--color-acento-suave)]",
     texto: "text-[var(--color-tinta-suave)] hover:text-[var(--color-acento)]",
@@ -44,7 +44,7 @@ export function BotonEnlace({
 }) {
   const estilos =
     variante === "solido"
-      ? "text-[#fffcf7] bg-gradient-to-b from-[var(--color-acento)] to-[var(--color-acento-hondo)] shadow-[var(--sombra-tinta)]"
+      ? "text-[var(--color-sobre-acento)] bg-gradient-to-b from-[var(--color-acento)] to-[var(--color-acento-hondo)] shadow-[var(--sombra-tinta)]"
       : "text-[var(--color-tinta)] bg-[var(--color-papel)] border border-[var(--color-borde)]"
   return (
     <Link
@@ -160,7 +160,7 @@ export function Pastilla({
       aria-pressed={activa}
       className={`pulsable inline-flex items-center gap-1.5 rounded-[var(--radius-pildora)] px-3.5 py-2 text-[13px] font-medium ${
         activa
-          ? "bg-[var(--color-acento)] text-[#fffcf7] shadow-[var(--sombra-tinta)]"
+          ? "bg-[var(--color-acento)] text-[var(--color-sobre-acento)] shadow-[var(--sombra-tinta)]"
           : "border border-[var(--color-borde)] bg-[var(--color-papel)] text-[var(--color-tinta-suave)] hover:border-[var(--color-acento-suave)]"
       }`}
       {...props}

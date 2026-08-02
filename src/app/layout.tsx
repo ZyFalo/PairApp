@@ -29,7 +29,11 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: "#f7f2ea",
+  // La barra del navegador acompaña al fondo, de día y de noche
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f7f2ea" },
+    { media: "(prefers-color-scheme: dark)", color: "#17130f" },
+  ],
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,

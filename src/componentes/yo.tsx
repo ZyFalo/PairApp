@@ -4,12 +4,13 @@ import {
   RiArchiveLine,
   RiCloseLine,
   RiInboxUnarchiveLine,
+  RiLockLine,
   RiNotification3Line,
   RiNotificationOffLine,
   RiSendPlaneLine,
 } from "@remixicon/react"
 import { useActionState, useCallback, useEffect, useState, useTransition } from "react"
-import { Apunte, Aviso, Boton, Campo, Tarjeta } from "@/componentes/base"
+import { Apunte, Aviso, Boton, Campo, Pastilla, Tarjeta } from "@/componentes/base"
 import { Seleccion } from "@/componentes/nosotros"
 import { archivarApunte, decirloAhora, desarchivarApunte } from "@/lib/acciones/bucle"
 import {
@@ -17,7 +18,8 @@ import {
   cambiarVisibilidadCiclo,
   registrarCiclo,
 } from "@/lib/acciones/nosotros"
-import { desuscribirDePush, suscribirAPush } from "@/lib/acciones/push"
+import { cambiarPausa, desuscribirDePush, suscribirAPush } from "@/lib/acciones/push"
+import { diaRelativo, finDePausa } from "@/lib/motor/tiempo"
 
 /**
  * Qué hacer con un apunte privado. "Decirlo ahora" es el mecanismo más
@@ -41,7 +43,7 @@ export function AccionesApunte({
         <button
           type="button"
           onClick={() => empezar(() => void decirloAhora(mensajeId))}
-          className="pulsable inline-flex items-center gap-1.5 rounded-[var(--radius-pildora)] bg-[var(--color-acento)] px-3 py-1.5 text-[12.5px] font-medium text-[#fffcf7]"
+          className="pulsable inline-flex items-center gap-1.5 rounded-[var(--radius-pildora)] bg-[var(--color-acento)] px-3 py-1.5 text-[12.5px] font-medium text-[var(--color-sobre-acento)]"
         >
           <RiSendPlaneLine size={14} />
           Enviárselo
@@ -138,6 +140,62 @@ export function InterruptorCiclo({ activo }: { activo: boolean }) {
   )
 }
 
+/** Cuánto silencio pido. "Sin pausa" no está aquí: se quita con su propio botón. */
+const PAUSAS = [
+  { dias: 1, texto: "Hoy" },
+  { dias: 3, texto: "Tres días" },
+  { dias: 7, texto: "Una semana" },
+]
+
+/**
+ * Modo pausa (§12.2): que la app no me hable durante unos días.
+ *
+ * Silencia avisos, no entregas. Lo que te manden sigue llegando y te espera al
+ * abrir — así el cofre de la otra persona nunca dice "le llegó" siendo mentira.
+ * Sin explicaciones ni preguntas al volver: pedir silencio no se justifica.
+ */
+export function ControlPausa({ hasta, zonaHoraria }: { hasta: Date | null; zonaHoraria: string }) {
+  const [, empezar] = useTransition()
+  const [pausa, setPausa] = useState(hasta)
+
+  function poner(dias: number) {
+    setPausa(dias > 0 ? finDePausa(dias, zonaHoraria, new Date()) : null)
+    empezar(() => void cambiarPausa(dias))
+  }
+
+  if (pausa && pausa > new Date()) {
+    return (
+      <div className="space-y-2">
+        <p className="flex items-center gap-2 text-[14.5px] text-[var(--color-tinta)]">
+          <RiNotificationOffLine size={16} className="text-[var(--color-acento)]" />
+          En silencio hasta el {diaRelativo(pausa, zonaHoraria, new Date()).toLowerCase()}
+        </p>
+        <Apunte>Lo que te escriba sigue llegando; te espera al abrir.</Apunte>
+        <button
+          type="button"
+          onClick={() => poner(0)}
+          className="pulsable text-[13px] text-[var(--color-acento)]"
+        >
+          Volver a recibir avisos
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      <Apunte>Silenciar los avisos</Apunte>
+      <div className="flex flex-wrap gap-2">
+        {PAUSAS.map((p) => (
+          <Pastilla key={p.dias} onClick={() => poner(p.dias)}>
+            {p.texto}
+          </Pastilla>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 /** Qué comparto de mi periodo (RF-5.3). */
 const VISIBILIDADES = [
   { valor: "NADA", texto: "Nada" },
@@ -196,6 +254,8 @@ export function FormularioCiclo() {
           </span>
         </label>
 
+        <Sintomas />
+
         <Aviso>{estado.error}</Aviso>
         <div className="flex gap-2">
           <Boton type="submit" disabled={pendiente} className="flex-1">
@@ -207,6 +267,68 @@ export function FormularioCiclo() {
         </div>
       </form>
     </Tarjeta>
+  )
+}
+
+/** Las tres escalas de RF-5.1. Ninguna es obligatoria. */
+const ESCALAS = [
+  { nombre: "dolor", texto: "Dolor", flojo: "nada", fuerte: "mucho" },
+  { nombre: "energia", texto: "Energía", flojo: "por el suelo", fuerte: "normal" },
+  { nombre: "sueno", texto: "Sueño", flojo: "fatal", fuerte: "bien" },
+]
+
+/**
+ * Síntomas opcionales (RF-5.1), plegados hasta que se piden.
+ *
+ * Van bajo llave a propósito: **no se comparten nunca**, ni con el nivel más
+ * abierto de RF-5.3. Son para mirar el propio historial. Si se los diera a la
+ * pareja, esto pasaría de ser un diario a ser un panel desde el que deducir
+ * cómo está ella — que es justo lo que §M5 evita.
+ */
+function Sintomas() {
+  const [abierto, setAbierto] = useState(false)
+
+  if (!abierto) {
+    return (
+      <button
+        type="button"
+        onClick={() => setAbierto(true)}
+        className="pulsable text-[13px] text-[var(--color-tinta-tenue)] hover:text-[var(--color-acento)]"
+      >
+        Apuntar cómo te sientes (opcional)
+      </button>
+    )
+  }
+
+  return (
+    <div className="aparece space-y-3 rounded-[var(--radius-suave)] bg-[var(--color-lienzo)] p-3">
+      <p className="flex items-center gap-1.5 text-[12.5px] text-[var(--color-tinta-tenue)]">
+        <RiLockLine size={13} />
+        Esto no se comparte nunca. Es para ti.
+      </p>
+
+      {ESCALAS.map((e) => (
+        <label key={e.nombre} className="block">
+          <span className="mb-1 flex items-center justify-between text-[13px] text-[var(--color-tinta-suave)]">
+            {e.texto}
+            <span className="text-[11.5px] text-[var(--color-tinta-tenue)]">
+              {e.flojo} → {e.fuerte}
+            </span>
+          </span>
+          <input type="range" name={e.nombre} min={1} max={5} defaultValue={3} className="w-full" />
+        </label>
+      ))}
+
+      <label className="flex items-center gap-2 text-[14px] text-[var(--color-tinta-suave)]">
+        <input
+          type="checkbox"
+          name="antojos"
+          value="true"
+          className="accent-[var(--color-acento)]"
+        />
+        Antojos
+      </label>
+    </div>
   )
 }
 

@@ -28,6 +28,9 @@
   --color-acento-hondo: #96503a;
   --color-acento-suave: #d99e88;
   --color-acento-tenue: #f6e6de;
+  /* Lo que se escribe encima del acento. De noche el acento aclara, así que
+     este color se invierte para que el texto siga leyéndose. */
+  --color-sobre-acento: #fffcf7;
 
   /* ---- Las tres familias de emociones (§M1.1.2) ------------------------- */
   --color-contigo: #cf9a3c;
@@ -59,6 +62,75 @@
     0 1px 2px -1px rgb(74 54 38 / 0.08), 0 4px 12px -4px rgb(74 54 38 / 0.08),
     0 16px 32px -12px rgb(74 54 38 / 0.1);
   --sombra-tinta: 0 2px 8px -2px rgb(184 101 74 / 0.35), 0 6px 20px -6px rgb(184 101 74 / 0.25);
+
+  /* ---- Piezas que cambian de noche ------------------------------------- */
+  /* El filo de luz del borde superior de cada hoja. */
+  --filo-luz: rgb(255 255 255 / 0.9);
+  /* El degradado del fondo y el grano del papel. */
+  --fondo-lienzo: radial-gradient(120% 80% at 50% 0%, #fbf7f0 0%, #f7f2ea 55%, #f2ebe0 100%);
+  --mezcla-grano: multiply;
+  --opacidad-grano: 0.4;
+}
+
+/* --------------------------------------------------------------------------
+   De noche
+   --------------------------------------------------------------------------
+   No es el mismo papel con los colores dados la vuelta: es el mismo cuaderno
+   bajo una lámpara. Nada de negro puro ni de blanco puro — marrón muy oscuro y
+   tinta cálida, porque a las dos de la mañana un blanco del 100 % sobre negro
+   del 100 % deslumbra y esta app se usa justo a esas horas.
+
+   Solo responde a la preferencia del sistema: un ajuste más que tocar sería
+   maquinaria a la vista, y §P10 pide justo lo contrario.
+   -------------------------------------------------------------------------- */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-lienzo: #17130f;
+    --color-lienzo-hondo: #221c16;
+    --color-papel: #201a15;
+    --color-papel-alto: #27201a;
+    --color-borde: #3d332a;
+    --color-borde-suave: #2f271f;
+
+    --color-tinta: #f0e6d8;
+    --color-tinta-suave: #bcac99;
+    --color-tinta-tenue: #8a7c6c;
+
+    /* El acento sube de tono: el terracota de día se hunde en el fondo oscuro */
+    --color-acento: #d9825f;
+    --color-acento-hondo: #c26c4b;
+    --color-acento-suave: #a5634b;
+    --color-acento-tenue: #3a241b;
+    --color-sobre-acento: #1b1510;
+
+    --color-contigo: #dfb265;
+    --color-contigo-fondo: #2a2317;
+    --color-contigo-borde: #3d3220;
+
+    --color-falta: #93a9c2;
+    --color-falta-fondo: #1b2029;
+    --color-falta-borde: #2b3341;
+
+    --color-paso: #c99280;
+    --color-paso-fondo: #2a1f1a;
+    --color-paso-borde: #3c2d25;
+
+    --sombra-papel:
+      0 1px 2px -1px rgb(0 0 0 / 0.5), 0 2px 6px -2px rgb(0 0 0 / 0.4),
+      0 8px 20px -8px rgb(0 0 0 / 0.45);
+    --sombra-alzada:
+      0 1px 2px -1px rgb(0 0 0 / 0.6), 0 4px 12px -4px rgb(0 0 0 / 0.5),
+      0 16px 32px -12px rgb(0 0 0 / 0.55);
+    --sombra-tinta: 0 2px 8px -2px rgb(0 0 0 / 0.5), 0 6px 20px -6px rgb(217 130 95 / 0.2);
+
+    /* Un filo blanco al 90 % sobre papel oscuro sería una cuchilla */
+    --filo-luz: rgb(255 255 255 / 0.07);
+    --fondo-lienzo: radial-gradient(120% 80% at 50% 0%, #241d17 0%, #17130f 55%, #100d0a 100%);
+    /* Multiplicar sobre un fondo oscuro no se ve: de noche el grano aclara */
+    --mezcla-grano: screen;
+    --opacidad-grano: 0.14;
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -71,9 +143,7 @@ html {
 
 body {
   /* Degradado muy tenue en vez de color plano: el papel nunca es uniforme */
-  background:
-    radial-gradient(120% 80% at 50% 0%, #fbf7f0 0%, var(--color-lienzo) 55%, #f2ebe0 100%)
-    fixed;
+  background: var(--fondo-lienzo) fixed;
   color: var(--color-tinta);
   font-family: var(--font-interfaz);
   font-feature-settings: "ss01", "cv01";
@@ -89,8 +159,8 @@ body::before {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.4;
-  mix-blend-mode: multiply;
+  opacity: var(--opacidad-grano);
+  mix-blend-mode: var(--mezcla-grano);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23g)' opacity='0.22'/%3E%3C/svg%3E");
 }
 
@@ -146,7 +216,7 @@ body > * {
   inset: 0 0 auto 0;
   height: 1px;
   border-radius: var(--radius-tarjeta) var(--radius-tarjeta) 0 0;
-  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.9) 20%, rgb(255 255 255 / 0.9) 80%, transparent);
+  background: linear-gradient(90deg, transparent, var(--filo-luz) 20%, var(--filo-luz) 80%, transparent);
   pointer-events: none;
 }
 
@@ -241,6 +311,13 @@ input:-webkit-autofill:focus {
   -webkit-text-fill-color: var(--color-tinta);
   caret-color: var(--color-tinta);
   transition: background-color 100000s ease-in-out 0s;
+}
+
+/* La X nativa del campo de búsqueda es gris de sistema y no encaja: se usa la
+   propia, que además se puede colocar donde toca. */
+input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 /* Foco visible pero cálido, nunca el azul del sistema */

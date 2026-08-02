@@ -16,6 +16,7 @@ import { loQueLeMande } from "@/lib/acciones/bucle"
 import { ETIQUETA_CIERRE, etiquetaDe, grupoDe } from "@/lib/motor/emociones"
 import { formatoLegible } from "@/lib/motor/tiempo"
 import { dbDeSesion } from "@/lib/sesion"
+import { Buscador } from "./buscador"
 import { EstadoEnvio } from "./estado-envio"
 
 export const dynamic = "force-dynamic"
@@ -41,14 +42,18 @@ const VISTAS = [
 export default async function PaginaCofre({
   searchParams,
 }: {
-  searchParams: Promise<{ vista?: string; archivo?: string }>
+  searchParams: Promise<{ vista?: string; archivo?: string; q?: string }>
 }) {
-  const { vista, archivo } = await searchParams
+  const { vista, archivo, q } = await searchParams
   const soloGuardados = vista === "guardados"
   const esEnviados = vista === "enviados"
   const esPorHablar = vista === "por-hablar"
   const verArchivo = archivo === "1"
+  const busqueda = q?.trim() ?? ""
   const { db, sesion } = await dbDeSesion()
+
+  /** Filtro de texto para las consultas que lo admiten (RF-3.11.1). */
+  const contiene = busqueda ? { contains: busqueda, mode: "insensitive" as const } : undefined
 
   const guardados = await db.guardado.findMany({
     where: { usuarioId: sesion.usuarioId },
@@ -63,18 +68,20 @@ export default async function PaginaCofre({
           where: {
             destinatarioId: sesion.usuarioId,
             ...(soloGuardados ? { mensajeId: { in: [...idsGuardados] } } : {}),
+            ...(contiene ? { mensaje: { texto: contiene } } : {}),
           },
           orderBy: { entregadaEn: "desc" },
           take: 100,
           include: { mensaje: true, respuesta: true },
         }),
-    esEnviados ? loQueLeMande() : Promise.resolve([]),
+    esEnviados ? loQueLeMande(busqueda) : Promise.resolve([]),
     esPorHablar
       ? db.mensaje.findMany({
           where: {
             autorId: sesion.usuarioId,
             destino: DestinoMensaje.SOLO_PARA_MI,
             archivadoEn: verArchivo ? { not: null } : null,
+            ...(contiene ? { texto: contiene } : {}),
           },
           orderBy: { creadoEn: "desc" },
           take: 50,
@@ -92,7 +99,7 @@ export default async function PaginaCofre({
         {VISTAS.map((v) => (
           <Pestana
             key={v.clave}
-            href={v.clave ? `/cofre?vista=${v.clave}` : "/cofre"}
+            href={enlaceDeVista(v.clave, busqueda)}
             activa={(vista ?? "") === v.clave}
             texto={v.texto}
             Icono={v.Icono}
@@ -100,16 +107,21 @@ export default async function PaginaCofre({
         ))}
       </div>
 
+      <Buscador inicial={busqueda} />
+
       {esPorHablar ? (
         <PorHablar
           apuntes={apuntes}
           verArchivo={verArchivo}
           hayPareja={Boolean(sesion.pareja)}
           zonaHoraria={sesion.zonaHoraria}
+          busqueda={busqueda}
         />
       ) : esEnviados ? (
         enviados.length === 0 ? (
-          <Vacio Icono={RiSendPlaneLine}>Todavía no le has dejado nada.</Vacio>
+          <Vacio Icono={RiSendPlaneLine}>
+            {busqueda ? sinResultados(busqueda) : "Todavía no le has dejado nada."}
+          </Vacio>
         ) : (
           <ul className="space-y-3">
             {enviados.map((m) => {
@@ -160,9 +172,11 @@ export default async function PaginaCofre({
         )
       ) : entregas.length === 0 ? (
         <Vacio Icono={soloGuardados ? RiBookmarkLine : RiInboxLine}>
-          {soloGuardados
-            ? "Todavía no has guardado nada."
-            : "Aquí aparecerá lo que te vaya escribiendo."}
+          {busqueda
+            ? sinResultados(busqueda)
+            : soloGuardados
+              ? "Todavía no has guardado nada."
+              : "Aquí aparecerá lo que te vaya escribiendo."}
         </Vacio>
       ) : (
         <ul className="space-y-3">
@@ -212,6 +226,20 @@ export default async function PaginaCofre({
   )
 }
 
+/** Lo que se dice cuando una búsqueda no encuentra nada. Sin dramatismo. */
+function sinResultados(busqueda: string): string {
+  return `Nada con «${busqueda}» por aquí.`
+}
+
+/** Enlace a una vista conservando la búsqueda: buscar algo y cambiar de vista es normal. */
+function enlaceDeVista(clave: string, busqueda: string): string {
+  const parametros = new URLSearchParams()
+  if (clave) parametros.set("vista", clave)
+  if (busqueda) parametros.set("q", busqueda)
+  const cadena = parametros.toString()
+  return cadena ? `/cofre?${cadena}` : "/cofre"
+}
+
 /** El icono de una respuesta de un toque, en el color del acento. */
 function IconoDeCierre({ cierre }: { cierre: keyof typeof ICONO_CIERRE }) {
   const Icono = ICONO_CIERRE[cierre]
@@ -229,12 +257,16 @@ function PorHablar({
   verArchivo,
   hayPareja,
   zonaHoraria,
+  busqueda,
 }: {
   apuntes: { id: string; texto: string; emocion: Emocion; creadoEn: Date }[]
   verArchivo: boolean
   hayPareja: boolean
   zonaHoraria: string
+  busqueda: string
 }) {
+  const enlaceArchivo = enlaceDeVista("por-hablar", busqueda)
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
@@ -242,7 +274,7 @@ function PorHablar({
           {verArchivo ? "Ya no están en la lista" : "Escrito solo para ti"}
         </Seccion>
         <Link
-          href={verArchivo ? "/cofre?vista=por-hablar" : "/cofre?vista=por-hablar&archivo=1"}
+          href={verArchivo ? enlaceArchivo : `${enlaceArchivo}&archivo=1`}
           className="pulsable text-[12.5px] text-[var(--color-tinta-tenue)] hover:text-[var(--color-acento)]"
         >
           {verArchivo ? "Volver" : "Ver archivadas"}
@@ -251,7 +283,11 @@ function PorHablar({
 
       {apuntes.length === 0 ? (
         <Vacio Icono={verArchivo ? RiArchiveLine : RiChatQuoteLine}>
-          {verArchivo ? "No has archivado nada." : "Lo que escribas «solo para mí» aparecerá aquí."}
+          {busqueda
+            ? sinResultados(busqueda)
+            : verArchivo
+              ? "No has archivado nada."
+              : "Lo que escribas «solo para mí» aparecerá aquí."}
         </Vacio>
       ) : (
         <>
@@ -310,7 +346,7 @@ function Pestana({
       aria-current={activa ? "page" : undefined}
       className={`pulsable inline-flex shrink-0 items-center justify-center gap-1.5 rounded-[var(--radius-pildora)] px-3.5 py-2 text-[13px] font-medium ${
         activa
-          ? "bg-[var(--color-acento)] text-[#fffcf7] shadow-[var(--sombra-tinta)]"
+          ? "bg-[var(--color-acento)] text-[var(--color-sobre-acento)] shadow-[var(--sombra-tinta)]"
           : "border border-[var(--color-borde)] bg-[var(--color-papel)] text-[var(--color-tinta-suave)]"
       }`}
     >

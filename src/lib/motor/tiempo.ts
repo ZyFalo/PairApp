@@ -38,6 +38,28 @@ export function ventanaOnceOnce(
   return { abierta: esHora && dentro, esNoche: local.hour >= 12 }
 }
 
+/**
+ * Si esta persona ha pedido que la app se calle (§12.2, modo pausa).
+ * Silencia avisos, no entregas: lo que le manden sigue llegando y la espera.
+ */
+export function enPausa(pausaHasta: Date | null, ahoraUtc: Date): boolean {
+  return pausaHasta !== null && pausaHasta.getTime() > ahoraUtc.getTime()
+}
+
+/**
+ * Hasta cuándo dura una pausa de N días, contando días enteros en la zona de
+ * quien la pide. "Tres días" acaba cuando acaba el tercero, no a la misma hora
+ * dentro de tres jornadas: nadie piensa en pausas de 72 horas exactas.
+ */
+export function finDePausa(dias: number, zonaHoraria: string, ahoraUtc: Date): Date {
+  return DateTime.fromJSDate(ahoraUtc, { zone: "utc" })
+    .setZone(zonaHoraria)
+    .plus({ days: dias - 1 })
+    .endOf("day")
+    .toUTC()
+    .toJSDate()
+}
+
 /** Día local en formato YYYY-MM-DD, para agrupar los 11:11 de una misma jornada. */
 export function diaLocal(zonaHoraria: string, momentoUtc: Date): string {
   return DateTime.fromJSDate(momentoUtc, { zone: "utc" })

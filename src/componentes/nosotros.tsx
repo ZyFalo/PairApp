@@ -4,6 +4,7 @@ import { RiCloseLine, RiDeleteBin6Line, RiSparkling2Line } from "@remixicon/reac
 import { useActionState, useEffect, useState, useTransition } from "react"
 import { Apunte, Aviso, Boton, Campo, Tarjeta } from "@/componentes/base"
 import { borrarEvento, crearEvento, dedicarCancion, pedirOnceOnce } from "@/lib/acciones/nosotros"
+import { useBorrador } from "@/lib/borrador"
 
 /**
  * Los 11:11 (M12). Cuatro minutos de gracia; si se pasa, el aviso desaparece
@@ -51,19 +52,29 @@ const AVISOS = [
   { valor: "24", texto: "El día antes" },
 ]
 
-/** Añadir un plan al calendario compartido (RF-7.1). */
+/**
+ * Añadir un plan al calendario compartido (RF-7.1).
+ * Lo escrito sobrevive a cambiar de pestaña, igual que en Hoy.
+ */
 export function FormularioEvento() {
   const [estado, accion, pendiente] = useActionState(crearEvento, {})
-  const [abierto, setAbierto] = useState(false)
+  const [borrador, actualizar, olvidar] = useBorrador("nosotros:plan", {
+    abierto: false,
+    titulo: "",
+    inicio: "",
+    avisoHoras: "",
+    notas: "",
+    esDePareja: true,
+  })
 
-  // Cerrar al guardar: dejar el formulario abierto invita a repetir sin querer.
+  // Al guardar se cierra y se olvida: dejarlo abierto invita a repetir sin querer.
   useEffect(() => {
-    if (estado.ok) setAbierto(false)
-  }, [estado.ok])
+    if (estado.ok) olvidar()
+  }, [estado.ok, olvidar])
 
-  if (!abierto) {
+  if (!borrador.abierto) {
     return (
-      <Boton variante="suave" onClick={() => setAbierto(true)} className="w-full">
+      <Boton variante="suave" onClick={() => actualizar({ abierto: true })} className="w-full">
         Añadir un plan
       </Boton>
     )
@@ -72,10 +83,31 @@ export function FormularioEvento() {
   return (
     <Tarjeta className="aparece">
       <form action={accion} className="space-y-3">
-        <Campo etiqueta="Qué" name="titulo" required maxLength={120} autoFocus />
-        <Campo etiqueta="Cuándo" name="inicio" type="datetime-local" required />
+        <Campo
+          etiqueta="Qué"
+          name="titulo"
+          required
+          maxLength={120}
+          autoFocus
+          value={borrador.titulo}
+          onChange={(e) => actualizar({ titulo: e.target.value })}
+        />
+        <Campo
+          etiqueta="Cuándo"
+          name="inicio"
+          type="datetime-local"
+          required
+          value={borrador.inicio}
+          onChange={(e) => actualizar({ inicio: e.target.value })}
+        />
 
-        <Seleccion etiqueta="Avisarme" name="avisoHoras" opciones={AVISOS} />
+        <Seleccion
+          etiqueta="Avisarme"
+          name="avisoHoras"
+          opciones={AVISOS}
+          valor={borrador.avisoHoras}
+          onCambio={(v) => actualizar({ avisoHoras: v })}
+        />
 
         <label className="block">
           <span className="mb-2 block text-[12.5px] font-medium uppercase tracking-[0.08em] text-[var(--color-tinta-tenue)]">
@@ -86,6 +118,8 @@ export function FormularioEvento() {
             rows={2}
             maxLength={2000}
             placeholder="Dónde, con quién, qué llevar…"
+            value={borrador.notas}
+            onChange={(e) => actualizar({ notas: e.target.value })}
             className="w-full resize-none rounded-[var(--radius-suave)] border border-[var(--color-borde)] bg-[var(--color-papel)] p-3 text-[15px] outline-none transition-colors focus:border-[var(--color-acento-suave)]"
           />
         </label>
@@ -95,7 +129,8 @@ export function FormularioEvento() {
             type="checkbox"
             name="esDePareja"
             value="true"
-            defaultChecked
+            checked={borrador.esDePareja}
+            onChange={(e) => actualizar({ esDePareja: e.target.checked })}
             className="accent-[var(--color-acento)]"
           />
           Es un plan de los dos
@@ -106,7 +141,7 @@ export function FormularioEvento() {
           <Boton type="submit" disabled={pendiente} className="flex-1">
             {pendiente ? "Guardando…" : "Guardar"}
           </Boton>
-          <Boton variante="texto" type="button" onClick={() => setAbierto(false)}>
+          <Boton variante="texto" type="button" onClick={olvidar}>
             Cancelar
           </Boton>
         </div>
@@ -167,15 +202,20 @@ const FRANJAS = [
 /** Dedicar una canción por enlace pegado (RF-8.2). Sin API ni OAuth. */
 export function FormularioCancion() {
   const [estado, accion, pendiente] = useActionState(dedicarCancion, {})
-  const [abierto, setAbierto] = useState(false)
+  const [borrador, actualizar, olvidar] = useBorrador("nosotros:cancion", {
+    abierto: false,
+    url: "",
+    mensaje: "",
+    franja: "TARDE",
+  })
 
   useEffect(() => {
-    if (estado.ok) setAbierto(false)
-  }, [estado.ok])
+    if (estado.ok) olvidar()
+  }, [estado.ok, olvidar])
 
-  if (!abierto) {
+  if (!borrador.abierto) {
     return (
-      <Boton variante="suave" onClick={() => setAbierto(true)} className="w-full">
+      <Boton variante="suave" onClick={() => actualizar({ abierto: true })} className="w-full">
         Dedicar una canción
       </Boton>
     )
@@ -191,20 +231,29 @@ export function FormularioCancion() {
           required
           autoFocus
           placeholder="https://"
+          value={borrador.url}
+          onChange={(e) => actualizar({ url: e.target.value })}
         />
-        <Campo etiqueta="Dedicatoria (opcional)" name="mensaje" maxLength={500} />
+        <Campo
+          etiqueta="Dedicatoria (opcional)"
+          name="mensaje"
+          maxLength={500}
+          value={borrador.mensaje}
+          onChange={(e) => actualizar({ mensaje: e.target.value })}
+        />
         <Seleccion
           etiqueta="¿Cuándo le llega?"
           name="franja"
           opciones={FRANJAS}
-          valorInicial="TARDE"
+          valor={borrador.franja}
+          onCambio={(v) => actualizar({ franja: v })}
         />
         <Aviso>{estado.error}</Aviso>
         <div className="flex gap-2">
           <Boton type="submit" disabled={pendiente} className="flex-1">
             {pendiente ? "Dedicando…" : "Dedicar"}
           </Boton>
-          <Boton variante="texto" type="button" onClick={() => setAbierto(false)}>
+          <Boton variante="texto" type="button" onClick={olvidar}>
             Cancelar
           </Boton>
         </div>
@@ -213,18 +262,27 @@ export function FormularioCancion() {
   )
 }
 
-/** Desplegable con la misma piel que los campos de texto. */
+/**
+ * Desplegable con la misma piel que los campos de texto.
+ * Con `valor` y `onCambio` va controlado; sin ellos, a su aire.
+ */
 export function Seleccion({
   etiqueta,
   name,
   opciones,
   valorInicial,
+  valor,
+  onCambio,
 }: {
   etiqueta: string
   name: string
   opciones: { valor: string; texto: string }[]
   valorInicial?: string
+  valor?: string
+  onCambio?: (valor: string) => void
 }) {
+  const controlado = valor !== undefined && onCambio !== undefined
+
   return (
     <label className="block">
       <span className="mb-2 block text-[12.5px] font-medium uppercase tracking-[0.08em] text-[var(--color-tinta-tenue)]">
@@ -232,7 +290,9 @@ export function Seleccion({
       </span>
       <select
         name={name}
-        defaultValue={valorInicial ?? opciones[0]?.valor}
+        {...(controlado
+          ? { value: valor, onChange: (e) => onCambio(e.target.value) }
+          : { defaultValue: valorInicial ?? opciones[0]?.valor })}
         className="w-full rounded-[var(--radius-suave)] border border-[var(--color-borde)] bg-[var(--color-papel)] px-4 py-3 text-[16px] text-[var(--color-tinta)] outline-none transition-colors focus:border-[var(--color-acento-suave)]"
       >
         {opciones.map((o) => (

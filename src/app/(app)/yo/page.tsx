@@ -5,17 +5,19 @@ import {
   RiSeedlingLine,
   RiSettings3Line,
 } from "@remixicon/react"
-import { Boton, Insignia, Seccion, Tarjeta, Titulo, Vacio } from "@/componentes/base"
+import { Apunte, Boton, Insignia, Seccion, Tarjeta, Titulo, Vacio } from "@/componentes/base"
 import { COLOR_GRUPO, ESTILO_GRUPO, ICONO_EMOCION } from "@/componentes/iconos"
 import {
   CambiarVisibilidadCiclo,
+  ControlPausa,
   FormularioCiclo,
   InterruptorCiclo,
   PanelPush,
 } from "@/componentes/yo"
 import { salir } from "@/lib/acciones/cuenta"
+import { CICLOS_PARA_ESTIMAR, estimarProximoCiclo } from "@/lib/motor/ciclo"
 import { ETIQUETA_VISIBILIDAD, etiquetaDe, grupoDe } from "@/lib/motor/emociones"
-import { formatoLegible } from "@/lib/motor/tiempo"
+import { diaRelativo, formatoLegible } from "@/lib/motor/tiempo"
 import { dbDeSesion } from "@/lib/sesion"
 
 export const dynamic = "force-dynamic"
@@ -27,7 +29,7 @@ export const dynamic = "force-dynamic"
 export default async function PaginaYo() {
   const { db, sesion } = await dbDeSesion()
 
-  const [historial, miCiclo] = await Promise.all([
+  const [historial, ciclos] = await Promise.all([
     db.checkin.findMany({
       where: { autorId: sesion.usuarioId },
       orderBy: { creadoEn: "desc" },
@@ -36,12 +38,16 @@ export default async function PaginaYo() {
     // Solo se consulta si lo llevas: quien no registra su ciclo no tiene por
     // qué ver aparecer la sección, ni siquiera vacía (RF-5.0).
     sesion.llevaCiclo
-      ? db.ciclo.findFirst({
+      ? db.ciclo.findMany({
           where: { usuarioId: sesion.usuarioId },
           orderBy: { inicio: "desc" },
+          take: CICLOS_PARA_ESTIMAR + 1,
         })
-      : Promise.resolve(null),
+      : Promise.resolve([]),
   ])
+
+  const miCiclo = ciclos[0] ?? null
+  const estimacion = estimarProximoCiclo(ciclos.map((c) => c.inicio))
 
   return (
     <div className="space-y-8">
@@ -114,6 +120,25 @@ export default async function PaginaYo() {
               </div>
             </Tarjeta>
           )}
+
+          {/* Siempre con la palabra "estimación" delante: un cuerpo no es un
+              calendario, y dar el cálculo por hecho invita a deducir en vez de
+              preguntar (RF-5.2). */}
+          {estimacion && (
+            <Tarjeta className="space-y-1">
+              <p className="text-[15px]">
+                Estimación del próximo:{" "}
+                {diaRelativo(estimacion.proximoInicio, sesion.zonaHoraria, new Date()).split(
+                  ",",
+                )[0] ?? ""}
+              </p>
+              <Apunte>
+                Sobre {estimacion.sobre} {estimacion.sobre === 1 ? "ciclo" : "ciclos"}, de{" "}
+                {estimacion.duracionMedia} días de media. Es un cálculo, no una promesa.
+              </Apunte>
+            </Tarjeta>
+          )}
+
           <FormularioCiclo />
         </section>
       )}
@@ -121,6 +146,9 @@ export default async function PaginaYo() {
       <section className="space-y-3">
         <Seccion Icono={RiNotification3Line}>Avisos</Seccion>
         <PanelPush />
+        <Tarjeta>
+          <ControlPausa hasta={sesion.pausaHasta} zonaHoraria={sesion.zonaHoraria} />
+        </Tarjeta>
       </section>
 
       <section className="space-y-3">

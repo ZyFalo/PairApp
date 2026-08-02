@@ -1,4 +1,5 @@
 import {
+  RiCalendarCheckLine,
   RiCalendarEventLine,
   RiExternalLinkLine,
   RiHeartsLine,
@@ -142,7 +143,17 @@ export default async function PaginaNosotros() {
                       </p>
                     )}
                   </div>
-                  <BotonBorrarEvento id={e.id} titulo={e.titulo} />
+                  <div className="flex shrink-0 items-center gap-1">
+                    {/* Al calendario del teléfono sin OAuth ni permisos (D29) */}
+                    <a
+                      href={`/api/evento/${e.id}/ics`}
+                      aria-label={`Añadir ${e.titulo} a tu calendario`}
+                      className="pulsable rounded-full p-1.5 text-[var(--color-borde)] hover:text-[var(--color-acento)]"
+                    >
+                      <RiCalendarCheckLine size={16} />
+                    </a>
+                    <BotonBorrarEvento id={e.id} titulo={e.titulo} />
+                  </div>
                 </Tarjeta>
               </li>
             ))}

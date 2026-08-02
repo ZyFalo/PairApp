@@ -393,13 +393,14 @@ function ajustar(
  * automáticos: sustituyen al botón de "te prometo que lo leo", que era una
  * promesa que después podía no cumplirse.
  */
-export async function loQueLeMande() {
+export async function loQueLeMande(busqueda = "") {
   const { db, sesion } = await dbDeSesion()
 
   const mensajes = await db.mensaje.findMany({
     where: {
       autorId: sesion.usuarioId,
       destino: { in: [DestinoMensaje.AHORA, DestinoMensaje.CUANDO_LE_SIRVA] },
+      ...(busqueda ? { texto: { contains: busqueda, mode: "insensitive" as const } } : {}),
     },
     orderBy: { creadoEn: "desc" },
     take: 60,

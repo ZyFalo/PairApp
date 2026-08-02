@@ -1,5 +1,6 @@
 import webpush from "web-push"
 import { prismaCrudo } from "@/lib/db"
+import { enPausa } from "@/lib/motor/tiempo"
 
 let configurado = false
 
@@ -23,6 +24,14 @@ function asegurarConfiguracion() {
  * las 23:00 es una bomba.
  */
 export async function avisar(usuarioId: string, titulo: string, cuerpo?: string, url = "/hoy") {
+  // El modo pausa se comprueba aquí, en el único sitio por el que sale todo
+  // aviso: así no hay forma de añadir un aviso nuevo y olvidarse de respetarlo.
+  const usuario = await prismaCrudo.usuario.findUnique({
+    where: { id: usuarioId },
+    select: { pausaHasta: true },
+  })
+  if (enPausa(usuario?.pausaHasta ?? null, new Date())) return
+
   asegurarConfiguracion()
 
   const suscripciones = await prismaCrudo.suscripcionPush.findMany({ where: { usuarioId } })
