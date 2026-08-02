@@ -85,6 +85,7 @@ export function MensajeEntrante(props: Props) {
       ) : fase === "amortiguador" && props.amortiguador ? (
         <motion.div key="amortiguador" exit={{ opacity: 0, y: -12 }} transition={SUAVE}>
           <Amortiguador
+            entregaId={props.entregaId}
             nombreAutor={props.nombreAutor}
             texto={props.amortiguador.texto}
             fecha={props.amortiguador.creadoEn}
@@ -185,16 +186,32 @@ function NombrarYElegir({
  * acordarse de quién es la persona que escribió.
  */
 function Amortiguador({
+  entregaId,
   nombreAutor,
   texto,
   fecha,
   onSeguir,
 }: {
+  entregaId: string
   nombreAutor: string
   texto: string
   fecha: string
   onSeguir: () => void
 }) {
+  const router = useRouter()
+  const [ocupado, setOcupado] = useState(false)
+
+  /**
+   * "Un rato más" aplaza de verdad. Antes hacía `history.back()`: volvías a
+   * Hoy y el mismo mensaje te esperaba otra vez con el mismo amortiguador
+   * delante, en bucle. Pedir tiempo tiene que dártelo.
+   */
+  async function masTarde() {
+    setOcupado(true)
+    await posponerLectura(entregaId, false)
+    router.push("/hoy")
+  }
+
   return (
     <section className="space-y-5">
       <Apunte>{nombreAutor} te escribió. Antes de abrirlo, algo que te dejó:</Apunte>
@@ -217,8 +234,10 @@ function Amortiguador({
         transition={{ delay: 0.7 }}
         className="grid gap-2"
       >
-        <Boton onClick={onSeguir}>Ahora sí, ábrelo</Boton>
-        <Boton variante="suave" onClick={() => history.back()}>
+        <Boton onClick={onSeguir} disabled={ocupado}>
+          Ahora sí, ábrelo
+        </Boton>
+        <Boton variante="suave" onClick={masTarde} disabled={ocupado}>
           Un rato más
         </Boton>
       </motion.div>
@@ -311,12 +330,20 @@ function Lectura({
                 Responder
               </span>
             </Boton>
-            {esDificilDeResponder(emocion) && (
+            {/* Los cuatro difíciles ofrecen decirlo; los demás, salir sin más.
+                Siempre hay una salida: sin ella, un mensaje de «incómodo» te
+                dejaba encerrado entre responder o irte por la pestaña, y al
+                irte quedaba sin leer para siempre. */}
+            {esDificilDeResponder(emocion) ? (
               <Boton variante="suave" onClick={necesitoUnRato}>
                 <span className="inline-flex items-center gap-2">
                   <RiPauseCircleLine size={17} />
                   Ahora no puedo
                 </span>
+              </Boton>
+            ) : (
+              <Boton variante="suave" onClick={cerrarSinResponder}>
+                Leerlo y volver
               </Boton>
             )}
           </>

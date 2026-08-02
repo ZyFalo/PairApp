@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync, statSync } from "node:fs"
+import { join } from "node:path"
 import { beforeAll, describe, expect, it } from "vitest"
 import { dbDelVinculo, prismaCrudo } from "./db"
 
@@ -120,5 +122,56 @@ describe("aislamiento entre vínculos", () => {
         update: { texto: "ok" },
       }),
     ).resolves.toBeTruthy()
+  })
+})
+
+/**
+ * Los únicos módulos que pueden tocar Prisma sin acotar (D41).
+ *
+ * Todos trabajan antes o por encima de un vínculo, donde el cliente acotado no
+ * sirve porque no hay a qué acotarse. Ver el comentario de `lib/db.ts`.
+ */
+const MODULOS_SIN_VINCULO = [
+  "src/auth.ts",
+  "src/lib/db.ts",
+  "src/lib/sesion.ts",
+  "src/lib/push.ts",
+  "src/lib/acciones/cuenta.ts",
+  "src/app/vincular/page.tsx",
+  "src/app/api/cron/despachar/route.ts",
+  "src/lib/aislamiento.test.ts",
+]
+
+/** Todos los archivos de código bajo `src`, saltando lo generado por Prisma. */
+function archivosDeCodigo(desde: string): string[] {
+  return readdirSync(desde).flatMap((nombre) => {
+    const ruta = join(desde, nombre)
+    if (nombre === "generated") return []
+    if (statSync(ruta).isDirectory()) return archivosDeCodigo(ruta)
+    return /\.tsx?$/.test(nombre) ? [ruta] : []
+  })
+}
+
+/**
+ * La frontera de D41, comprobada y no solo prometida.
+ *
+ * Hasta ahora la regla vivía en un comentario que además decía algo falso
+ * ("solo db.ts y auth.ts") mientras cinco módulos la incumplían por motivos
+ * legítimos. Una regla que se enuncia mal y no se comprueba deja de distinguir
+ * el uso legítimo del descuido: el siguiente `prismaCrudo` dentro de una
+ * pantalla pasaría la revisión porque "ya se hace en cinco sitios".
+ *
+ * Si esta prueba falla, la pregunta no es cómo silenciarla: es si de verdad
+ * hace falta el cliente crudo ahí o basta con `dbDelVinculo`.
+ */
+describe("la frontera del cliente sin filtrar (D41)", () => {
+  it("nadie más importa prismaCrudo", () => {
+    const permitidos = new Set(MODULOS_SIN_VINCULO)
+
+    const intrusos = archivosDeCodigo("src")
+      .filter((ruta) => !permitidos.has(ruta))
+      .filter((ruta) => /\bprismaCrudo\b/.test(readFileSync(ruta, "utf8")))
+
+    expect(intrusos).toEqual([])
   })
 })

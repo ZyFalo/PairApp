@@ -3,11 +3,11 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import {
-  type CierreHilo,
+  CierreHilo,
   ClaseMensaje,
   DestinoMensaje,
   Emocion,
-  type Necesidad,
+  Necesidad,
   Visibilidad,
 } from "@/generated/prisma/enums"
 import { claseDe, grupoDe, puedeGuardarseParaDespues } from "@/lib/motor/emociones"
@@ -17,6 +17,14 @@ import { dbDeSesion } from "@/lib/sesion"
 
 const enumDe = <T extends Record<string, string>>(e: T) =>
   z.enum(Object.values(e) as [string, ...string[]])
+
+/**
+ * Un enum que puede venir vacío. Los campos ocultos mandan `""` cuando no hay
+ * nada elegido, y `""` no es un valor del enum: sin esto, no elegir necesidad
+ * hacía fallar el envío entero.
+ */
+const enumOpcional = <T extends Record<string, string>>(e: T) =>
+  z.preprocess((v) => (v === "" || v === undefined ? undefined : v), enumDe(e).optional())
 
 const esquemaCheckin = z.object({
   emocion: enumDe(Emocion),
@@ -28,7 +36,7 @@ const esquemaMensaje = z.object({
   checkinId: z.string().min(1),
   texto: z.string().trim().min(1, "Escribe algo").max(4000),
   destino: enumDe(DestinoMensaje),
-  necesidad: z.string().optional(),
+  necesidad: enumOpcional(Necesidad),
   tonoMarcado: z.coerce.boolean().default(false),
   /** Guardado desde el umbral para decidir en frío (§6.3). */
   enFrio: z.coerce.boolean().default(false),
@@ -184,8 +192,10 @@ export async function posponerLectura(entregaId: string, ambosEnojados: boolean)
 const esquemaRespuesta = z.object({
   entregaId: z.string().min(1),
   texto: z.string().trim().max(4000).optional(),
-  emocionAdjunta: z.string().optional(),
-  cierre: z.string().optional(),
+  // Enums de verdad, no cadenas sueltas: un valor inventado llegaba hasta el
+  // `create` de Prisma y reventaba allí en vez de rebotar aquí.
+  emocionAdjunta: enumOpcional(Emocion),
+  cierre: enumOpcional(CierreHilo),
 })
 
 /**
@@ -367,7 +377,15 @@ export async function loQueHayParaMi() {
   let amortiguador: { texto: string; creadoEn: Date } | null = null
   if (presentacion.tipo === "amortiguado" && sesion.pareja) {
     const calido = await db.mensaje.findFirst({
-      where: { autorId: sesion.pareja.id, clase: ClaseMensaje.PRESENCIA },
+      where: {
+        autorId: sesion.pareja.id,
+        clase: ClaseMensaje.PRESENCIA,
+        // Solo lo que de verdad salió hacia mí. Sin esto, el amortiguador podía
+        // sacar un mensaje que ella escribió "solo para mí" y enseñármelo: un
+        // apunte privado suyo convertido en consuelo mío.
+        destino: { not: DestinoMensaje.SOLO_PARA_MI },
+        eliminadoEn: null,
+      },
       orderBy: { creadoEn: "desc" },
     })
     if (calido) amortiguador = { texto: calido.texto, creadoEn: calido.creadoEn }

@@ -2,9 +2,23 @@ import { PrismaPg } from "@prisma/adapter-pg"
 import { PrismaClient } from "@/generated/prisma/client"
 
 /**
- * Cliente de Prisma sin filtrar. Solo puede importarse desde este archivo
- * y desde la autenticación, que todavía no sabe a qué vínculo pertenece nadie.
- * Cualquier otro uso es un fallo de revisión (D41).
+ * Cliente de Prisma sin filtrar (D41).
+ *
+ * Solo pueden importarlo los módulos que trabajan **antes o por encima** de un
+ * vínculo, donde el cliente acotado no sirve porque todavía no hay a qué
+ * acotarse. La lista está en `MODULOS_SIN_VINCULO` (`lib/aislamiento.test.ts`)
+ * y una prueba falla si alguien se añade a ella sin darse cuenta:
+ *
+ * - `auth.ts` autentica: al entrar aún no se sabe de quién es nadie.
+ * - `sesion.ts` resuelve el vínculo; es quien construye el cliente acotado.
+ * - `acciones/cuenta.ts` registra y vincula: la membresía todavía no existe.
+ * - `app/vincular/page.tsx` es la pantalla previa a tener pareja.
+ * - `api/cron/despachar` recorre **todos** los vínculos, por definición.
+ * - `push.ts` opera sobre usuarios y suscripciones, que no cuelgan de vínculo.
+ *
+ * En cualquier otro sitio es un fallo: si conoces el vínculo, usa
+ * `dbDelVinculo` y deja que el filtro lo ponga él. Escribir `where:
+ * { vinculoId }` a mano funciona hasta el día en que alguien lo borra.
  */
 const globalParaPrisma = globalThis as unknown as { prisma?: PrismaClient }
 

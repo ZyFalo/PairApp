@@ -1,5 +1,6 @@
 "use server"
 
+import { DateTime } from "luxon"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import type { FranjaDia } from "@/generated/prisma/enums"
@@ -55,7 +56,10 @@ const esquemaEvento = z.object({
   titulo: z.string().trim().min(1, "Falta el título").max(120),
   inicio: z.string().min(1, "Falta la fecha"),
   tipo: z.string().default("cita"),
-  esDePareja: z.coerce.boolean().default(true),
+  // El checkbox desmarcado no viaja en el FormData, así que `coerce.boolean()`
+  // sobre `undefined` daba `false`… pero `.default(true)` lo pisaba y todo plan
+  // acababa siendo de los dos. Se lee la presencia de la casilla, no su valor.
+  esDePareja: z.preprocess((v) => v === "true", z.boolean()),
   notas: z.string().trim().max(2000).optional(),
   avisoHoras: z.coerce.number().int().min(0).max(720).optional(),
 })
@@ -75,7 +79,11 @@ export async function crearEvento(_previo: Resultado, datos: FormData): Promise<
       creadorId: sesion.usuarioId,
       titulo,
       tipo,
-      inicio: new Date(inicio),
+      // `datetime-local` da "2026-08-05T21:00" sin zona. `new Date()` lo leería
+      // en la del servidor —UTC en producción—, así que un plan a las nueve de
+      // la noche acababa siendo a las cuatro de la tarde. Se ancla a la zona de
+      // quien lo escribe, que es la que tenía en la cabeza al teclearlo.
+      inicio: DateTime.fromISO(inicio, { zone: sesion.zonaHoraria }).toJSDate(),
       esDePareja,
       notas: notas || null,
       avisoHoras: avisoHoras || null,

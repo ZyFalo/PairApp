@@ -75,7 +75,11 @@ export default async function PaginaHoy() {
   // que lleva doce horas esperando decisión pesa más que un check-in nuevo (§6.3).
   if (enFrio[0]) {
     return (
+      // `key` con el id: sin él, React reutiliza el componente entre dos
+      // revisiones seguidas y el textarea conserva el texto del mensaje
+      // anterior. Enviarías uno con las palabras de otro.
       <RevisionEnFrio
+        key={enFrio[0].id}
         mensajeId={enFrio[0].id}
         texto={enFrio[0].texto}
         emocion={enFrio[0].emocion}
