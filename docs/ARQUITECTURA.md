@@ -205,6 +205,23 @@ lib/estilo.test.ts    Falla si se cuela un emoji en cualquier .ts o .tsx
 Las tres últimas son **invariantes**, no pruebas de una función: existen porque
 son reglas fáciles de romper sin darse cuenta y difíciles de ver en una revisión.
 
+### Probar a mano lo que depende del reloj
+
+Media app depende del tiempo: la revisión en frío tarda doce horas, retirar un
+envío son dos minutos, un check-in caduca a las ocho. Sin ayuda, probarla entera
+significa esperar o escribir SQL — y lo que cuesta probar, no se prueba.
+
+```bash
+pnpm db:escenario              # lista los casos
+pnpm db:escenario frio         # monta uno y dice qué mirar
+pnpm db:escenario limpio       # deja la semilla como estaba
+```
+
+Cada caso limpia lo suyo antes de montarse, así que se pueden encadenar. El de
+los 11:11 **se niega a funcionar** fuera de los minutos :11 a :15 de cualquier
+hora, y explica por qué: cambiar la zona horaria mueve la hora pero nunca el
+minuto. Fingir que funciona habría sido peor que no tenerlo.
+
 **Antes de dar algo por terminado:**
 
 ```bash
