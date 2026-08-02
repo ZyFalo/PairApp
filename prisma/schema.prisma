@@ -148,6 +148,7 @@ model Vinculo {
   eventos       Evento[]
   dedicatorias  Dedicatoria[]
   ciclos        Ciclo[]
+  adjuntos      Adjunto[]
   suscripciones SuscripcionPush[]
 
   @@map("vinculo")
@@ -247,6 +248,7 @@ model Mensaje {
   vinculo  Vinculo   @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
   checkin  Checkin?  @relation(fields: [checkinId], references: [id], onDelete: SetNull)
   entrega  Entrega?
+  adjunto  Adjunto?
   guardados Guardado[]
 
   @@index([vinculoId, autorId, creadoEn])
@@ -306,6 +308,38 @@ model Respuesta {
 
   @@index([vinculoId])
   @@map("respuesta")
+}
+
+/// Qué se puede adjuntar a un mensaje (fase 2).
+enum TipoAdjunto {
+  IMAGEN
+  AUDIO
+}
+
+/// Una foto o una nota de voz dentro de un mensaje (fase 2).
+///
+/// Uno por mensaje a propósito: esto es una carta, no una galería. Poder
+/// mandar doce fotos convertiría el gesto en otra cosa.
+///
+/// El archivo vive en Cloudinary, no aquí. Se guarda `publicId` además de la
+/// URL porque sin él no se puede borrar de allí cuando se elimina el mensaje,
+/// y un archivo huérfano en la nube es un archivo que nadie sabe que existe.
+model Adjunto {
+  id        String      @id @default(cuid())
+  vinculoId String
+  mensajeId String      @unique
+  tipo      TipoAdjunto
+  url       String      @db.Text
+  publicId  String
+  /// Solo en audio: cuánto dura, para pintar el reproductor sin descargarlo.
+  segundos  Int?
+  creadoEn  DateTime    @default(now())
+
+  vinculo Vinculo @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
+  mensaje Mensaje @relation(fields: [mensajeId], references: [id], onDelete: Cascade)
+
+  @@index([vinculoId])
+  @@map("adjunto")
 }
 
 /// El cofre: mensajes que quien los recibió decidió conservar (§3.2.2).

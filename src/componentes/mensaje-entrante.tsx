@@ -4,6 +4,7 @@ import { RiHeart3Line, RiMoonClearLine, RiPauseCircleLine, RiQuillPenLine } from
 import { AnimatePresence, motion } from "motion/react"
 import { useRouter } from "next/navigation"
 import { useActionState, useEffect, useState } from "react"
+import { type DatosAdjunto, VistaAdjunto } from "@/componentes/adjunto"
 import {
   Apunte,
   Aviso,
@@ -42,6 +43,7 @@ type Props = {
   esPresencia: boolean
   presentacion: Presentacion
   amortiguador: { texto: string; creadoEn: string } | null
+  adjunto: DatosAdjunto | null
 }
 
 const SUAVE = { duration: 0.6, ease: [0.16, 1, 0.3, 1] as const }
@@ -233,6 +235,7 @@ function Lectura({
   necesidad,
   tonoMarcado,
   esPresencia,
+  adjunto,
   onResponder,
 }: Props & { onResponder: () => void }) {
   const router = useRouter()
@@ -266,8 +269,10 @@ function Lectura({
         animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
         transition={{ duration: 0.95, ease: [0.16, 1, 0.3, 1] }}
       >
-        <Tarjeta alzada className="px-6 py-7">
+        <Tarjeta alzada className="space-y-4 px-6 py-7">
           <TextoDeCarta>{texto}</TextoDeCarta>
+          {/* Debajo del texto, nunca en su lugar: lo que dice sigue mandando */}
+          {adjunto && <VistaAdjunto adjunto={adjunto} alt={`Lo que te mandó ${nombreAutor}`} />}
         </Tarjeta>
       </motion.div>
 

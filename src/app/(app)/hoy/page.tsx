@@ -48,6 +48,15 @@ export default async function PaginaHoy() {
         tonoMarcado={pendiente.mensaje.tonoMarcado}
         esPresencia={pendiente.mensaje.clase === ClaseMensaje.PRESENCIA}
         presentacion={pendiente.presentacion}
+        adjunto={
+          pendiente.mensaje.adjunto
+            ? {
+                tipo: pendiente.mensaje.adjunto.tipo,
+                url: pendiente.mensaje.adjunto.url,
+                segundos: pendiente.mensaje.adjunto.segundos,
+              }
+            : null
+        }
         amortiguador={
           pendiente.amortiguador
             ? {

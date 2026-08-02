@@ -345,7 +345,7 @@ export async function loQueHayParaMi() {
       OR: [{ pospuestaHasta: null }, { pospuestaHasta: { lte: ahora } }],
     },
     orderBy: { entregadaEn: "asc" },
-    include: { mensaje: true },
+    include: { mensaje: { include: { adjunto: true } } },
   })
   if (!pendiente) return null
 
