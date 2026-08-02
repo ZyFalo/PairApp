@@ -241,7 +241,12 @@ model Entrega {
   necesitaRatoEn DateTime?
   /// Mensaje cálido que se puso delante antes de abrir este (RF-3.0.7).
   amortiguadoConId String?
-  recordatorioEn DateTime?
+  /// Hasta cuándo la app deja de insistir con este mensaje (RF-3.0.11).
+  ///
+  /// Aplazar no es marcarlo como visto: el mensaje sigue sin leer y vuelve
+  /// solo cuando pasa la hora. Sin este campo, "ahora no puedo" se comería el
+  /// mensaje en silencio, que es exactamente lo que la app existe para evitar.
+  pospuestaHasta DateTime?
 
   vinculo   Vinculo    @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
   mensaje   Mensaje    @relation(fields: [mensajeId], references: [id], onDelete: Cascade)

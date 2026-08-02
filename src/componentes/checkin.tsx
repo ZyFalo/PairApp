@@ -1,30 +1,31 @@
 "use client"
 
+import { RiArrowGoBackLine } from "@remixicon/react"
 import { AnimatePresence, motion } from "motion/react"
 import { useActionState, useState } from "react"
 import { Apunte, Aviso, Boton } from "@/componentes/base"
-import type { Emocion, GrupoEmocion } from "@/generated/prisma/enums"
+import { COLOR_GRUPO, ESTILO_GRUPO, ICONO_EMOCION } from "@/componentes/iconos"
+import type { Emocion, Visibilidad } from "@/generated/prisma/enums"
 import { registrarCheckin } from "@/lib/acciones/bucle"
-import { EMOCIONES, etiquetaDe, ficha, ORDEN_GRUPOS, TITULO_GRUPO } from "@/lib/motor/emociones"
+import {
+  EMOCIONES,
+  ETIQUETA_VISIBILIDAD,
+  etiquetaDe,
+  grupoDe,
+  ORDEN_GRUPOS,
+  TITULO_GRUPO,
+} from "@/lib/motor/emociones"
 import { Compositor } from "./compositor"
 
-/** Cada familia tiene su propia temperatura de color, ninguna en alarma (§M1.1.2). */
-const ESTILO_GRUPO: Record<GrupoEmocion, { fondo: string; borde: string; punto: string }> = {
-  ESTOY_CONTIGO: {
-    fondo: "bg-[var(--color-contigo-fondo)]",
-    borde: "border-[var(--color-contigo-borde)]",
-    punto: "bg-[var(--color-contigo)]",
-  },
-  ME_FALTA_ALGO: {
-    fondo: "bg-[var(--color-falta-fondo)]",
-    borde: "border-[var(--color-falta-borde)]",
-    punto: "bg-[var(--color-falta)]",
-  },
-  ALGO_PASO: {
-    fondo: "bg-[var(--color-paso-fondo)]",
-    borde: "border-[var(--color-paso-borde)]",
-    punto: "bg-[var(--color-paso)]",
-  },
+/**
+ * Opciones de visibilidad según la emoción (RF-1.3). Desde las cálidas no se
+ * ofrece "sin detalle": avisar de que estás bien pero no decir de qué no tiene
+ * ningún sentido, y una opción que nadie usa es ruido.
+ */
+function visibilidadesDe(emocion: Emocion): Visibilidad[] {
+  return grupoDe(emocion) === "ESTOY_CONTIGO"
+    ? ["COMPLETO", "PRIVADO"]
+    : ["COMPLETO", "SOLO_COLOR", "PRIVADO"]
 }
 
 /**
@@ -43,11 +44,25 @@ export function Checkin({
 }) {
   const [estado, accion, pendiente] = useActionState(registrarCheckin, {})
   const [intensidad, setIntensidad] = useState(3)
+  const [visibilidad, setVisibilidad] = useState<Visibilidad>("COMPLETO")
   const [elegida, setElegida] = useState<Emocion | null>(null)
 
   // Tras registrar, se ofrece dejar algo. Nunca antes: el mensaje es opcional.
   if (estado.checkinId && elegida) {
-    return <Compositor checkinId={estado.checkinId} emocion={elegida} nombrePareja={nombrePareja} />
+    return (
+      <Compositor
+        checkinId={estado.checkinId}
+        emocion={elegida}
+        intensidad={intensidad}
+        nombrePareja={nombrePareja}
+      />
+    )
+  }
+
+  /** Al cambiar de emoción, una visibilidad que ya no aplica vuelve a la normal. */
+  function elegir(emocion: Emocion) {
+    setElegida(emocion)
+    if (!visibilidadesDe(emocion).includes(visibilidad)) setVisibilidad("COMPLETO")
   }
 
   return (
@@ -64,6 +79,7 @@ export function Checkin({
       <form action={accion} className="space-y-5">
         <input type="hidden" name="intensidad" value={intensidad} />
         <input type="hidden" name="emocion" value={elegida ?? ""} />
+        <input type="hidden" name="visibilidad" value={visibilidad} />
 
         {ORDEN_GRUPOS.map((grupo, indiceGrupo) => {
           const estilo = ESTILO_GRUPO[grupo]
@@ -89,13 +105,15 @@ export function Checkin({
               <div className="grid grid-cols-3 gap-2">
                 {EMOCIONES.filter((f) => f.grupo === grupo).map((f) => {
                   const activa = elegida === f.emocion
+                  const Icono = ICONO_EMOCION[f.emocion]
                   return (
                     <motion.button
                       key={f.emocion}
                       type="button"
-                      onClick={() => setElegida(f.emocion)}
+                      onClick={() => elegir(f.emocion)}
                       whileTap={{ scale: 0.94 }}
-                      className={`relative flex flex-col items-center gap-1.5 rounded-[var(--radius-suave)] px-2 py-3.5 text-[11.5px] font-medium leading-tight transition-all duration-300 ${
+                      aria-pressed={activa}
+                      className={`relative flex flex-col items-center gap-2 rounded-[var(--radius-suave)] px-2 py-3.5 text-[11.5px] font-medium leading-tight transition-all duration-300 ${
                         activa
                           ? "bg-[var(--color-papel-alto)] text-[var(--color-tinta)] shadow-[var(--sombra-alzada)]"
                           : "bg-[var(--color-papel)]/55 text-[var(--color-tinta-suave)] hover:bg-[var(--color-papel)]"
@@ -108,7 +126,10 @@ export function Checkin({
                           className="absolute inset-0 rounded-[var(--radius-suave)] ring-2 ring-[var(--color-acento)]"
                         />
                       )}
-                      <span className="text-[23px] leading-none">{f.icono}</span>
+                      <Icono
+                        size={22}
+                        className={`relative ${activa ? "text-[var(--color-acento)]" : COLOR_GRUPO[grupo]}`}
+                      />
                       <span className="relative">{etiquetaDe(f.emocion, genero)}</span>
                     </motion.button>
                   )
@@ -118,7 +139,8 @@ export function Checkin({
           )
         })}
 
-        {/* La intensidad no se pregunta: aparece solo si la buscas (RF-1.1.5) */}
+        {/* Ni la intensidad ni la visibilidad se preguntan: aparecen solo si las
+            buscas (RF-1.1.5). La maquinaria es invisible hasta que hace falta. */}
         <AnimatePresence>
           {elegida && (
             <motion.div
@@ -128,22 +150,52 @@ export function Checkin({
               transition={{ duration: 0.4, ease: [0.22, 0.61, 0.36, 1] }}
               className="overflow-hidden"
             >
-              <div className="space-y-2.5 pt-1">
-                <div className="flex items-center justify-between">
-                  <Apunte>Intensidad</Apunte>
-                  <span className="text-[13px] tabular-nums text-[var(--color-tinta-suave)]">
-                    {intensidad} de 5
-                  </span>
+              <div className="space-y-4 pt-1">
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <Apunte>Intensidad</Apunte>
+                    <span className="text-[13px] tabular-nums text-[var(--color-tinta-suave)]">
+                      {intensidad} de 5
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={1}
+                    max={5}
+                    value={intensidad}
+                    onChange={(e) => setIntensidad(Number(e.target.value))}
+                    className="w-full"
+                    aria-label="Intensidad"
+                  />
                 </div>
-                <input
-                  type="range"
-                  min={1}
-                  max={5}
-                  value={intensidad}
-                  onChange={(e) => setIntensidad(Number(e.target.value))}
-                  className="w-full"
-                  aria-label="Intensidad"
-                />
+
+                {nombrePareja && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Apunte>Quién lo ve</Apunte>
+                      <span className="text-[12.5px] text-[var(--color-tinta-tenue)]">
+                        {ETIQUETA_VISIBILIDAD[visibilidad].explica}
+                      </span>
+                    </div>
+                    <div className="flex gap-1.5">
+                      {visibilidadesDe(elegida).map((v) => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() => setVisibilidad(v)}
+                          aria-pressed={visibilidad === v}
+                          className={`pulsable flex-1 rounded-[var(--radius-pildora)] px-2 py-1.5 text-[12.5px] ${
+                            visibilidad === v
+                              ? "bg-[var(--color-lienzo-hondo)] font-medium text-[var(--color-tinta)]"
+                              : "text-[var(--color-tinta-tenue)] hover:text-[var(--color-tinta-suave)]"
+                          }`}
+                        >
+                          {ETIQUETA_VISIBILIDAD[v].corta}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
@@ -165,11 +217,11 @@ export function Checkin({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
-            onClick={() => setElegida(ultimaEmocion)}
-            className="pulsable w-full text-center text-[13px] text-[var(--color-tinta-tenue)]"
+            onClick={() => elegir(ultimaEmocion)}
+            className="pulsable flex w-full items-center justify-center gap-1.5 text-[13px] text-[var(--color-tinta-tenue)] hover:text-[var(--color-tinta-suave)]"
           >
-            ↺ Igual que la última vez · {ficha(ultimaEmocion).icono}{" "}
-            {etiquetaDe(ultimaEmocion, genero)}
+            <RiArrowGoBackLine size={14} />
+            Igual que la última vez · {etiquetaDe(ultimaEmocion, genero)}
           </motion.button>
         )}
       </form>

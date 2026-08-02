@@ -1,7 +1,8 @@
 "use client"
 
+import { RiBookmarkFill, RiBookmarkLine, RiInboxUnarchiveLine } from "@remixicon/react"
 import { useState, useTransition } from "react"
-import { alternarGuardado } from "@/lib/acciones/bucle"
+import { alternarGuardado, retirarGuardado } from "@/lib/acciones/bucle"
 
 /**
  * Guardar un mensaje en el cofre. La señal solo existe en positivo: no hay
@@ -14,17 +15,41 @@ export function BotonGuardar({ mensajeId, guardado }: { mensajeId: string; guard
   return (
     <button
       type="button"
+      aria-pressed={activo}
       onClick={() => {
         setActivo(!activo)
         empezar(() => {
           void alternarGuardado(mensajeId)
         })
       }}
-      className={`text-[13px] transition-colors duration-200 ${
-        activo ? "text-[var(--color-acento)]" : "text-[var(--color-tinta-tenue)]"
+      className={`pulsable inline-flex items-center gap-1.5 text-[13px] ${
+        activo
+          ? "text-[var(--color-acento)]"
+          : "text-[var(--color-tinta-tenue)] hover:text-[var(--color-tinta-suave)]"
       }`}
     >
-      {activo ? "♥ Guardado" : "♡ Guardar"}
+      {activo ? <RiBookmarkFill size={15} /> : <RiBookmarkLine size={15} />}
+      {activo ? "Guardado" : "Guardar"}
+    </button>
+  )
+}
+
+/**
+ * Recuperar un mensaje que dejaste "para cuando le sirva" y todavía no ha
+ * salido (RF-2.2.4). Vuelve a tus apuntes: arrepentirse antes de que llegue
+ * tiene que ser posible, o guardar da miedo.
+ */
+export function BotonRetirar({ mensajeId }: { mensajeId: string }) {
+  const [, empezar] = useTransition()
+
+  return (
+    <button
+      type="button"
+      onClick={() => empezar(() => void retirarGuardado(mensajeId))}
+      className="pulsable inline-flex items-center gap-1.5 text-[13px] text-[var(--color-tinta-tenue)] hover:text-[var(--color-acento)]"
+    >
+      <RiInboxUnarchiveLine size={15} />
+      Retirarlo
     </button>
   )
 }

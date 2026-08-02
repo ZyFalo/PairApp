@@ -68,3 +68,22 @@ export function formatoLegible(momentoUtc: Date, zonaHoraria: string): string {
     .setLocale("es")
     .toFormat("d 'de' LLLL, HH:mm")
 }
+
+/**
+ * Fecha de un plan, dicha como la diría una persona: "Hoy, 21:00".
+ *
+ * Es una fecha, no una cuenta atrás: dice cuándo es, nunca cuánto falta
+ * (RF-3.0.13.1). "Faltan 3 días" mete prisa; "el 5 de agosto" solo informa.
+ */
+export function diaRelativo(momentoUtc: Date, zonaHoraria: string, ahoraUtc: Date): string {
+  const cuando = DateTime.fromJSDate(momentoUtc, { zone: "utc" })
+    .setZone(zonaHoraria)
+    .setLocale("es")
+  const hoy = DateTime.fromJSDate(ahoraUtc, { zone: "utc" }).setZone(zonaHoraria).startOf("day")
+  const dias = cuando.startOf("day").diff(hoy, "days").days
+
+  if (dias === 0) return `Hoy, ${cuando.toFormat("HH:mm")}`
+  if (dias === 1) return `Mañana, ${cuando.toFormat("HH:mm")}`
+  if (dias > 1 && dias < 7) return cuando.toFormat("cccc, HH:mm")
+  return cuando.toFormat("d 'de' LLLL, HH:mm")
+}

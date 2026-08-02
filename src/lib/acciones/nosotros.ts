@@ -188,3 +188,36 @@ export async function registrarCiclo(_previo: Resultado, datos: FormData): Promi
   revalidatePath("/nosotros")
   return { ok: true }
 }
+
+/**
+ * Cambiar qué se comparte de un periodo ya registrado (RF-5.3).
+ *
+ * Poder cerrar lo que ya abriste es parte de decidir de verdad: sin esto, la
+ * primera elección sería para siempre, y eso empuja a no compartir nada.
+ */
+export async function cambiarVisibilidadCiclo(
+  _previo: Resultado,
+  datos: FormData,
+): Promise<Resultado> {
+  const analizado = z
+    .object({
+      cicloId: z.string().min(1),
+      nivelVisibilidad: z.enum(["NADA", "SOLO_FECHAS", "FECHAS_Y_NOTA"]),
+      notaParaPareja: z.string().trim().max(1000).optional(),
+    })
+    .safeParse(Object.fromEntries(datos))
+  if (!analizado.success) return { error: "No se pudo cambiar" }
+
+  const { db, sesion } = await dbDeSesion()
+  await db.ciclo.updateMany({
+    where: { id: analizado.data.cicloId, usuarioId: sesion.usuarioId },
+    data: {
+      nivelVisibilidad: analizado.data.nivelVisibilidad,
+      notaParaPareja: analizado.data.notaParaPareja || null,
+    },
+  })
+
+  revalidatePath("/yo")
+  revalidatePath("/nosotros")
+  return { ok: true }
+}

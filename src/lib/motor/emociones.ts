@@ -1,10 +1,20 @@
-import { ClaseMensaje, Emocion, GrupoEmocion, Necesidad } from "@/generated/prisma/enums"
+import {
+  CierreHilo,
+  ClaseMensaje,
+  Emocion,
+  GrupoEmocion,
+  Necesidad,
+  Visibilidad,
+} from "@/generated/prisma/enums"
 
-/** Cómo se presenta cada emoción en la interfaz. El vocabulario es fijo (RF-1.1.8). */
+/**
+ * Cómo se presenta cada emoción en la interfaz. El vocabulario es fijo (RF-1.1.8).
+ * El icono no vive aquí: este archivo es lógica pura y no sabe de React
+ * (ver `componentes/iconos.tsx`).
+ */
 export type FichaEmocion = {
   emocion: Emocion
   grupo: GrupoEmocion
-  icono: string
   /** Etiqueta en masculino y femenino: la interfaz concuerda con el género del perfil (RF-1.1.9). */
   etiqueta: { masculino: string; femenino: string; neutro: string }
 }
@@ -14,32 +24,26 @@ export const EMOCIONES: FichaEmocion[] = [
   {
     emocion: Emocion.BIEN,
     grupo: GrupoEmocion.ESTOY_CONTIGO,
-    icono: "🌤",
     etiqueta: { masculino: "Bien", femenino: "Bien", neutro: "Bien" },
   },
   {
     emocion: Emocion.AGRADECIDO,
     grupo: GrupoEmocion.ESTOY_CONTIGO,
-    icono: "🙏",
     etiqueta: { masculino: "Agradecido", femenino: "Agradecida", neutro: "Con gratitud" },
   },
   {
     emocion: Emocion.TE_EXTRANO,
     grupo: GrupoEmocion.ESTOY_CONTIGO,
-    icono: "💭",
     etiqueta: { masculino: "Te extraño", femenino: "Te extraño", neutro: "Te extraño" },
   },
   {
     emocion: Emocion.TRISTE,
     grupo: GrupoEmocion.ME_FALTA_ALGO,
-    icono: "😢",
     etiqueta: { masculino: "Triste", femenino: "Triste", neutro: "Triste" },
   },
   {
     emocion: Emocion.ME_SIENTO_SOLO,
     grupo: GrupoEmocion.ME_FALTA_ALGO,
-    // Cara que se desvanece: "estás aquí, pero no te siento" (RF-1.1)
-    icono: "🫥",
     etiqueta: {
       masculino: "Me siento solo",
       femenino: "Me siento sola",
@@ -49,25 +53,21 @@ export const EMOCIONES: FichaEmocion[] = [
   {
     emocion: Emocion.PREOCUPADO,
     grupo: GrupoEmocion.ME_FALTA_ALGO,
-    icono: "😟",
     etiqueta: { masculino: "Preocupado", femenino: "Preocupada", neutro: "Con preocupación" },
   },
   {
     emocion: Emocion.INCOMODO,
     grupo: GrupoEmocion.ALGO_PASO,
-    icono: "😐",
     etiqueta: { masculino: "Incómodo", femenino: "Incómoda", neutro: "Con incomodidad" },
   },
   {
     emocion: Emocion.APENADO,
     grupo: GrupoEmocion.ALGO_PASO,
-    icono: "😔",
     etiqueta: { masculino: "Apenado", femenino: "Apenada", neutro: "Con pena" },
   },
   {
     emocion: Emocion.ENOJADO,
     grupo: GrupoEmocion.ALGO_PASO,
-    icono: "😠",
     etiqueta: { masculino: "Enojado", femenino: "Enojada", neutro: "Con enojo" },
   },
 ]
@@ -176,3 +176,51 @@ export const ETIQUETA_NECESIDAD: Record<Necesidad, string> = {
   [Necesidad.SOLUCIONES]: "soluciones",
   [Necesidad.NO_SE]: "no sé",
 }
+
+/** Orden fijo de las necesidades en la interfaz. */
+export const NECESIDADES: Necesidad[] = [
+  Necesidad.ESCUCHA,
+  Necesidad.ESPACIO,
+  Necesidad.DISTRACCION,
+  Necesidad.CONTACTO,
+  Necesidad.SOLUCIONES,
+  Necesidad.NO_SE,
+]
+
+/**
+ * Si desde esta emoción tiene sentido preguntar qué necesito (RF-1.2).
+ * Solo cuando algo va mal: nadie "necesita" nada por estar bien.
+ *
+ * Ojo con la diferencia respecto a `necesidadPorDefecto`: apenado entra aquí
+ * —se puede pedir espacio desde la pena— pero no trae ninguna marcada, porque
+ * sugerirle "escucha" a quien se siente culpable es ponerle palabras.
+ */
+export function admiteNecesidad(emocion: Emocion): boolean {
+  return grupoDe(emocion) !== GrupoEmocion.ESTOY_CONTIGO
+}
+
+/**
+ * Cuánto ve la otra persona de un check-in (RF-1.3). Registrar sin contarlo es
+ * un uso legítimo: el historial propio existe aunque no se comparta (RF-1.5).
+ */
+export const ETIQUETA_VISIBILIDAD: Record<Visibilidad, { corta: string; explica: string }> = {
+  [Visibilidad.COMPLETO]: { corta: "Lo ve", explica: "Verá cómo estás" },
+  [Visibilidad.SOLO_COLOR]: { corta: "Sin detalle", explica: "Sabrá que no estás bien, nada más" },
+  [Visibilidad.PRIVADO]: { corta: "Solo yo", explica: "No verá nada" },
+}
+
+/** Cómo se lee cada respuesta de un toque (§3.3). */
+export const ETIQUETA_CIERRE: Record<CierreHilo, string> = {
+  [CierreHilo.GRACIAS]: "Gracias",
+  [CierreHilo.TE_QUIERO]: "Te quiero",
+  [CierreHilo.HABLARLO_MAS]: "Quisiera hablarlo un poco más",
+  [CierreHilo.HABLAMOS_LUEGO]: "Hablamos luego",
+}
+
+/** Orden fijo de las respuestas de un toque. */
+export const CIERRES: CierreHilo[] = [
+  CierreHilo.GRACIAS,
+  CierreHilo.TE_QUIERO,
+  CierreHilo.HABLARLO_MAS,
+  CierreHilo.HABLAMOS_LUEGO,
+]

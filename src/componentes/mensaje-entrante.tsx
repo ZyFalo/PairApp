@@ -1,13 +1,35 @@
 "use client"
 
-import { RiHeart3Line, RiPauseCircleLine, RiQuillPenLine } from "@remixicon/react"
+import { RiHeart3Line, RiMoonClearLine, RiPauseCircleLine, RiQuillPenLine } from "@remixicon/react"
 import { AnimatePresence, motion } from "motion/react"
 import { useRouter } from "next/navigation"
-import { useActionState, useState } from "react"
-import { Apunte, Aviso, Boton, Separador, Tarjeta, TextoDeCarta } from "@/componentes/base"
-import type { Emocion } from "@/generated/prisma/enums"
-import { avisarNecesitoUnRato, marcarVisto, responder } from "@/lib/acciones/bucle"
-import { ETIQUETA_NECESIDAD, esDificilDeResponder, etiquetaDe, ficha } from "@/lib/motor/emociones"
+import { useActionState, useEffect, useState } from "react"
+import {
+  Apunte,
+  Aviso,
+  Boton,
+  Pastilla,
+  Separador,
+  Tarjeta,
+  TextoDeCarta,
+} from "@/componentes/base"
+import { COLOR_GRUPO, ICONO_CIERRE, ICONO_EMOCION, ICONO_NECESIDAD } from "@/componentes/iconos"
+import type { Emocion, Necesidad } from "@/generated/prisma/enums"
+import { avisarNecesitoUnRato, marcarVisto, posponerLectura, responder } from "@/lib/acciones/bucle"
+import {
+  CIERRES,
+  ETIQUETA_CIERRE,
+  ETIQUETA_NECESIDAD,
+  esDificilDeResponder,
+  etiquetaDe,
+  grupoDe,
+} from "@/lib/motor/emociones"
+
+/** Cómo decidió la matriz que hay que presentar este mensaje (§3.0.15). */
+export type Presentacion =
+  | { tipo: "directo" }
+  | { tipo: "amortiguado" }
+  | { tipo: "nombrar_y_elegir"; ambosEnojados: boolean }
 
 type Props = {
   entregaId: string
@@ -17,24 +39,41 @@ type Props = {
   necesidad: string | null
   tonoMarcado: boolean
   esPresencia: boolean
+  presentacion: Presentacion
   amortiguador: { texto: string; creadoEn: string } | null
-  ambosEnojados: boolean
 }
 
 const SUAVE = { duration: 0.6, ease: [0.16, 1, 0.3, 1] as const }
 
+/** Los cuatro momentos de recibir algo, en orden. */
+type Fase = "nombrar" | "amortiguador" | "leer" | "responder"
+
+/** Fase inicial según lo que decidió el motor: nunca se salta una celda. */
+function faseInicial(presentacion: Presentacion): Fase {
+  if (presentacion.tipo === "nombrar_y_elegir") return "nombrar"
+  if (presentacion.tipo === "amortiguado") return "amortiguador"
+  return "leer"
+}
+
 /**
- * Recibir un mensaje: amortiguador si hace falta, lectura, y la pausa entre
- * leer y responder (§3.3).
+ * Recibir un mensaje: las tres presentaciones de la matriz, la lectura, y la
+ * pausa entre leer y responder (§3.3).
  */
 export function MensajeEntrante(props: Props) {
-  const [fase, setFase] = useState<"amortiguador" | "leer" | "responder">(
-    props.amortiguador ? "amortiguador" : "leer",
-  )
+  const [fase, setFase] = useState<Fase>(() => faseInicial(props.presentacion))
 
   return (
     <AnimatePresence mode="wait">
-      {fase === "amortiguador" && props.amortiguador ? (
+      {fase === "nombrar" && props.presentacion.tipo === "nombrar_y_elegir" ? (
+        <motion.div key="nombrar" exit={{ opacity: 0, y: -12 }} transition={SUAVE}>
+          <NombrarYElegir
+            entregaId={props.entregaId}
+            nombreAutor={props.nombreAutor}
+            ambosEnojados={props.presentacion.ambosEnojados}
+            onLeer={() => setFase("leer")}
+          />
+        </motion.div>
+      ) : fase === "amortiguador" && props.amortiguador ? (
         <motion.div key="amortiguador" exit={{ opacity: 0, y: -12 }} transition={SUAVE}>
           <Amortiguador
             nombreAutor={props.nombreAutor}
@@ -62,6 +101,76 @@ export function MensajeEntrante(props: Props) {
 }
 
 /**
+ * La tercera celda de la matriz (§3.0.15): quien recibe está en "algo pasó",
+ * y ahí el cariño no consuela — en enojo invalida, en pena aumenta la culpa.
+ *
+ * Así que no se amortigua ni se abre de golpe: se nombra el hecho y se deja
+ * elegir. Las dos opciones pesan lo mismo a propósito. Esperar no es fallar.
+ */
+function NombrarYElegir({
+  entregaId,
+  nombreAutor,
+  ambosEnojados,
+  onLeer,
+}: {
+  entregaId: string
+  nombreAutor: string
+  ambosEnojados: boolean
+  onLeer: () => void
+}) {
+  const router = useRouter()
+  const [ocupado, setOcupado] = useState(false)
+
+  async function esperar() {
+    setOcupado(true)
+    await posponerLectura(entregaId, ambosEnojados)
+    router.push("/hoy")
+  }
+
+  return (
+    <section className="space-y-6 pt-8">
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={SUAVE}
+        className="space-y-3 text-center"
+      >
+        <p className="carta text-[26px] leading-snug">
+          {ambosEnojados ? "Los dos están enojados." : `${nombreAutor} te escribió.`}
+        </p>
+        <Apunte>
+          {ambosEnojados ? "Nada de esto se va a ninguna parte." : "Tú eliges cuándo."}
+        </Apunte>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.45 }}
+        className="grid gap-2"
+      >
+        <Boton variante="suave" onClick={onLeer} disabled={ocupado}>
+          Leerlo ahora
+        </Boton>
+        <Boton variante="suave" onClick={esperar} disabled={ocupado}>
+          <span className="inline-flex items-center gap-2">
+            {ambosEnojados ? <RiMoonClearLine size={17} /> : <RiPauseCircleLine size={17} />}
+            {ambosEnojados ? "Mañana por la mañana" : "Más tarde"}
+          </span>
+        </Boton>
+      </motion.div>
+
+      {/* Sin cuenta atrás: un reloj corriendo convierte esperar en deuda (RF-3.0.13.1) */}
+      <p className="text-center text-[12.5px] text-[var(--color-tinta-tenue)]">
+        {ambosEnojados
+          ? "Dormir encima de esto suele ser lo que mejor funciona."
+          : "Sigue aquí cuando vuelvas."}
+      </p>
+    </section>
+  )
+}
+
+/**
  * Algo cálido de ella antes de abrir un mensaje difícil (RF-3.0.7).
  * No esconde nada: el mensaje está a un toque. Solo da un segundo para
  * acordarse de quién es la persona que escribió.
@@ -79,7 +188,7 @@ function Amortiguador({
 }) {
   return (
     <section className="space-y-5">
-      <Apunte>{nombreAutor} te escribió. Antes de abrirlo, algo que te dejó ella:</Apunte>
+      <Apunte>{nombreAutor} te escribió. Antes de abrirlo, algo que te dejó:</Apunte>
 
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.98, filter: "blur(6px)" }}
@@ -117,11 +226,11 @@ function Lectura({
   necesidad,
   tonoMarcado,
   esPresencia,
-  ambosEnojados,
   onResponder,
 }: Props & { onResponder: () => void }) {
   const router = useRouter()
-  const f = ficha(emocion)
+  const Icono = ICONO_EMOCION[emocion]
+  const IconoNecesidad = necesidad ? ICONO_NECESIDAD[necesidad as Necesidad] : null
 
   async function cerrarSinResponder() {
     await marcarVisto(entregaId)
@@ -135,14 +244,8 @@ function Lectura({
 
   return (
     <section className="space-y-5">
-      {ambosEnojados && (
-        <p className="carta text-center text-[19px] text-[var(--color-tinta-suave)]">
-          Los dos están enojados.
-        </p>
-      )}
-
       <div className="flex items-center gap-2.5">
-        <span className="text-[19px] leading-none">{f.icono}</span>
+        <Icono size={19} className={COLOR_GRUPO[grupoDe(emocion)]} />
         <span className="text-[13.5px] text-[var(--color-tinta-suave)]">
           {nombreAutor} · {etiquetaDe(emocion, "NEUTRO").toLowerCase()}
         </span>
@@ -161,7 +264,7 @@ function Lectura({
         </Tarjeta>
       </motion.div>
 
-      {necesidad && (
+      {necesidad && IconoNecesidad && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -169,8 +272,9 @@ function Lectura({
           className="flex items-center gap-2"
         >
           <Apunte>Necesita</Apunte>
-          <span className="rounded-[var(--radius-pildora)] bg-[var(--color-acento-tenue)] px-3 py-1 text-[13px] font-medium text-[var(--color-acento-hondo)]">
-            {ETIQUETA_NECESIDAD[necesidad as keyof typeof ETIQUETA_NECESIDAD]}
+          <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-pildora)] bg-[var(--color-acento-tenue)] px-3 py-1 text-[13px] font-medium text-[var(--color-acento-hondo)]">
+            <IconoNecesidad size={14} />
+            {ETIQUETA_NECESIDAD[necesidad as Necesidad]}
           </span>
         </motion.div>
       )}
@@ -210,13 +314,7 @@ function Lectura({
   )
 }
 
-const CIERRES = [
-  { valor: "GRACIAS", texto: "Gracias 💛" },
-  { valor: "TE_QUIERO", texto: "Te quiero" },
-  { valor: "HABLARLO_MAS", texto: "Quisiera hablarlo un poco más" },
-  { valor: "HABLAMOS_LUEGO", texto: "Hablamos luego" },
-] as const
-
+/** Las emociones que se pueden adjuntar a una respuesta (RF-3.18). */
 const EMOCIONES_ADJUNTAS: Emocion[] = ["APENADO", "INCOMODO", "TRISTE", "AGRADECIDO", "BIEN"]
 
 /** Responder, con la opción de adjuntar cómo me dejó el mensaje (RF-3.18). */
@@ -225,10 +323,13 @@ function FormularioRespuesta({ entregaId, onVolver }: Props & { onVolver: () => 
   const [estado, accion, pendiente] = useActionState(responder, {})
   const [emocionAdjunta, setEmocionAdjunta] = useState("")
 
-  if (estado.ok) {
-    router.push("/hoy")
-    router.refresh()
-  }
+  // Navegar es un efecto, no algo que ocurra mientras se pinta.
+  useEffect(() => {
+    if (estado.ok) {
+      router.push("/hoy")
+      router.refresh()
+    }
+  }, [estado.ok, router])
 
   return (
     <section className="space-y-4">
@@ -239,7 +340,9 @@ function FormularioRespuesta({ entregaId, onVolver }: Props & { onVolver: () => 
         <textarea
           name="texto"
           rows={5}
+          maxLength={4000}
           placeholder="Tu respuesta…"
+          aria-label="Tu respuesta"
           className="carta w-full resize-none rounded-[var(--radius-tarjeta)] border border-[var(--color-borde)] bg-[var(--color-papel)] p-5 text-[17px] leading-relaxed shadow-[inset_0_1px_2px_rgb(74_54_38_/_0.04)] outline-none transition-colors focus:border-[var(--color-acento-suave)]"
         />
 
@@ -247,20 +350,14 @@ function FormularioRespuesta({ entregaId, onVolver }: Props & { onVolver: () => 
           <Apunte>Y de paso, cómo me dejó (opcional)</Apunte>
           <div className="flex flex-wrap gap-2">
             {EMOCIONES_ADJUNTAS.map((e) => (
-              <motion.button
+              <Pastilla
                 key={e}
-                type="button"
-                whileTap={{ scale: 0.94 }}
+                Icono={ICONO_EMOCION[e]}
+                activa={emocionAdjunta === e}
                 onClick={() => setEmocionAdjunta(emocionAdjunta === e ? "" : e)}
-                className={`inline-flex items-center gap-1.5 rounded-[var(--radius-pildora)] px-3.5 py-2 text-[13px] font-medium transition-all duration-200 ${
-                  emocionAdjunta === e
-                    ? "bg-[var(--color-acento)] text-[#fffcf7] shadow-[var(--sombra-tinta)]"
-                    : "border border-[var(--color-borde)] bg-[var(--color-papel)] text-[var(--color-tinta-suave)]"
-                }`}
               >
-                <span className="text-[15px] leading-none">{ficha(e).icono}</span>
-                <span>{etiquetaDe(e, "NEUTRO")}</span>
-              </motion.button>
+                {etiquetaDe(e, "NEUTRO")}
+              </Pastilla>
             ))}
           </div>
         </div>
@@ -276,18 +373,22 @@ function FormularioRespuesta({ entregaId, onVolver }: Props & { onVolver: () => 
         <div className="space-y-2">
           <Apunte>O responde con un toque</Apunte>
           <div className="grid gap-2">
-            {CIERRES.map((c) => (
-              <button
-                key={c.valor}
-                type="submit"
-                name="cierre"
-                value={c.valor}
-                disabled={pendiente}
-                className="pulsable rounded-[var(--radius-suave)] border border-[var(--color-borde)] bg-[var(--color-papel)] px-4 py-3 text-[14px] text-[var(--color-tinta-suave)] hover:border-[var(--color-acento-suave)] hover:text-[var(--color-tinta)]"
-              >
-                {c.texto}
-              </button>
-            ))}
+            {CIERRES.map((c) => {
+              const Icono = ICONO_CIERRE[c]
+              return (
+                <button
+                  key={c}
+                  type="submit"
+                  name="cierre"
+                  value={c}
+                  disabled={pendiente}
+                  className="pulsable flex items-center gap-2.5 rounded-[var(--radius-suave)] border border-[var(--color-borde)] bg-[var(--color-papel)] px-4 py-3 text-[14px] text-[var(--color-tinta-suave)] hover:border-[var(--color-acento-suave)] hover:text-[var(--color-tinta)] disabled:opacity-40"
+                >
+                  <Icono size={16} className="text-[var(--color-acento-suave)]" />
+                  {ETIQUETA_CIERRE[c]}
+                </button>
+              )
+            })}
           </div>
         </div>
 

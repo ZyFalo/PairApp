@@ -1,5 +1,6 @@
 import Link from "next/link"
 import type { ComponentProps, ReactNode } from "react"
+import type { Icono } from "@/componentes/iconos"
 
 /**
  * Componentes propios en lugar de una librería: §8.2 pide identidad visual
@@ -108,9 +109,10 @@ export function Titulo({ children }: { children: ReactNode }) {
 }
 
 /** Encabezado de sección, discreto y en mayúsculas espaciadas. */
-export function Seccion({ children }: { children: ReactNode }) {
+export function Seccion({ children, Icono }: { children: ReactNode; Icono?: Icono }) {
   return (
-    <h2 className="text-[12px] font-medium uppercase tracking-[0.12em] text-[var(--color-tinta-tenue)]">
+    <h2 className="flex items-center gap-2 text-[12px] font-medium uppercase tracking-[0.12em] text-[var(--color-tinta-tenue)]">
+      {Icono && <Icono size={14} className="text-[var(--color-acento-suave)]" />}
       {children}
     </h2>
   )
@@ -122,9 +124,10 @@ export function Apunte({ children }: { children: ReactNode }) {
 }
 
 /** Cuando no hay nada que mostrar. "Nada" es una respuesta válida (RF-3.6). */
-export function Vacio({ children }: { children: ReactNode }) {
+export function Vacio({ children, Icono }: { children: ReactNode; Icono?: Icono }) {
   return (
-    <div className="rounded-[var(--radius-tarjeta)] border border-dashed border-[var(--color-borde)] px-6 py-10 text-center">
+    <div className="flex flex-col items-center gap-2.5 rounded-[var(--radius-tarjeta)] border border-dashed border-[var(--color-borde)] px-6 py-9 text-center">
+      {Icono && <Icono size={22} className="text-[var(--color-borde)]" />}
       <p className="text-[15px] text-[var(--color-tinta-tenue)]">{children}</p>
     </div>
   )
@@ -138,5 +141,59 @@ export function Separador() {
       <span className="size-1 rounded-full bg-[var(--color-borde)]" />
       <span className="h-px flex-1 bg-gradient-to-l from-transparent to-[var(--color-borde)]" />
     </div>
+  )
+}
+
+/**
+ * Pastilla seleccionable, con su icono. La usan las necesidades y las emociones
+ * que se adjuntan a una respuesta.
+ */
+export function Pastilla({
+  Icono,
+  activa,
+  children,
+  ...props
+}: ComponentProps<"button"> & { Icono?: Icono; activa?: boolean }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={activa}
+      className={`pulsable inline-flex items-center gap-1.5 rounded-[var(--radius-pildora)] px-3.5 py-2 text-[13px] font-medium ${
+        activa
+          ? "bg-[var(--color-acento)] text-[#fffcf7] shadow-[var(--sombra-tinta)]"
+          : "border border-[var(--color-borde)] bg-[var(--color-papel)] text-[var(--color-tinta-suave)] hover:border-[var(--color-acento-suave)]"
+      }`}
+      {...props}
+    >
+      {Icono && <Icono size={15} />}
+      {children}
+    </button>
+  )
+}
+
+/**
+ * Marca de estado, para decir dónde está algo sin gritarlo (§3.17).
+ * `viva` la enciende con el acento; apagada es un dato más, no una alerta.
+ */
+export function Insignia({
+  Icono,
+  children,
+  viva = false,
+}: {
+  Icono?: Icono
+  children: ReactNode
+  viva?: boolean
+}) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-[var(--radius-pildora)] px-2.5 py-1 text-[12px] font-medium ${
+        viva
+          ? "bg-[var(--color-acento-tenue)] text-[var(--color-acento-hondo)]"
+          : "bg-[var(--color-lienzo-hondo)] text-[var(--color-tinta-tenue)]"
+      }`}
+    >
+      {Icono && <Icono size={13} />}
+      {children}
+    </span>
   )
 }

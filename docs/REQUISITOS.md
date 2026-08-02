@@ -1291,6 +1291,10 @@ Cuatro pestañas, nada más:
 - **Movimiento:** transiciones suaves, nada rebota. La revelación de una cápsula merece una animación deliberada, casi ceremonial — es el momento clave de la app.
 - **Densidad:** mucho aire. Una acción principal por pantalla.
 
+**RF-8.2.2 Sin emojis en ninguna pantalla. Iconos de trazo, coloreados por familia.** Un emoji lo dibuja cada sistema operativo a su manera, no se puede teñir del color que le toca, y su registro gráfico —caras amarillas— choca con el papel y la tinta. Todos los iconos salen de un único archivo, y una prueba automática falla si alguno se cuela.
+
+**RF-8.2.3 Las nueve emociones se dibujan como clima, no como caras.** Es la traducción visual de §1.2: un estado de ánimo pasa, viene de fuera y no es culpa de nadie. Una cara enfadada señala a una persona; una tormenta solo describe el día. Las dos emociones que hablan de la otra persona —gratitud y añoranza— sí llevan manos y corazones, porque no describen mi clima sino el vínculo.
+
 ### 8.3 La mascota mensajera
 
 Toda la maquinaria interna (umbrales, amortiguadores, disparadores) necesita una cara amable, o la app se siente como un sistema que te administra. La mascota es esa cara.
@@ -1498,6 +1502,8 @@ Cuidado aquí: medir una relación es peligroso. Estas métricas son **privadas,
 | D39 | **TypeScript de punta a punta.** Next.js + React + Prisma + shadcn/ui, un solo servicio. Se descartó un backend Python separado: habría supuesto dos servicios, dos lenguajes y dos ORM contra la misma base de datos | 2026-08-01 |
 | D40 | **shadcn/ui con *tokens* personalizados antes de la primera pantalla** (`PLAN.md` §0.4). Aporta accesibilidad resuelta; su aspecto por defecto es incompatible con §8.2 y se cambia de entrada. Los componentes con carga emocional se escriben a mano | 2026-08-01 |
 | D41 | **Prisma nunca se usa crudo** (`PLAN.md` §0.1.1). Todo acceso pasa por un cliente extendido acotado al vínculo; R4 lo verifica con un test que intenta leer datos ajenos | 2026-08-01 |
+| D42 | **Cero emojis; iconos de trazo coloreados por familia** (RF-8.2.2). Las nueve emociones son clima, no caras (RF-8.2.3): un estado de ánimo no es un defecto de carácter, y una tormenta lo dice mejor que un ceño fruncido | 2026-08-02 |
+| D43 | **Aplazar leer no es haber leído** (RF-3.0.11). Un mensaje pospuesto desde "nombrar y elegir" guarda su hora de vuelta y sigue sin leer; el que se aplaza *después* de abrirlo sí queda visto, porque leerlo es un hecho que no se puede deshacer (RF-3.17.4) | 2026-08-02 |
 
 ### 12.2 Preguntas abiertas
 

@@ -20,3 +20,15 @@ export async function suscribirAPush(datos: { endpoint: string; p256dh: string; 
   })
   return { ok: true }
 }
+
+/**
+ * Deja de avisar en este dispositivo. Poder apagarlos es parte de que sean
+ * cómodos: unos avisos que no se pueden quitar acaban con la app desinstalada.
+ */
+export async function desuscribirDePush(endpoint: string) {
+  if (!endpoint) return { error: "Falta el dispositivo" }
+
+  const { db, sesion } = await dbDeSesion()
+  await db.suscripcionPush.deleteMany({ where: { endpoint, usuarioId: sesion.usuarioId } })
+  return { ok: true }
+}

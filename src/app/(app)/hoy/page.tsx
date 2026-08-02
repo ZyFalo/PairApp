@@ -1,11 +1,13 @@
 import { Apunte, Tarjeta } from "@/componentes/base"
 import { Checkin } from "@/componentes/checkin"
+import { COLOR_GRUPO, ICONO_EMOCION } from "@/componentes/iconos"
 import { MensajeEntrante } from "@/componentes/mensaje-entrante"
-import { ClaseMensaje } from "@/generated/prisma/enums"
+import { VentanaOnceOnce } from "@/componentes/nosotros"
+import { ClaseMensaje, Visibilidad } from "@/generated/prisma/enums"
 import { loQueHayParaMi } from "@/lib/acciones/bucle"
-import { etiquetaDe, ficha } from "@/lib/motor/emociones"
+import { etiquetaDe, grupoDe } from "@/lib/motor/emociones"
 import { estadoVigente } from "@/lib/motor/entrega"
-import { formatoLegible } from "@/lib/motor/tiempo"
+import { diaLocal, formatoLegible, ventanaOnceOnce } from "@/lib/motor/tiempo"
 import { dbDeSesion } from "@/lib/sesion"
 
 export const dynamic = "force-dynamic"
@@ -43,6 +45,7 @@ export default async function PaginaHoy() {
         necesidad={pendiente.mensaje.necesidad}
         tonoMarcado={pendiente.mensaje.tonoMarcado}
         esPresencia={pendiente.mensaje.clase === ClaseMensaje.PRESENCIA}
+        presentacion={pendiente.presentacion}
         amortiguador={
           pendiente.amortiguador
             ? {
@@ -51,10 +54,22 @@ export default async function PaginaHoy() {
               }
             : null
         }
-        ambosEnojados={miUltimo?.emocion === "ENOJADO" && pendiente.mensaje.emocion === "ENOJADO"}
       />
     )
   }
+
+  // Los 11:11 también aquí: la ventana dura cuatro minutos y nadie va a
+  // acordarse de cambiar de pestaña a tiempo (RF-12.2).
+  const ventana = ventanaOnceOnce(sesion.zonaHoraria, ahora)
+  const yaPedi =
+    ventana.abierta &&
+    (await db.onceOnce.findFirst({
+      where: {
+        autorId: sesion.usuarioId,
+        dia: diaLocal(sesion.zonaHoraria, ahora),
+        esNoche: ventana.esNoche,
+      },
+    })) !== null
 
   const suEstadoVigente =
     suUltimo &&
@@ -65,22 +80,20 @@ export default async function PaginaHoy() {
 
   return (
     <div className="space-y-7">
+      {ventana.abierta && !yaPedi && <VentanaOnceOnce />}
+
       {/* Cómo está ella. La ausencia nunca se enuncia (RF-3.0.2). */}
-      {sesion.pareja && suEstadoVigente && suUltimo && suUltimo.visibilidad !== "PRIVADO" && (
-        <Tarjeta className="aparece flex items-center gap-3">
-          <span className="text-[26px]">
-            {suUltimo.visibilidad === "SOLO_COLOR" ? "•" : ficha(suUltimo.emocion).icono}
-          </span>
-          <div>
-            <p className="text-[15px]">
-              {suUltimo.visibilidad === "SOLO_COLOR"
-                ? `${sesion.pareja.nombre} no está bien`
-                : `${sesion.pareja.nombre} está ${etiquetaDe(suUltimo.emocion, "NEUTRO").toLowerCase()}`}
-            </p>
-            <Apunte>{formatoLegible(suUltimo.creadoEn, sesion.zonaHoraria)}</Apunte>
-          </div>
-        </Tarjeta>
-      )}
+      {sesion.pareja &&
+        suEstadoVigente &&
+        suUltimo &&
+        suUltimo.visibilidad !== Visibilidad.PRIVADO && (
+          <EstadoDeElla
+            nombre={sesion.pareja.nombre}
+            emocion={suUltimo.emocion}
+            soloColor={suUltimo.visibilidad === Visibilidad.SOLO_COLOR}
+            cuando={formatoLegible(suUltimo.creadoEn, sesion.zonaHoraria)}
+          />
+        )}
 
       <Checkin
         genero={sesion.genero}
@@ -88,5 +101,44 @@ export default async function PaginaHoy() {
         ultimaEmocion={miUltimo?.emocion ?? null}
       />
     </div>
+  )
+}
+
+/**
+ * Cómo está ella, en una línea. Si eligió compartir solo el color, se dice
+ * eso y nada más: la app no rellena lo que ella decidió callar (RF-1.3).
+ */
+function EstadoDeElla({
+  nombre,
+  emocion,
+  soloColor,
+  cuando,
+}: {
+  nombre: string
+  emocion: keyof typeof ICONO_EMOCION
+  soloColor: boolean
+  cuando: string
+}) {
+  const grupo = grupoDe(emocion)
+  const Icono = ICONO_EMOCION[emocion]
+
+  return (
+    <Tarjeta className="aparece flex items-center gap-3.5">
+      {soloColor ? (
+        <span
+          className={`size-4 shrink-0 rounded-full ${COLOR_GRUPO[grupo]} bg-current opacity-70`}
+        />
+      ) : (
+        <Icono size={26} className={`shrink-0 ${COLOR_GRUPO[grupo]}`} />
+      )}
+      <div>
+        <p className="text-[15px]">
+          {soloColor
+            ? `${nombre} no está bien`
+            : `${nombre} está ${etiquetaDe(emocion, "NEUTRO").toLowerCase()}`}
+        </p>
+        <Apunte>{cuando}</Apunte>
+      </div>
+    </Tarjeta>
   )
 }

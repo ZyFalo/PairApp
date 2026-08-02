@@ -11,7 +11,7 @@ import {
   Visibilidad,
 } from "@/generated/prisma/enums"
 import { claseDe, grupoDe, puedeGuardarseParaDespues } from "@/lib/motor/emociones"
-import { decidirPresentacion } from "@/lib/motor/entrega"
+import { decidirPresentacion, topeDePosponer } from "@/lib/motor/entrega"
 import { dbDeSesion } from "@/lib/sesion"
 
 const enumDe = <T extends Record<string, string>>(e: T) =>
@@ -136,14 +136,38 @@ export async function marcarVisto(entregaId: string) {
 }
 
 /**
- * "Ahora no puedo" (RF-3.14). Describe un estado presente, no promete nada:
- * es infinitamente mejor que el visto sin respuesta.
+ * "Ahora no puedo", ya habiéndolo leído (RF-3.14). Describe un estado presente,
+ * no promete nada: es infinitamente mejor que el visto sin respuesta.
+ *
+ * Marca visto a propósito. El mensaje **sí** se leyó; lo que falta es la
+ * respuesta, y fingir que no llegó sería mentir sobre un hecho (RF-3.17.4).
  */
 export async function avisarNecesitoUnRato(entregaId: string) {
   const { db, sesion } = await dbDeSesion()
   await db.entrega.updateMany({
     where: { id: entregaId, destinatarioId: sesion.usuarioId },
     data: { necesitaRatoEn: new Date(), vistaEn: new Date() },
+  })
+  revalidatePath("/hoy")
+  revalidatePath("/cofre")
+}
+
+/**
+ * Aplazar la lectura **antes** de abrir (§3.0.15, celda "nombrar y elegir").
+ *
+ * Aquí no se marca visto: el mensaje sigue sin leer y vuelve cuando pasa la
+ * hora. Es la diferencia entre "ahora no puedo con esto" y "lo leí y no
+ * contesté" — dos cosas distintas que merecen dos registros distintos.
+ *
+ * Tres horas normalmente; hasta mañana si los dos están enojados, porque dormir
+ * es la intervención más eficaz que existe para eso (RF-3.0.11).
+ */
+export async function posponerLectura(entregaId: string, ambosEnojados: boolean) {
+  const { db, sesion } = await dbDeSesion()
+  const hasta = topeDePosponer({ tipo: "nombrar_y_elegir", ambosEnojados }, new Date())
+  await db.entrega.updateMany({
+    where: { id: entregaId, destinatarioId: sesion.usuarioId, vistaEn: null },
+    data: { pospuestaHasta: hasta },
   })
   revalidatePath("/hoy")
 }
@@ -236,12 +260,26 @@ export async function alternarGuardado(mensajeId: string) {
   revalidatePath("/hoy")
 }
 
-/** Archiva un apunte de "solo para mí": ya se habló o dejó de importar (RF-2.0.8). */
+/**
+ * Archiva un apunte de "solo para mí": ya se habló o dejó de importar (RF-2.0.8).
+ * Archivar no borra — guarda memoria sin presión (RF-2.0.9), y por eso existe
+ * `desarchivarApunte`: si archivar fuese irreversible, sería borrar con otro nombre.
+ */
 export async function archivarApunte(mensajeId: string) {
   const { db, sesion } = await dbDeSesion()
   await db.mensaje.updateMany({
     where: { id: mensajeId, autorId: sesion.usuarioId, destino: DestinoMensaje.SOLO_PARA_MI },
     data: { archivadoEn: new Date() },
+  })
+  revalidatePath("/yo")
+}
+
+/** Devuelve un apunte archivado a la lista de cosas por hablar (RF-2.0.9). */
+export async function desarchivarApunte(mensajeId: string) {
+  const { db, sesion } = await dbDeSesion()
+  await db.mensaje.updateMany({
+    where: { id: mensajeId, autorId: sesion.usuarioId, destino: DestinoMensaje.SOLO_PARA_MI },
+    data: { archivadoEn: null },
   })
   revalidatePath("/yo")
 }
@@ -280,13 +318,20 @@ export async function decirloAhora(mensajeId: string): Promise<Resultado> {
 /**
  * Lo que hay para mí ahora mismo: el mensaje sin ver más antiguo, con la
  * presentación que decide la matriz (§3.0.15).
+ *
+ * Un mensaje aplazado no cuenta hasta que pasa su hora: aplazar es distinto
+ * de leer, y distinto también de ignorar.
  */
 export async function loQueHayParaMi() {
   const { db, sesion } = await dbDeSesion()
   const ahora = new Date()
 
   const pendiente = await db.entrega.findFirst({
-    where: { destinatarioId: sesion.usuarioId, vistaEn: null },
+    where: {
+      destinatarioId: sesion.usuarioId,
+      vistaEn: null,
+      OR: [{ pospuestaHasta: null }, { pospuestaHasta: { lte: ahora } }],
+    },
     orderBy: { entregadaEn: "asc" },
     include: { mensaje: true },
   })
@@ -307,19 +352,85 @@ export async function loQueHayParaMi() {
 
   // El amortiguador necesita algo cálido de ella; si no hay, se muestra directo
   // sin rellenar con nada genérico (RF-3.0.7.2).
-  let amortiguador: { id: string; texto: string; creadoEn: Date } | null = null
+  let amortiguador: { texto: string; creadoEn: Date } | null = null
   if (presentacion.tipo === "amortiguado" && sesion.pareja) {
     const calido = await db.mensaje.findFirst({
       where: { autorId: sesion.pareja.id, clase: ClaseMensaje.PRESENCIA },
       orderBy: { creadoEn: "desc" },
     })
-    if (calido) amortiguador = { id: calido.id, texto: calido.texto, creadoEn: calido.creadoEn }
+    if (calido) amortiguador = { texto: calido.texto, creadoEn: calido.creadoEn }
   }
 
   return {
     entregaId: pendiente.id,
     mensaje: pendiente.mensaje,
-    presentacion: amortiguador ? presentacion : { tipo: "directo" as const },
+    presentacion: ajustar(presentacion, amortiguador !== null, pendiente.pospuestaHasta !== null),
     amortiguador,
   }
+}
+
+/**
+ * Correcciones que la matriz no puede hacer sola porque dependen de qué hay
+ * guardado, no de cómo está nadie.
+ *
+ * Si ya se aplazó una vez, no se vuelve a preguntar: la persona eligió esta
+ * hora, y volver a ofrecerle "más tarde" convertiría una decisión en un bucle.
+ */
+function ajustar(
+  presentacion: ReturnType<typeof decidirPresentacion>,
+  hayAmortiguador: boolean,
+  yaPospuesto: boolean,
+): ReturnType<typeof decidirPresentacion> {
+  // Sin nada cálido que poner delante no se puede amortiguar: antes directo
+  // que rellenar con algo genérico (RF-3.0.7.2).
+  if (presentacion.tipo === "amortiguado" && !hayAmortiguador) return { tipo: "directo" }
+  if (presentacion.tipo === "nombrar_y_elegir" && yaPospuesto) return { tipo: "directo" }
+  return presentacion
+}
+
+/**
+ * Lo que le mandé y en qué punto está (§3.17). Los estados de entrega son
+ * automáticos: sustituyen al botón de "te prometo que lo leo", que era una
+ * promesa que después podía no cumplirse.
+ */
+export async function loQueLeMande() {
+  const { db, sesion } = await dbDeSesion()
+
+  const mensajes = await db.mensaje.findMany({
+    where: {
+      autorId: sesion.usuarioId,
+      destino: { in: [DestinoMensaje.AHORA, DestinoMensaje.CUANDO_LE_SIRVA] },
+    },
+    orderBy: { creadoEn: "desc" },
+    take: 60,
+    include: { entrega: { include: { respuesta: true } } },
+  })
+
+  return mensajes.map((m) => ({
+    id: m.id,
+    texto: m.texto,
+    emocion: m.emocion,
+    creadoEn: m.creadoEn,
+    esperando: m.destino === DestinoMensaje.CUANDO_LE_SIRVA && !m.entrega,
+    entregadaEn: m.entrega?.entregadaEn ?? null,
+    vistaEn: m.entrega?.vistaEn ?? null,
+    necesitaRatoEn: m.entrega?.necesitaRatoEn ?? null,
+    respuesta: m.entrega?.respuesta ?? null,
+  }))
+}
+
+/** Retira un mensaje guardado que todavía no se ha entregado (RF-2.2.4). */
+export async function retirarGuardado(mensajeId: string) {
+  const { db, sesion } = await dbDeSesion()
+  await db.mensaje.updateMany({
+    where: {
+      id: mensajeId,
+      autorId: sesion.usuarioId,
+      destino: DestinoMensaje.CUANDO_LE_SIRVA,
+      entrega: { is: null },
+    },
+    data: { destino: DestinoMensaje.SOLO_PARA_MI },
+  })
+  revalidatePath("/cofre")
+  revalidatePath("/yo")
 }
