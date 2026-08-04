@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "check": "biome check .",
     "check:fix": "biome check --write .",
@@ -17,7 +17,8 @@
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:sembrar": "tsx prisma/sembrar.ts",
-    "db:escenario": "tsx prisma/escenario.ts"
+    "db:escenario": "tsx prisma/escenario.ts",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.0.2",

@@ -11,6 +11,16 @@ import { prismaCrudo } from "@/lib/db"
  * sin acotar: aquí todavía no se sabe a qué vínculo pertenece nadie (D41).
  */
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  /**
+   * Fiarse de la cabecera `Host` que llega.
+   *
+   * Auth.js la rechaza por defecto, y con razón: si un atacante la falsea puede
+   * desviar el enlace de un correo de acceso. Aquí no hay correos de acceso
+   * —solo contraseña— y en producción la app vive detrás del proxy de Railway,
+   * que reescribe el `Host`. Sin esto, iniciar sesión falla con `UntrustedHost`
+   * en cuanto sale del portátil.
+   */
+  trustHost: true,
   session: {
     strategy: "jwt",
     // 90 días, renovados en cada uso: en la práctica no se vuelve a pedir.
