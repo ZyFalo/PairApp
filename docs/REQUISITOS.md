@@ -155,6 +155,24 @@ Consecuencia directa de P10. La app habla poco y con calma.
 **RF-0.5** Pantalla de ajustes con: notificaciones, privacidad, apariencia, datos, y **"Disolver vínculo"** (borrado con doble confirmación y ventana de gracia de 7 días).
 **RF-0.6** Estado de conexión visible del contenido: la app funciona sin red y sincroniza al reconectar.
 
+**RF-0.7 Configuración inicial: qué usa esta pareja.** Antes de entrar por primera vez, se elige qué módulos opcionales quedan encendidos. Cuatro reglas gobiernan esta pantalla:
+
+**RF-0.7.1 La dispara el enlace al completarse, no el primer arranque.** Configurar «lo nuestro» antes de que exista la otra persona es elegir por ella. Mientras se está sola, la app se usa sin pasar por aquí.
+
+**RF-0.7.2 Dos clases de interruptor, y no se mezclan.** Los **de los dos** (música, series, recuerdos, 11:11) los cambia cualquiera y los ven ambos. Los **míos** (llevar el ciclo, compartir mi ánimo, en qué ventanas del 11:11 participo) no los ve ni los cambia nadie más (RF-5.0, RF-1.5, RF-12.8). Ponerlos en la misma lista convertiría un ajuste privado en una negociación — *«¿por qué no quieres que vea tu ánimo?»*—, que es exactamente lo que M5 evita.
+
+**RF-0.7.3 Los guardarraíles no son opcionales.** El umbral del enojo, el buzón en frío, la ventana de retirada y el amortiguador no aparecen aquí. No son extras: son los frenos, y un interruptor para los frenos es un interruptor que se toca justo el peor día (P9).
+
+**RF-0.7.4 Todo encendido de partida, y se pregunta por ellos, no por funciones.** *«¿Veis series juntos?»*, no *«¿activar el módulo de series?»*. Apagado por defecto significa que nadie los descubre; encendido con salida fácil significa que la app llega completa y se poda. **Apagar no borra nada** y se cambia cuando sea, en la misma pantalla — no en una copia.
+
+**RF-0.7.5 Un cambio compartido no puede ser mudo.** Cuando uno apaga un módulo, la pantalla de ajustes dice quién fue y cuándo. Sin notificación: una pestaña que desaparece sin explicación es la clase de cambio silencioso que la app evita en todo lo demás (RF-6.4.2). A quien lo hizo se le dice *«lo cambiaste tú»*: el aviso existe para el otro, y el propio nombre sobra.
+
+**RF-0.7.6 La configuración tiene dos mitades y no se reparten igual.** La de módulos se hace **una vez para los dos**; la personal —el ciclo, mi ánimo, mis ventanas— la hace **cada quien**, porque nadie puede elegirla por otro.
+
+Por eso quien llega segundo también pasa por la pantalla, y la primera parte le cambia el encabezado: en vez de *«Ya estáis los dos»* lee **«[Nombre] ya eligió esto»**, con los mismos interruptores y la elección de la otra persona puesta. No es una pregunta, es un resumen — y puede cambiarlo todo ahí mismo.
+
+Marcar solo el vínculo dejaba a la segunda persona sin ver nunca la pantalla: con los valores por defecto puestos y sin habérselos enseñado.
+
 ❓ *Decisión abierta:* ¿queremos "modo pausa"? Un interruptor que silencia todas las entregas y notificaciones durante N días, sin borrar nada, para cuando alguien necesita espacio. Yo creo que sí — es el equivalente a "no puedo con esto ahora" sin tener que desinstalar.
 
 ---

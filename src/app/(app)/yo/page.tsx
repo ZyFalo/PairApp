@@ -1,4 +1,5 @@
 import {
+  RiHeart2Line,
   RiLogoutBoxLine,
   RiNotification3Line,
   RiSeedlingLine,
@@ -8,9 +9,10 @@ import { InterruptorCiclo, InterruptorCompartirAnimo, VentanasDelOnce } from "@/
 import { ControlPausa, PanelPush } from "@/componentes/avisos"
 import { Apunte, Boton, Insignia, Seccion, Tarjeta, Titulo } from "@/componentes/base"
 import { CambiarVisibilidadCiclo, FormularioCiclo } from "@/componentes/ciclo"
+import { EleccionDeModulos } from "@/componentes/modulos"
 import { salir } from "@/lib/acciones/cuenta"
 import { CICLOS_PARA_ESTIMAR } from "@/lib/motor/ciclo"
-import { fechaSuelta } from "@/lib/motor/tiempo"
+import { fechaSuelta, formatoLegible } from "@/lib/motor/tiempo"
 import { dbDeSesion } from "@/lib/sesion"
 
 export const dynamic = "force-dynamic"
@@ -86,17 +88,47 @@ export default async function PaginaYo() {
         </Tarjeta>
       </section>
 
+      {/* Lo mío: nadie más lo ve ni lo cambia (RF-5.0, RF-1.5, RF-12.8). */}
       <section className="space-y-3">
-        <Seccion Icono={RiSettings3Line}>Ajustes</Seccion>
+        <Seccion Icono={RiSettings3Line}>Solo tuyo</Seccion>
         <Tarjeta className="space-y-5">
           <InterruptorCiclo activo={sesion.llevaCiclo} />
           <InterruptorCompartirAnimo
             activo={sesion.compartoAnimo}
             nombrePareja={sesion.pareja?.nombre ?? null}
           />
-          <VentanasDelOnce actual={sesion.ventanasOnce} />
+          {sesion.modulos.once && <VentanasDelOnce actual={sesion.ventanasOnce} />}
         </Tarjeta>
       </section>
+
+      {/* Lo de los dos, en su propia sección y con el aviso de que se comparte.
+          Es **el mismo componente** que pinta la pantalla de «empezar»: el
+          onboarding no es una copia de los ajustes, es la primera vez que se
+          ven. Dos copias acaban divergiendo. */}
+      {sesion.pareja && (
+        <section className="space-y-3">
+          <Seccion Icono={RiHeart2Line}>Lo que usáis los dos</Seccion>
+          <Tarjeta>
+            <EleccionDeModulos
+              modulos={sesion.modulos}
+              ultimoCambio={
+                sesion.ultimoCambioDeModulos && {
+                  nombre: sesion.ultimoCambioDeModulos.nombre,
+                  mio: sesion.ultimoCambioDeModulos.mio,
+                  // `formatoLegible` y no `haceEnPalabras`: esa cuenta días de
+                  // calendario —perfecto para «escribiste esto ayer»— y aquí
+                  // decía «hace unas horas» de algo cambiado hace dos minutos.
+                  // Para un ajuste, la fecha exacta informa y no interpreta.
+                  cuando: `el ${formatoLegible(sesion.ultimoCambioDeModulos.cuando, sesion.zonaHoraria)}`,
+                }
+              }
+            />
+          </Tarjeta>
+          <Apunte>
+            Esto lo ve y lo cambia {sesion.pareja.nombre} también. Apagar no borra nada.
+          </Apunte>
+        </section>
+      )}
 
       <form action={salir}>
         <Boton variante="texto" type="submit" className="w-full">

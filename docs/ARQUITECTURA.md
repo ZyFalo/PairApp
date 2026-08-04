@@ -111,6 +111,8 @@ que es donde se mira cuando algo falla.
 | Un icono | `src/componentes/iconos.tsx`, nunca suelto |
 | Un color | `src/app/globals.css`, como variable, con su versión oscura |
 | Un modelo | `prisma/schema.prisma`, **con `vinculoId`**, y migración |
+| Un ajuste **mío** | columna en `Usuario` + acción en `acciones/ajustes.ts` + control en `componentes/ajustes.tsx` |
+| Un módulo **de los dos** | columna en `Vinculo` + su ficha en `motor/modulos.ts`, y aparece solo en las dos pantallas |
 
 ### Los ficheros del motor, por tema
 
@@ -124,8 +126,34 @@ reparacion.ts   Los cuatro gestos y cuándo se ofrecen (§6.8)
 calendario.ts   La rejilla del mes: qué días se pintan y qué cae en cada uno (M7)
 ics.ts          Generación de archivos .ics para el calendario del teléfono
 once.ts         La ventana de los 11:11 y quién participa en ella (M12)
+modulos.ts      Qué módulos usa una pareja, y cómo se le pregunta (RF-0.7)
 juntos.ts       Selector al azar de títulos y aniversarios de recuerdos
 ```
+
+### Los dos tipos de ajuste, y por qué están separados
+
+| | Dónde vive | Quién lo cambia | Quién lo ve |
+|---|---|---|---|
+| **Míos** | `Usuario` | solo yo | **nadie más** (RF-5.0, RF-1.5, RF-12.8) |
+| **De los dos** | `Vinculo` | cualquiera | los dos, y queda escrito quién fue |
+
+Los dos grupos se editan con los mismos componentes en dos sitios —la pantalla
+de `empezar` y la de `Yo`—, y eso **no es duplicación, es lo contrario**: el
+onboarding no tiene su propia copia de los ajustes, así que no pueden divergir.
+
+La puerta está en `(app)/layout.tsx` y no en la raíz: quien escriba `/cofre` a
+mano tiene que pasar por el mismo sitio. Y mira **dos marcadores**, porque la
+configuración tiene dos mitades que no se reparten igual:
+
+```
+Vinculo.configuradoEn   los módulos, una vez para los dos
+Usuario.empezoEn        lo personal, cada quien el suyo
+```
+
+Con solo el primero, quien llegaba segundo no veía nunca la pantalla y se
+quedaba con los valores por defecto sin habérselos enseñado. Quién eligió los
+módulos no se guarda: si yo no he pasado y la elección ya existe, fue la otra
+persona.
 
 ### Dos relojes, y confundirlos coloca las cosas en el día de al lado
 

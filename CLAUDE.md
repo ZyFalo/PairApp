@@ -153,6 +153,15 @@ Lo que sí cruza es **JSX ya dibujado**: el componente de cliente recibe
 `children` y se queda solo con el comportamiento. El patrón está en
 `componentes/vistas.tsx`.
 
+**Ningún `<button>` dentro de un `<a>`.** Es un nido inválido: el navegador
+reestructura el DOM al leerlo, la hidratación de **toda la pantalla** falla y
+los componentes de cliente dejan de responder — sin ningún error visible más
+que un aviso de hidratación que parece de una extensión. Para navegar con
+aspecto de botón está `BotonEnlace` en `base.tsx`.
+
+Costó una tarde: los interruptores de la pantalla de empezar no hacían nada, y
+el `<button>` culpable estaba veinte líneas más abajo.
+
 ---
 
 ## 8. Antes de dar algo por terminado

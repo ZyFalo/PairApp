@@ -157,6 +157,14 @@ model Usuario {
   horasPregunta  Int[]            @default([9, 14, 19])
   /// En qué ventanas de los 11:11 participo (RF-12.1). Por defecto, las dos.
   ventanasOnce   VentanasOnce     @default(AMBAS)
+  /// Cuándo **esta persona** pasó por «empezar» (RF-0.7).
+  ///
+  /// Va aquí y no solo en `Vinculo` porque la configuración tiene dos mitades y
+  /// no se reparten igual: la de módulos se hace **una vez para los dos**, pero
+  /// la personal —el ciclo, mi ánimo, mis ventanas— la tiene que hacer cada
+  /// quien. Con un único marcador en el vínculo, quien llegaba segundo no veía
+  /// nunca la pantalla y se quedaba sin elegir lo suyo.
+  empezoEn       DateTime?
   creadoEn       DateTime         @default(now())
 
   membresia          Membresia?
@@ -171,6 +179,43 @@ model Usuario {
 model Vinculo {
   id       String   @id @default(cuid())
   creadoEn DateTime @default(now())
+
+  // --- Qué módulos usa esta pareja -----------------------------------------
+  //
+  // Booleanos explícitos y no un array de claves: así cada uno lleva escrito
+  // qué significa apagarlo, y añadir uno nuevo obliga a pensarlo.
+  //
+  // **Encendidos de partida.** Apagado por defecto significa que nadie los
+  // descubre; encendido con salida fácil significa que la app llega completa y
+  // se poda. Apagar no borra nada: vuelve intacto al encender, igual que el
+  // ciclo (RF-5.0).
+  //
+  // Lo que **no** está aquí, a propósito: el umbral del enojo, el buzón en
+  // frío, la ventana de retirada y el amortiguador. Esos no son funciones
+  // extra, son los frenos — y un interruptor para los frenos es un interruptor
+  // que se toca justo el peor día (P9).
+
+  /// Dedicatorias musicales (M8).
+  usaMusica    Boolean @default(true)
+  /// Series y películas (M9).
+  usaTitulos   Boolean @default(true)
+  /// Recuerdos (M11). Apagarlo los quita también del calendario.
+  usaRecuerdos Boolean @default(true)
+  /// El ritual de los 11:11 (M12). Distinto de `Usuario.ventanasOnce`: esto lo
+  /// quita para los dos; aquello es en cuáles participo yo.
+  usaOnce      Boolean @default(true)
+
+  /// Cuándo se hizo la elección inicial. Null = todavía no se ha pasado por
+  /// «empezar», y ninguna pantalla de la app debería abrirse antes.
+  configuradoEn DateTime?
+
+  /// Quién tocó los módulos por última vez, y cuándo.
+  ///
+  /// Una pestaña que desaparece sin explicación es la clase de cambio silencioso
+  /// que esta app evita en todo lo demás (RF-6.4.2). No se avisa a nadie: se
+  /// deja dicho en la propia pantalla de ajustes, que es donde se va a mirar.
+  modulosPorId String?
+  modulosEn    DateTime?
 
   membresias    Membresia[]
   invitaciones  Invitacion[]

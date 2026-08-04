@@ -96,7 +96,11 @@ export async function loQuePasaEnElMes(mes: Mes): Promise<CasillaLlena[]> {
       // Los anuales no caben en una ventana: un cumpleaños de 1998 tiene que
       // salir en 2026. Son pocos, se traen todos y se calcula su ocurrencia.
       db.evento.findMany({ where: { anual: true } }),
-      db.recuerdo.findMany({ orderBy: { ocurrioEl: "desc" }, take: 200 }),
+      // Apagar un módulo lo apaga en todas partes, no solo en su pestaña: un
+      // recuerdo no puede seguir marcando su casilla si los recuerdos no se usan.
+      sesion.modulos.recuerdos
+        ? db.recuerdo.findMany({ orderBy: { ocurrioEl: "desc" }, take: 200 })
+        : Promise.resolve([]),
     ])
 
   const mios = porDia(misCheckins, zona)
@@ -183,8 +187,12 @@ export async function elDia(dia: Dia): Promise<ElDia> {
         orderBy: { inicio: "asc" },
       }),
       db.evento.findMany({ where: { anual: true } }),
-      db.recuerdo.findMany({ orderBy: { ocurrioEl: "desc" }, take: 200 }),
-      db.onceOnce.findMany({ where: { dia }, orderBy: { creadoEn: "asc" } }),
+      sesion.modulos.recuerdos
+        ? db.recuerdo.findMany({ orderBy: { ocurrioEl: "desc" }, take: 200 })
+        : Promise.resolve([]),
+      sesion.modulos.once
+        ? db.onceOnce.findMany({ where: { dia }, orderBy: { creadoEn: "asc" } })
+        : Promise.resolve([]),
       sesion.llevaCiclo
         ? db.ciclo.findMany({ where: cicloHasta(sesion.usuarioId, hasta), ...ULTIMOS_CICLOS })
         : Promise.resolve([]),

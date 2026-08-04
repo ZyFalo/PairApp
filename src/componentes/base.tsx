@@ -119,8 +119,12 @@ export function Seccion({ children, Icono }: { children: ReactNode; Icono?: Icon
 }
 
 /** Texto secundario, para contexto que no compite con lo principal. */
-export function Apunte({ children }: { children: ReactNode }) {
-  return <p className="text-[14px] leading-relaxed text-[var(--color-tinta-suave)]">{children}</p>
+export function Apunte({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return (
+    <p className={`text-[14px] leading-relaxed text-[var(--color-tinta-suave)] ${className}`}>
+      {children}
+    </p>
+  )
 }
 
 /** Cuando no hay nada que mostrar. "Nada" es una respuesta válida (RF-3.6). */

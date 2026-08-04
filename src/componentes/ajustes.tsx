@@ -6,11 +6,16 @@ import {
   cambiarCompartirAnimo,
   cambiarRegistroCiclo,
   cambiarVentanasOnce,
-} from "@/lib/acciones/nosotros"
+} from "@/lib/acciones/ajustes"
 
 /**
- * Los dos interruptores de «Yo». Los dos hacen lo mismo en el fondo: decidir
- * qué existe y qué se ve. Ninguno se deduce de nada — se encienden a mano.
+ * Los ajustes **míos** de «Yo»: el ciclo, mi ánimo en el calendario y mis
+ * ventanas del 11:11. Todos hacen lo mismo en el fondo —decidir qué existe y
+ * qué se ve— y ninguno se deduce de nada: se encienden a mano.
+ *
+ * Los de la pareja viven en `componentes/modulos.tsx`, y están separados a
+ * propósito: mezclar un ajuste privado con uno compartido convierte el privado
+ * en una negociación.
  */
 
 /**
@@ -38,18 +43,6 @@ export function InterruptorCiclo({ activo }: { activo: boolean }) {
   )
 }
 
-/**
- * Dejar que la otra persona vea mi ánimo día a día en el calendario (RF-1.5).
- *
- * Existe porque el calendario cambia la naturaleza del dato. Hasta ahora ella
- * solo veía mi estado **actual**, que caduca a las ocho horas (RF-3.0.7.7); un
- * mes entero es otra cosa. "Hoy estoy triste" y "mira mis últimos treinta días"
- * no son la misma frase, y dar la segunda por dicha al decir la primera sería
- * inferir — justo lo que §1.2 prohíbe.
- *
- * No anula lo que se eligió en cada registro: un día marcado como privado sigue
- * sin aparecer. Los dos controles se multiplican, nunca se pisan.
- */
 /** Las cuatro respuestas a «¿cuándo se abre esto para mí?» (RF-12.1, RF-12.8). */
 const VENTANAS = [
   { valor: "AMBAS", texto: "Mañana y noche" },
@@ -108,6 +101,18 @@ export function VentanasDelOnce({ actual }: { actual: string }) {
   )
 }
 
+/**
+ * Dejar que la otra persona vea mi ánimo día a día en el calendario (RF-1.5).
+ *
+ * Existe porque el calendario cambia la naturaleza del dato. Hasta ahora ella
+ * solo veía mi estado **actual**, que caduca a las ocho horas (RF-3.0.7.7); un
+ * mes entero es otra cosa. "Hoy estoy triste" y "mira mis últimos treinta días"
+ * no son la misma frase, y dar la segunda por dicha al decir la primera sería
+ * inferir — justo lo que §1.2 prohíbe.
+ *
+ * No anula lo que se eligió en cada registro: un día marcado como privado sigue
+ * sin aparecer. Los dos controles se multiplican, nunca se pisan.
+ */
 export function InterruptorCompartirAnimo({
   activo,
   nombrePareja,

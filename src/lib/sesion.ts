@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { dbDelVinculo, prismaCrudo } from "@/lib/db"
+import type { ModulosDelVinculo } from "@/lib/motor/modulos"
 
 /** Quién está usando la app y a qué vínculo pertenece. */
 export type Sesion = {
@@ -17,6 +18,26 @@ export type Sesion = {
   ventanasOnce: "AMBAS" | "MANANA" | "NOCHE" | "NINGUNA"
   /** Hasta cuándo he pedido que la app no me hable. Null si no hay pausa (§12.2). */
   pausaHasta: Date | null
+  /**
+   * Qué módulos usa esta pareja. Son de los dos: cualquiera los cambia y los
+   * dos lo ven, al revés que `llevaCiclo` o `ventanasOnce`, que son míos.
+   */
+  modulos: ModulosDelVinculo
+  /** Cuándo se eligieron los módulos, una vez para los dos. Null = nunca. */
+  configuradoEn: Date | null
+  /**
+   * Cuándo pasé **yo** por «empezar». Null = no he elegido lo mío todavía.
+   *
+   * Separado del anterior porque quien llega segundo se encuentra los módulos
+   * ya elegidos pero no ha decidido nada suyo: con un solo marcador se saltaba
+   * la pantalla entera y se quedaba con los valores por defecto sin verlos.
+   */
+  empezoEn: Date | null
+  /**
+   * Quién tocó los módulos por última vez, para que el cambio no sea mudo.
+   * `mio` porque la frase cambia: a uno le sobra su propio nombre.
+   */
+  ultimoCambioDeModulos: { nombre: string; cuando: Date; mio: boolean } | null
   /** La otra persona del vínculo. Null mientras nadie haya canjeado la invitación. */
   pareja: {
     id: string
@@ -43,15 +64,20 @@ export async function exigirSesion(): Promise<Sesion> {
   const usuarioId = sesion.user.id
   const vinculoId = sesion.user.vinculoId
 
-  const membresias = await prismaCrudo.membresia.findMany({
-    where: { vinculoId },
-    include: { usuario: true },
-  })
+  const [membresias, vinculo] = await Promise.all([
+    prismaCrudo.membresia.findMany({ where: { vinculoId }, include: { usuario: true } }),
+    prismaCrudo.vinculo.findUnique({ where: { id: vinculoId } }),
+  ])
 
   const yo = membresias.find((m) => m.usuarioId === usuarioId)
-  if (!yo) redirect("/vincular")
+  if (!yo || !vinculo) redirect("/vincular")
 
   const otra = membresias.find((m) => m.usuarioId !== usuarioId)
+
+  // Quién cambió los módulos: se resuelve a un nombre aquí y no en la pantalla,
+  // porque el identificador puede ser de cualquiera de los dos y la pantalla no
+  // tiene por qué saber buscarlo.
+  const quienCambio = membresias.find((m) => m.usuarioId === vinculo.modulosPorId)
 
   return {
     usuarioId,
@@ -66,6 +92,22 @@ export async function exigirSesion(): Promise<Sesion> {
     // viaja no se puede filtrar por descuido en una pantalla.
     ventanasOnce: yo.usuario.ventanasOnce,
     pausaHasta: yo.usuario.pausaHasta,
+    modulos: {
+      musica: vinculo.usaMusica,
+      titulos: vinculo.usaTitulos,
+      recuerdos: vinculo.usaRecuerdos,
+      once: vinculo.usaOnce,
+    },
+    configuradoEn: vinculo.configuradoEn,
+    empezoEn: yo.usuario.empezoEn,
+    ultimoCambioDeModulos:
+      quienCambio && vinculo.modulosEn
+        ? {
+            nombre: quienCambio.usuario.nombre,
+            cuando: vinculo.modulosEn,
+            mio: quienCambio.usuarioId === usuarioId,
+          }
+        : null,
     pareja: otra
       ? {
           id: otra.usuario.id,
