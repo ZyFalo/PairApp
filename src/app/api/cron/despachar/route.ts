@@ -1,6 +1,6 @@
-import { DestinoMensaje, GrupoEmocion } from "@/generated/prisma/enums"
+import { DestinoMensaje } from "@/generated/prisma/enums"
 import { prismaCrudo } from "@/lib/db"
-import { grupoDe } from "@/lib/motor/emociones"
+import { leVendriaBienAlgoGuardado } from "@/lib/motor/entrega"
 import { franjaActual, tocaPreguntaPeriodica, ventanaOnceOnce } from "@/lib/motor/tiempo"
 import { avisar } from "@/lib/push"
 
@@ -55,12 +55,18 @@ export async function GET(peticion: Request) {
       where: { autorId: usuario.id },
       orderBy: { creadoEn: "desc" },
     })
-    const enCarencia =
-      ultimo &&
-      grupoDe(ultimo.emocion) === GrupoEmocion.ME_FALTA_ALGO &&
-      ahora.getTime() - ultimo.creadoEn.getTime() < 3_600_000
+    const enCarencia = leVendriaBienAlgoGuardado(
+      ultimo
+        ? {
+            emocion: ultimo.emocion,
+            intensidad: ultimo.intensidad,
+            creadoEn: ultimo.creadoEn,
+          }
+        : null,
+      ahora,
+    )
 
-    if (enCarencia) {
+    if (enCarencia && ultimo) {
       const yaHoy = await prismaCrudo.entrega.findFirst({
         where: {
           destinatarioId: usuario.id,

@@ -2,8 +2,16 @@
 
 import { RiDeleteBin6Line, RiDiceLine, RiLockLine, RiLockUnlockLine } from "@remixicon/react"
 import { useActionState, useEffect, useState, useTransition } from "react"
-import { Apunte, Aviso, Boton, Campo, Insignia, Pastilla, Tarjeta } from "@/componentes/base"
-import { Seleccion } from "@/componentes/nosotros"
+import {
+  Apunte,
+  Aviso,
+  Boton,
+  Campo,
+  Insignia,
+  Pastilla,
+  Seleccion,
+  Tarjeta,
+} from "@/componentes/base"
 import type { EstadoTitulo } from "@/generated/prisma/enums"
 import {
   alternarSoloJuntos,

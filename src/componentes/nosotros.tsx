@@ -2,7 +2,7 @@
 
 import { RiCloseLine, RiDeleteBin6Line, RiSparkling2Line } from "@remixicon/react"
 import { useActionState, useEffect, useState, useTransition } from "react"
-import { Apunte, Aviso, Boton, Campo, Tarjeta } from "@/componentes/base"
+import { Apunte, Aviso, Boton, Campo, Seleccion, Tarjeta } from "@/componentes/base"
 import { borrarEvento, crearEvento, dedicarCancion, pedirOnceOnce } from "@/lib/acciones/nosotros"
 import { useBorrador } from "@/lib/borrador"
 
@@ -259,48 +259,5 @@ export function FormularioCancion() {
         </div>
       </form>
     </Tarjeta>
-  )
-}
-
-/**
- * Desplegable con la misma piel que los campos de texto.
- * Con `valor` y `onCambio` va controlado; sin ellos, a su aire.
- */
-export function Seleccion({
-  etiqueta,
-  name,
-  opciones,
-  valorInicial,
-  valor,
-  onCambio,
-}: {
-  etiqueta: string
-  name: string
-  opciones: { valor: string; texto: string }[]
-  valorInicial?: string
-  valor?: string
-  onCambio?: (valor: string) => void
-}) {
-  const controlado = valor !== undefined && onCambio !== undefined
-
-  return (
-    <label className="block">
-      <span className="mb-2 block text-[12.5px] font-medium uppercase tracking-[0.08em] text-[var(--color-tinta-tenue)]">
-        {etiqueta}
-      </span>
-      <select
-        name={name}
-        {...(controlado
-          ? { value: valor, onChange: (e) => onCambio(e.target.value) }
-          : { defaultValue: valorInicial ?? opciones[0]?.valor })}
-        className="w-full rounded-[var(--radius-suave)] border border-[var(--color-borde)] bg-[var(--color-papel)] px-4 py-3 text-[16px] text-[var(--color-tinta)] outline-none transition-colors focus:border-[var(--color-acento-suave)]"
-      >
-        {opciones.map((o) => (
-          <option key={o.valor} value={o.valor}>
-            {o.texto}
-          </option>
-        ))}
-      </select>
-    </label>
   )
 }

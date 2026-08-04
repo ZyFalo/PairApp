@@ -87,3 +87,22 @@ export function topeDePosponer(presentacion: Presentacion, ahora: Date): Date {
   const horas = presentacion.tipo === "nombrar_y_elegir" && presentacion.ambosEnojados ? 12 : 3
   return new Date(ahora.getTime() + horas * 3_600_000)
 }
+
+/** Cuánto dura la carencia a efectos de entregar algo guardado (RF-2.2). */
+export const MINUTOS_DE_CARENCIA = 60
+
+/**
+ * Si a alguien le vendría bien ahora mismo algo que le dejaron guardado.
+ *
+ * Vive aquí y no en el cron porque es una regla del dominio, no de la tarea
+ * programada: quién necesita qué no lo decide el reloj de un servidor.
+ *
+ * La ventana es corta a propósito. Un mensaje guardado llega bien cuando el
+ * mal rato es de ahora; entregado seis horas después ya no consuela nada,
+ * porque quien lo lee no está donde estaba.
+ */
+export function leVendriaBienAlgoGuardado(estado: EstadoReceptor, ahora: Date): boolean {
+  if (estado === null) return false
+  if (grupoDe(estado.emocion) !== GrupoEmocion.ME_FALTA_ALGO) return false
+  return ahora.getTime() - estado.creadoEn.getTime() < MINUTOS_DE_CARENCIA * 60_000
+}

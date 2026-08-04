@@ -10,8 +10,7 @@ import {
   RiSendPlaneLine,
 } from "@remixicon/react"
 import { useActionState, useCallback, useEffect, useState, useTransition } from "react"
-import { Apunte, Aviso, Boton, Campo, Pastilla, Tarjeta } from "@/componentes/base"
-import { Seleccion } from "@/componentes/nosotros"
+import { Apunte, Aviso, Boton, Campo, Pastilla, Seleccion, Tarjeta } from "@/componentes/base"
 import { archivarApunte, decirloAhora, desarchivarApunte } from "@/lib/acciones/bucle"
 import {
   cambiarRegistroCiclo,

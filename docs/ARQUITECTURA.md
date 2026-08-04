@@ -1,5 +1,8 @@
 # Arquitectura de PairApp
 
+> **Las reglas obligatorias están en `CLAUDE.md`, en la raíz.** Ahí va lo que
+> hay que respetar; aquí, cómo está montado y por qué.
+>
 > Para qué sirve este documento: que quien llegue sepa **dónde poner una cosa
 > nueva** sin preguntar, y qué reglas no puede romper aunque el código se lo
 > permita. No explica qué hace la app —eso está en `REQUISITOS.md`— sino cómo
@@ -22,7 +25,7 @@ Navegador  ──►  Next.js (App Router)  ──►  Postgres
 
 ---
 
-## 2. Las cinco capas, de dentro a fuera
+## 2. Las seis capas, de dentro a fuera
 
 El orden importa: **cada capa solo puede depender de las de dentro**. Si una
 función del motor necesita algo de una acción, está en el sitio equivocado.
@@ -31,13 +34,14 @@ función del motor necesita algo de una acción, está en el sitio equivocado.
 |---|---|---|---|
 | **1. Motor** | `src/lib/motor/` | Reglas del dominio. Funciones puras: entran datos, salen datos | Tocar la base, importar React, leer `process.env`, llamar a `Date.now()` sin recibirlo |
 | **2. Datos** | `src/lib/db.ts`, `sesion.ts` | Acceso a Postgres, ya acotado al vínculo | Contener reglas de negocio |
-| **3. Acciones** | `src/lib/acciones/` | Server actions. Validan, orquestan, escriben | Contener reglas que deberían estar en el motor |
-| **4. Componentes** | `src/componentes/` | Interfaz reutilizable | Consultar la base directamente |
-| **5. Páginas** | `src/app/` | Rutas, composición, carga de datos | Contener lógica de dominio |
+| **3. Consultas** | `src/lib/consultas/` | Lecturas para las páginas. Sin `"use server"` | Escribir en la base |
+| **4. Acciones** | `src/lib/acciones/` | Server actions. Validan, orquestan, escriben | Contener reglas que deberían estar en el motor |
+| **5. Componentes** | `src/componentes/` | Interfaz reutilizable | Consultar la base directamente |
+| **6. Páginas** | `src/app/` | Rutas, composición, carga de datos | Contener lógica de dominio |
 
 ### Por qué el motor es puro
 
-Porque es lo que hay que poder probar sin levantar nada. Las 120 pruebas del
+Porque es lo que hay que poder probar sin levantar nada. Las 129 pruebas del
 proyecto son casi todas de esta capa, y corren en 300 ms porque no tocan la red
 ni la base. Cuando una regla se puede probar barato, se prueba; cuando cuesta
 levantar medio sistema, se deja sin probar y acaba rota.
@@ -62,9 +66,10 @@ Es lo más importante del proyecto. Son dos personas y los datos de una pareja
 2. **En el acceso:** nadie usa Prisma directamente. `dbDelVinculo(vinculoId)`
    devuelve un cliente que inyecta el filtro en toda consulta filtrable.
 
-3. **Por convención vigilada:** `prismaCrudo` solo puede importarse desde
-   `src/lib/db.ts` y `src/auth.ts` (decisión D41). En cualquier otro sitio es
-   un fallo de revisión.
+3. **Comprobado, no prometido:** `prismaCrudo` solo pueden importarlo los
+   módulos que trabajan antes o por encima de un vínculo. La lista está
+   nombrada y justificada en `aislamiento.test.ts`, y una prueba falla si
+   alguien se añade a ella (D41).
 
 ### El matiz que ya nos mordió una vez
 
@@ -99,6 +104,7 @@ que es donde se mira cuando algo falla.
 |---|---|
 | Una regla que decide algo (cuándo, cuánto, cuál) | `src/lib/motor/<tema>.ts` + su `.test.ts` al lado |
 | Algo que escribe en la base | `src/lib/acciones/<tema>.ts` |
+| Una consulta para una pantalla | `src/lib/consultas/<tema>.ts` |
 | Una pantalla | `src/app/(app)/<ruta>/page.tsx` |
 | Un trozo de interfaz que se repite | `src/componentes/base.tsx` |
 | Un trozo de interfaz de un módulo concreto | `src/componentes/<modulo>.tsx` |
@@ -200,6 +206,7 @@ lib/motor/*.test.ts   Reglas del dominio. Puras, rápidas, sin base de datos
 lib/aislamiento.test.ts  Monta dos parejas de verdad y comprueba que no se ven
 lib/esquema.test.ts   Lee schema.prisma y exige vinculoId en todo modelo
 lib/estilo.test.ts    Falla si se cuela un emoji en cualquier .ts o .tsx
+lib/capas.test.ts     Hace cumplir las capas: quién puede importar a quién
 ```
 
 Las tres últimas son **invariantes**, no pruebas de una función: existen porque
@@ -248,9 +255,6 @@ que falte.
 
 Honestidad sobre el estado, para que nadie descubra esto por su cuenta:
 
-- **`componentes/nosotros.tsx` exporta `Seleccion`**, un desplegable genérico
-  que usan otros dos módulos. Debería estar en `base.tsx`: un control común no
-  puede vivir en el fichero de una funcionalidad.
 - **`motor.test.ts` es un cajón**: prueba `emociones` y `entrega` juntos,
   mientras el resto del motor tiene un fichero por tema. Debería partirse.
 - **`nosotros/page.tsx` es el fichero más grande** de la app. Sus cuatro vistas
@@ -258,3 +262,5 @@ Honestidad sobre el estado, para que nadie descubra esto por su cuenta:
 - **Sin cobertura de las server actions.** Toda la comprobación de pertenencia
   se ha verificado a mano en el navegador; convendría un test de integración
   como el de aislamiento.
+- **`componentes/yo.tsx` sigue teniendo 500 líneas** y siete cosas sin relación
+  entre sí. Está organizado por pestaña y debería estarlo por asunto.
