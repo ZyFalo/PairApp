@@ -1,0 +1,91 @@
+"use client"
+
+import { RiArchiveLine, RiCloseLine, RiInboxUnarchiveLine, RiSendPlaneLine } from "@remixicon/react"
+import { useState, useTransition } from "react"
+import { archivarApunte, decirloAhora, desarchivarApunte } from "@/lib/acciones/bucle"
+
+/**
+ * Lo que escribiste para ti y aún no has dicho (§2.0).
+ *
+ * Vive en el cofre, en la vista "Por hablar". Estos dos botones son todo lo
+ * que se puede hacer con un apunte: contarlo o guardarlo.
+ */
+
+/**
+ * Qué hacer con un apunte privado. "Decirlo ahora" es el mecanismo más
+ * importante de la lista: mover algo de callado a hablado sin empezar de
+ * cero (RF-2.0.6). Archivar no borra: guarda memoria sin presión (RF-2.0.9).
+ */
+export function AccionesApunte({
+  mensajeId,
+  hayPareja,
+}: {
+  mensajeId: string
+  hayPareja: boolean
+}) {
+  const [, empezar] = useTransition()
+  const [confirmando, setConfirmando] = useState(false)
+
+  // Enviar es irreversible: un toque de más no debería bastar para que salga.
+  if (confirmando) {
+    return (
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => empezar(() => void decirloAhora(mensajeId))}
+          className="pulsable inline-flex items-center gap-1.5 rounded-[var(--radius-pildora)] bg-[var(--color-acento)] px-3 py-1.5 text-[12.5px] font-medium text-[var(--color-sobre-acento)]"
+        >
+          <RiSendPlaneLine size={14} />
+          Enviárselo
+        </button>
+        <button
+          type="button"
+          onClick={() => setConfirmando(false)}
+          aria-label="Cancelar"
+          className="pulsable rounded-full p-1 text-[var(--color-tinta-tenue)]"
+        >
+          <RiCloseLine size={16} />
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-center gap-3 text-[13px]">
+      {hayPareja && (
+        <button
+          type="button"
+          onClick={() => setConfirmando(true)}
+          className="pulsable inline-flex items-center gap-1.5 text-[var(--color-acento)]"
+        >
+          <RiSendPlaneLine size={14} />
+          Decirlo ahora
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={() => empezar(() => void archivarApunte(mensajeId))}
+        className="pulsable inline-flex items-center gap-1.5 text-[var(--color-tinta-tenue)] hover:text-[var(--color-tinta-suave)]"
+      >
+        <RiArchiveLine size={14} />
+        Archivar
+      </button>
+    </div>
+  )
+}
+
+/** Sacar un apunte del archivo (RF-2.0.9). */
+export function BotonDesarchivar({ mensajeId }: { mensajeId: string }) {
+  const [, empezar] = useTransition()
+
+  return (
+    <button
+      type="button"
+      onClick={() => empezar(() => void desarchivarApunte(mensajeId))}
+      className="pulsable inline-flex items-center gap-1.5 text-[13px] text-[var(--color-tinta-tenue)] hover:text-[var(--color-acento)]"
+    >
+      <RiInboxUnarchiveLine size={14} />
+      Recuperarlo
+    </button>
+  )
+}

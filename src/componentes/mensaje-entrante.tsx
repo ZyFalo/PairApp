@@ -3,24 +3,15 @@
 import { RiHeart3Line, RiMoonClearLine, RiPauseCircleLine, RiQuillPenLine } from "@remixicon/react"
 import { AnimatePresence, motion } from "motion/react"
 import { useRouter } from "next/navigation"
-import { useActionState, useEffect, useState } from "react"
+import { useState } from "react"
 import { type DatosAdjunto, VistaAdjunto } from "@/componentes/adjunto"
-import {
-  Apunte,
-  Aviso,
-  Boton,
-  Pastilla,
-  Separador,
-  Tarjeta,
-  TextoDeCarta,
-} from "@/componentes/base"
-import { COLOR_GRUPO, ICONO_CIERRE, ICONO_EMOCION, ICONO_NECESIDAD } from "@/componentes/iconos"
+import { Apunte, Boton, Tarjeta, TextoDeCarta } from "@/componentes/base"
+import { COLOR_GRUPO, ICONO_EMOCION, ICONO_NECESIDAD } from "@/componentes/iconos"
+import { FormularioRespuesta } from "@/componentes/mensaje-responder"
 import type { Emocion, Necesidad } from "@/generated/prisma/enums"
-import { avisarNecesitoUnRato, marcarVisto, posponerLectura, responder } from "@/lib/acciones/bucle"
+import { avisarNecesitoUnRato, marcarVisto, posponerLectura } from "@/lib/acciones/entregas"
 import { useBorrador } from "@/lib/borrador"
 import {
-  CIERRES,
-  ETIQUETA_CIERRE,
   ETIQUETA_NECESIDAD,
   esDificilDeResponder,
   etiquetaDe,
@@ -349,100 +340,6 @@ function Lectura({
           </>
         )}
       </motion.div>
-    </section>
-  )
-}
-
-/** Las emociones que se pueden adjuntar a una respuesta (RF-3.18). */
-const EMOCIONES_ADJUNTAS: Emocion[] = ["APENADO", "INCOMODO", "TRISTE", "AGRADECIDO", "BIEN"]
-
-/** Responder, con la opción de adjuntar cómo me dejó el mensaje (RF-3.18). */
-function FormularioRespuesta({ entregaId, onVolver }: Props & { onVolver: () => void }) {
-  const router = useRouter()
-  const [estado, accion, pendiente] = useActionState(responder, {})
-
-  // Perder media respuesta escrita por mirar otra pestaña es de las cosas que
-  // más desaniman a volver a escribir.
-  const [borrador, actualizar, olvidar] = useBorrador(`hoy:respuesta:${entregaId}`, {
-    texto: "",
-    emocionAdjunta: "",
-  })
-  const { texto, emocionAdjunta } = borrador
-
-  // Navegar es un efecto, no algo que ocurra mientras se pinta.
-  useEffect(() => {
-    if (!estado.ok) return
-    olvidar()
-    router.refresh()
-  }, [estado.ok, olvidar, router])
-
-  return (
-    <section className="space-y-4">
-      <form action={accion} className="space-y-4">
-        <input type="hidden" name="entregaId" value={entregaId} />
-        <input type="hidden" name="emocionAdjunta" value={emocionAdjunta} />
-
-        <textarea
-          name="texto"
-          value={texto}
-          onChange={(e) => actualizar({ texto: e.target.value })}
-          rows={5}
-          maxLength={4000}
-          placeholder="Tu respuesta…"
-          aria-label="Tu respuesta"
-          className="carta w-full resize-none rounded-[var(--radius-tarjeta)] border border-[var(--color-borde)] bg-[var(--color-papel)] p-5 text-[17px] leading-relaxed shadow-[inset_0_1px_2px_rgb(74_54_38_/_0.04)] outline-none transition-colors focus:border-[var(--color-acento-suave)]"
-        />
-
-        <div className="space-y-2.5">
-          <Apunte>Y de paso, cómo me dejó (opcional)</Apunte>
-          <div className="flex flex-wrap gap-2">
-            {EMOCIONES_ADJUNTAS.map((e) => (
-              <Pastilla
-                key={e}
-                Icono={ICONO_EMOCION[e]}
-                activa={emocionAdjunta === e}
-                onClick={() => actualizar({ emocionAdjunta: emocionAdjunta === e ? "" : e })}
-              >
-                {etiquetaDe(e, "NEUTRO")}
-              </Pastilla>
-            ))}
-          </div>
-        </div>
-
-        <Aviso>{estado.error}</Aviso>
-
-        <Boton type="submit" disabled={pendiente} className="w-full">
-          {pendiente ? "Enviando…" : "Enviar respuesta"}
-        </Boton>
-
-        <Separador />
-
-        <div className="space-y-2">
-          <Apunte>O responde con un toque</Apunte>
-          <div className="grid gap-2">
-            {CIERRES.map((c) => {
-              const Icono = ICONO_CIERRE[c]
-              return (
-                <button
-                  key={c}
-                  type="submit"
-                  name="cierre"
-                  value={c}
-                  disabled={pendiente}
-                  className="pulsable flex items-center gap-2.5 rounded-[var(--radius-suave)] border border-[var(--color-borde)] bg-[var(--color-papel)] px-4 py-3 text-[14px] text-[var(--color-tinta-suave)] hover:border-[var(--color-acento-suave)] hover:text-[var(--color-tinta)] disabled:opacity-40"
-                >
-                  <Icono size={16} className="text-[var(--color-acento-suave)]" />
-                  {ETIQUETA_CIERRE[c]}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        <Boton variante="texto" type="button" onClick={onVolver} className="w-full">
-          Volver
-        </Boton>
-      </form>
     </section>
   )
 }

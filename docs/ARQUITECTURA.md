@@ -206,7 +206,7 @@ lib/motor/*.test.ts   Reglas del dominio. Puras, rápidas, sin base de datos
 lib/aislamiento.test.ts  Monta dos parejas de verdad y comprueba que no se ven
 lib/esquema.test.ts   Lee schema.prisma y exige vinculoId en todo modelo
 lib/estilo.test.ts    Falla si se cuela un emoji en cualquier .ts o .tsx
-lib/capas.test.ts     Hace cumplir las capas: quién puede importar a quién
+lib/capas.test.ts     Hace cumplir las capas, y que ningún fichero crezca sin freno
 ```
 
 Las tres últimas son **invariantes**, no pruebas de una función: existen porque
@@ -255,12 +255,10 @@ que falte.
 
 Honestidad sobre el estado, para que nadie descubra esto por su cuenta:
 
-- **`motor.test.ts` es un cajón**: prueba `emociones` y `entrega` juntos,
-  mientras el resto del motor tiene un fichero por tema. Debería partirse.
-- **`nosotros/page.tsx` es el fichero más grande** de la app. Sus cuatro vistas
-  pedirían ser cuatro componentes.
 - **Sin cobertura de las server actions.** Toda la comprobación de pertenencia
   se ha verificado a mano en el navegador; convendría un test de integración
   como el de aislamiento.
-- **`componentes/yo.tsx` sigue teniendo 500 líneas** y siete cosas sin relación
-  entre sí. Está organizado por pestaña y debería estarlo por asunto.
+- **`componentes/juntos.tsx` y `cofre/page.tsx` rondan las 400 líneas.** Están
+  por debajo del límite, pero cerca: el próximo añadido pedirá partirlos.
+- **Las cuatro vistas de Nosotros** podrían ser cuatro componentes; solo se ha
+  extraído la de "Después", que era la que hacía pasar el límite.

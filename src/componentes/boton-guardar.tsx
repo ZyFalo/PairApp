@@ -8,12 +8,8 @@ import {
   RiInboxUnarchiveLine,
 } from "@remixicon/react"
 import { useState, useTransition } from "react"
-import {
-  alternarGuardado,
-  eliminarConRastro,
-  retirarEnviado,
-  retirarGuardado,
-} from "@/lib/acciones/bucle"
+import { alternarGuardado } from "@/lib/acciones/bucle"
+import { eliminarConRastro, retirarEnviado, retirarGuardado } from "@/lib/acciones/entregas"
 
 /**
  * Guardar un mensaje en el cofre. La señal solo existe en positivo: no hay

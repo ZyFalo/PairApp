@@ -7,10 +7,10 @@ import {
   RiSendPlaneLine,
 } from "@remixicon/react"
 import Link from "next/link"
+import { AccionesApunte, BotonDesarchivar } from "@/componentes/apuntes"
 import { Apunte, Seccion, Tarjeta, TextoDeCarta, Titulo, Vacio } from "@/componentes/base"
 import { BotonGuardar, BotonRetirar, DeshacerEnvio } from "@/componentes/boton-guardar"
 import { COLOR_GRUPO, ICONO_CIERRE, ICONO_EMOCION } from "@/componentes/iconos"
-import { AccionesApunte, BotonDesarchivar } from "@/componentes/yo"
 import type { Emocion } from "@/generated/prisma/enums"
 import { DestinoMensaje } from "@/generated/prisma/enums"
 import { loQueLeMande } from "@/lib/consultas/bucle"

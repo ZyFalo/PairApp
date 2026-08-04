@@ -117,6 +117,8 @@ un salto mental en cada lectura, y ahí es donde se pierden los matices.
   necesita su versión oscura**.
 - **Sin contadores, sin insignias de pendientes, sin cuentas atrás.** Un número
   al lado de una lista convierte una conversación en una deuda (RF-2.0.7).
+- **Ningún fichero pasa de 420 líneas.** Cuando uno se acerca, la pregunta no
+  es cómo apretarlo: es si de verdad hace **una** cosa. Casi siempre hace tres.
 - **Toda pantalla tiene salida.** Si algo se abre, se cierra sin recargar.
 - **Lo irreversible se avisa antes**, con la consecuencia dicha: «verá que lo
   borraste», no «¿estás seguro?».

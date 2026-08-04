@@ -7,7 +7,7 @@ import { useState, useTransition } from "react"
 import { Apunte, Aviso, Boton, Tarjeta, TextoDeCarta } from "@/componentes/base"
 import { COLOR_GRUPO, ICONO_EMOCION } from "@/componentes/iconos"
 import type { Emocion } from "@/generated/prisma/enums"
-import { dejarloIr, enviarDelFrio } from "@/lib/acciones/bucle"
+import { dejarloIr, enviarDelFrio } from "@/lib/acciones/entregas"
 import { etiquetaDe, grupoDe } from "@/lib/motor/emociones"
 
 type Props = {

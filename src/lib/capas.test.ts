@@ -125,7 +125,11 @@ describe("las capas de la arquitectura", () => {
       .filter(({ ruta, imp }) => {
         const m = imp.match(/^@\/componentes\/([\w-]+)$/)
         if (!m || comunes.has(m[1])) return false
-        return !ruta.endsWith(`${m[1]}.tsx`)
+        // Un módulo puede repartirse en varios ficheros si comparten prefijo:
+        // `mensaje-entrante` y `mensaje-responder` son el mismo gesto partido
+        // en dos momentos, no dos módulos que se llaman entre sí.
+        const modulo = (f: string) => f.split("/").pop()?.replace(".tsx", "").split("-")[0]
+        return modulo(ruta) !== m[1].split("-")[0]
       })
       .map(({ ruta, imp }) => `${ruta} → ${imp}`)
 
@@ -154,5 +158,27 @@ describe("el mapa de capas está al día", () => {
     }).map((c) => c.carpeta)
 
     expect(faltan).toEqual([])
+  })
+})
+
+/**
+ * Un fichero que crece sin freno acaba siendo siete cosas sin relación entre
+ * sí. Pasó con `componentes/yo.tsx` —500 líneas cuyo único vínculo era salir
+ * en la misma pestaña— y con `acciones/bucle.ts`, que mezclaba lecturas y
+ * escrituras porque nadie miró el tamaño a tiempo.
+ *
+ * El límite no es sagrado: es un aviso. Si uno lo pasa, la pregunta es si de
+ * verdad hace **una** cosa. Casi siempre la respuesta es que hace tres.
+ */
+const LIMITE_LINEAS = 420
+
+describe("nada crece sin freno", () => {
+  it("ningún fichero pasa del límite de líneas", () => {
+    const pasados = ficheros("src")
+      .map((ruta) => ({ ruta, lineas: readFileSync(ruta, "utf8").split("\n").length }))
+      .filter(({ lineas }) => lineas > LIMITE_LINEAS)
+      .map(({ ruta, lineas }) => `${ruta} (${lineas})`)
+
+    expect(pasados).toEqual([])
   })
 })

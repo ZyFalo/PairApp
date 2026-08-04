@@ -1,7 +1,6 @@
 import {
   RiCalendarCheckLine,
   RiCalendarEventLine,
-  RiChatHistoryLine,
   RiExternalLinkLine,
   RiFilmLine,
   RiHandHeartLine,
@@ -13,12 +12,6 @@ import {
 } from "@remixicon/react"
 import Link from "next/link"
 import { Apunte, Insignia, Seccion, Tarjeta, Titulo, Vacio } from "@/componentes/base"
-import {
-  BotonArchivarAcuerdo,
-  EstadoConflicto,
-  FormularioAcuerdo,
-  FormularioConflicto,
-} from "@/componentes/conflicto"
 import {
   BotonBorrarRecuerdo,
   EligeTu,
@@ -33,14 +26,10 @@ import {
   VentanaOnceOnce,
 } from "@/componentes/nosotros"
 import { anosDesde, cumpleAnosHoy, haceAnos } from "@/lib/motor/juntos"
-import {
-  diaLocal,
-  diaRelativo,
-  fechaSuelta,
-  formatoLegible,
-  ventanaOnceOnce,
-} from "@/lib/motor/tiempo"
+import { diaLocal, diaRelativo, fechaSuelta, ventanaOnceOnce } from "@/lib/motor/tiempo"
 import { dbDeSesion } from "@/lib/sesion"
+
+import { DespuesDeUnaDiscusion } from "./despues"
 
 export const dynamic = "force-dynamic"
 
@@ -398,75 +387,13 @@ export default async function PaginaNosotros({
       )}
 
       {esDespues && (
-        <>
-          <section className="space-y-3">
-            <Seccion Icono={RiHandHeartLine}>Lo que acordamos</Seccion>
-            {acuerdos.length === 0 ? (
-              <Vacio Icono={RiHandHeartLine}>
-                Nada apuntado. Aquí van esas cosas que se dicen después y luego se olvidan.
-              </Vacio>
-            ) : (
-              <ul className="space-y-2">
-                {acuerdos.map((a) => (
-                  <li key={a.id}>
-                    <Tarjeta className="aparece flex items-start justify-between gap-3">
-                      <p className="carta text-[16px] leading-relaxed">{a.texto}</p>
-                      <BotonArchivarAcuerdo id={a.id} />
-                    </Tarjeta>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <FormularioAcuerdo />
-          </section>
-
-          <section className="space-y-3">
-            <Seccion Icono={RiChatHistoryLine}>Cuando algo pasó</Seccion>
-            {relatos.length === 0 ? (
-              <Apunte>
-                Cuatro preguntas para ordenar una discusión: qué pasó, qué sentiste, qué necesitabas
-                y qué harías distinto. Lo escribes para ti; compartirlo se decide después.
-              </Apunte>
-            ) : (
-              <ul className="space-y-2">
-                {relatos.map((r) => {
-                  const esMio = r.autorId === sesion.usuarioId
-                  return (
-                    <li key={r.id}>
-                      <Tarjeta className="aparece space-y-2.5">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <Apunte>
-                            {esMio ? "Tú" : (sesion.pareja?.nombre ?? "Ella")} ·{" "}
-                            {formatoLegible(r.creadoEn, sesion.zonaHoraria)}
-                          </Apunte>
-                          {esMio && (
-                            <EstadoConflicto id={r.id} compartido={r.compartidoEn !== null} />
-                          )}
-                        </div>
-                        <dl className="space-y-2">
-                          {[
-                            ["Qué pasó", r.quePaso],
-                            ["Qué sentí", r.queSenti],
-                            ["Qué necesitaba", r.queNecesitaba],
-                            ["Qué haría distinto", r.queHariaDistinto],
-                          ].map(([titulo, cuerpo]) => (
-                            <div key={titulo}>
-                              <dt className="text-[11.5px] font-medium uppercase tracking-[0.1em] text-[var(--color-tinta-tenue)]">
-                                {titulo}
-                              </dt>
-                              <dd className="carta text-[15.5px] leading-relaxed">{cuerpo}</dd>
-                            </div>
-                          ))}
-                        </dl>
-                      </Tarjeta>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-            <FormularioConflicto />
-          </section>
-        </>
+        <DespuesDeUnaDiscusion
+          acuerdos={acuerdos}
+          relatos={relatos}
+          usuarioId={sesion.usuarioId}
+          nombrePareja={sesion.pareja?.nombre ?? null}
+          zonaHoraria={sesion.zonaHoraria}
+        />
       )}
 
       {!sesion.pareja && (

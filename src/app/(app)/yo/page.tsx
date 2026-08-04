@@ -5,15 +5,10 @@ import {
   RiSeedlingLine,
   RiSettings3Line,
 } from "@remixicon/react"
+import { ControlPausa, PanelPush } from "@/componentes/avisos"
 import { Apunte, Boton, Insignia, Seccion, Tarjeta, Titulo, Vacio } from "@/componentes/base"
+import { CambiarVisibilidadCiclo, FormularioCiclo, InterruptorCiclo } from "@/componentes/ciclo"
 import { COLOR_GRUPO, ESTILO_GRUPO, ICONO_EMOCION } from "@/componentes/iconos"
-import {
-  CambiarVisibilidadCiclo,
-  ControlPausa,
-  FormularioCiclo,
-  InterruptorCiclo,
-  PanelPush,
-} from "@/componentes/yo"
 import { salir } from "@/lib/acciones/cuenta"
 import { CICLOS_PARA_ESTIMAR, estimarProximoCiclo } from "@/lib/motor/ciclo"
 import { ETIQUETA_VISIBILIDAD, etiquetaDe, grupoDe } from "@/lib/motor/emociones"
