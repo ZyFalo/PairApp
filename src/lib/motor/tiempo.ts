@@ -6,8 +6,11 @@ import { DateTime } from "luxon"
  */
 export const VENTANA_DESPACHO_MIN = 15
 
-/** Minuto en que empieza el ritual de los 11:11 y hasta dónde llega la gracia (RF-12.2). */
-export const ONCE_ONCE = { hora: 11, minuto: 11, graciaMin: 4 }
+/**
+ * Un día en milisegundos. Sirve para aritmética de fechas sueltas, que se
+ * guardan a medianoche UTC y no sufren cambios de horario.
+ */
+export const UN_DIA = 86_400_000
 
 /**
  * Si a esta persona le toca su pregunta periódica ahora mismo (RF-1.0).
@@ -24,21 +27,6 @@ export function tocaPreguntaPeriodica(
 }
 
 /**
- * Si estamos dentro de la ventana de los 11:11 (RF-12.2).
- * Cuatro minutos de gracia: el minuto exacto sería precioso y frustrante.
- */
-export function ventanaOnceOnce(
-  zonaHoraria: string,
-  ahoraUtc: Date,
-): { abierta: boolean; esNoche: boolean } {
-  const local = DateTime.fromJSDate(ahoraUtc, { zone: "utc" }).setZone(zonaHoraria)
-  const esHora = local.hour === ONCE_ONCE.hora || local.hour === ONCE_ONCE.hora + 12
-  const dentro =
-    local.minute >= ONCE_ONCE.minuto && local.minute <= ONCE_ONCE.minuto + ONCE_ONCE.graciaMin
-  return { abierta: esHora && dentro, esNoche: local.hour >= 12 }
-}
-
-/**
  * Una fecha sin hora: "2 de agosto de 2025".
  *
  * Para las columnas que guardan un día suelto (recuerdos, ciclos). Se lee en
@@ -48,6 +36,33 @@ export function ventanaOnceOnce(
  */
 export function fechaSuelta(dia: Date): string {
   return DateTime.fromJSDate(dia, { zone: "utc" }).setLocale("es").toFormat("d 'de' LLLL 'de' yyyy")
+}
+
+/**
+ * Un día suelto como clave: "2026-08-02".
+ *
+ * Gemela de `fechaSuelta` y por el mismo motivo lee en UTC: es para colgar del
+ * calendario lo que se guarda sin hora —recuerdos, periodos—, y pasarlo por una
+ * zona con desfase negativo lo movería un día entero de casilla.
+ *
+ * Para lo que sí tiene hora —un plan, un check-in— la clave la da `diaLocal`,
+ * que sí traduce a la zona de quien mira. Confundirlas coloca las cosas en el
+ * día de al lado, que es el bug de calendario más difícil de ver.
+ */
+export function diaSuelto(dia: Date): string {
+  return DateTime.fromJSDate(dia, { zone: "utc" }).toFormat("yyyy-MM-dd")
+}
+
+/**
+ * La inversa: de la clave de un día a cómo se dice. "2026-08-04" → "4 de
+ * agosto de 2026".
+ *
+ * Existe para no repetir en cada pantalla el `new Date(dia + "T00:00:00Z")`,
+ * que es fácil de escribir mal —sin la Z se lee en la zona del servidor— y
+ * mueve la fecha un día sin que nada avise.
+ */
+export function fechaDeClave(dia: string): string {
+  return fechaSuelta(new Date(`${dia}T00:00:00Z`))
 }
 
 /**

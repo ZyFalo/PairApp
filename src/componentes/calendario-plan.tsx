@@ -1,48 +1,19 @@
 "use client"
 
-import { RiCloseLine, RiDeleteBin6Line, RiSparkling2Line } from "@remixicon/react"
+import { RiCloseLine, RiDeleteBin6Line } from "@remixicon/react"
 import { useActionState, useEffect, useState, useTransition } from "react"
-import { Apunte, Aviso, Boton, Campo, Seleccion, Tarjeta } from "@/componentes/base"
-import { borrarEvento, crearEvento, dedicarCancion, pedirOnceOnce } from "@/lib/acciones/nosotros"
+import { Aviso, Boton, Campo, Seleccion, Tarjeta } from "@/componentes/base"
+import { borrarEvento, crearEvento } from "@/lib/acciones/nosotros"
 import { useBorrador } from "@/lib/borrador"
 
 /**
- * Los 11:11 (M12). Cuatro minutos de gracia; si se pasa, el aviso desaparece
- * sin dejar rastro ni mención. Sin rachas ni contadores (RF-12.7).
+ * Añadir y quitar planes del calendario compartido (M7).
+ *
+ * Vivía en `nosotros.tsx` junto a los 11:11 y las dedicatorias, tres cosas cuyo
+ * único parecido era salir en la misma pestaña. Al convertirse el calendario en
+ * la pantalla de entrada, el formulario del plan pasó a usarse desde dos sitios
+ * —el mes y la hoja de un día— y el fichero se partió por donde tocaba.
  */
-export function VentanaOnceOnce() {
-  const [estado, accion, pendiente] = useActionState(pedirOnceOnce, {})
-  const [texto, setTexto] = useState("")
-
-  if (estado.ok) return null
-
-  return (
-    <Tarjeta alzada className="aparece space-y-3">
-      <p className="flex items-center justify-center gap-2 carta text-[19px]">
-        <RiSparkling2Line size={18} className="text-[var(--color-contigo)]" />
-        11:11
-      </p>
-      <form action={accion} className="space-y-3">
-        <textarea
-          name="texto"
-          value={texto}
-          onChange={(e) => setTexto(e.target.value.slice(0, 140))}
-          rows={2}
-          placeholder="Pide un deseo…"
-          aria-label="Tu deseo"
-          className="carta w-full resize-none rounded-[var(--radius-suave)] border border-[var(--color-borde)] bg-[var(--color-lienzo)] p-3 text-[16px] outline-none transition-colors focus:border-[var(--color-acento-suave)]"
-        />
-        <div className="flex items-center justify-between">
-          <Apunte>{140 - texto.length} caracteres</Apunte>
-          <Boton type="submit" disabled={pendiente || !texto.trim()}>
-            Pedir
-          </Boton>
-        </div>
-        <Aviso>{estado.error}</Aviso>
-      </form>
-    </Tarjeta>
-  )
-}
 
 /** Cuánto antes avisar de un plan (RF-7.2). "Sin aviso" es una opción legítima. */
 const AVISOS = [
@@ -53,10 +24,13 @@ const AVISOS = [
 ]
 
 /**
- * Añadir un plan al calendario compartido (RF-7.1).
+ * Añadir un plan (RF-7.1).
  * Lo escrito sobrevive a cambiar de pestaña, igual que en Hoy.
+ *
+ * `fechaSugerida` llega cuando se abre desde un día concreto: quien toca el 14
+ * y pulsa "añadir" quiere un plan el 14, no volver a teclear la fecha.
  */
-export function FormularioEvento() {
+export function FormularioEvento({ fechaSugerida }: { fechaSugerida?: string }) {
   const [estado, accion, pendiente] = useActionState(crearEvento, {})
   const [borrador, actualizar, olvidar] = useBorrador("nosotros:plan", {
     abierto: false,
@@ -65,6 +39,7 @@ export function FormularioEvento() {
     avisoHoras: "",
     notas: "",
     esDePareja: true,
+    anual: false,
   })
 
   // Al guardar se cierra y se olvida: dejarlo abierto invita a repetir sin querer.
@@ -74,7 +49,18 @@ export function FormularioEvento() {
 
   if (!borrador.abierto) {
     return (
-      <Boton variante="suave" onClick={() => actualizar({ abierto: true })} className="w-full">
+      <Boton
+        variante="suave"
+        onClick={() =>
+          actualizar({
+            abierto: true,
+            // Solo se rellena si no había nada escrito: sugerir no puede pisar
+            // un borrador a medias que alguien dejó al cambiar de pestaña.
+            inicio: borrador.inicio || (fechaSugerida ? `${fechaSugerida}T20:00` : ""),
+          })
+        }
+        className="w-full"
+      >
         Añadir un plan
       </Boton>
     )
@@ -136,6 +122,20 @@ export function FormularioEvento() {
           Es un plan de los dos
         </label>
 
+        {/* Los aniversarios se repiten solos (RF-7.3): sin esto, un cumpleaños
+            solo existiría en el año en que se apuntó. */}
+        <label className="flex items-center gap-2 text-[14px] text-[var(--color-tinta-suave)]">
+          <input
+            type="checkbox"
+            name="anual"
+            value="true"
+            checked={borrador.anual}
+            onChange={(e) => actualizar({ anual: e.target.checked })}
+            className="accent-[var(--color-acento)]"
+          />
+          Se repite cada año
+        </label>
+
         <Aviso>{estado.error}</Aviso>
         <div className="flex gap-2">
           <Boton type="submit" disabled={pendiente} className="flex-1">
@@ -189,75 +189,5 @@ export function BotonBorrarEvento({ id, titulo }: { id: string; titulo: string }
         <RiCloseLine size={15} />
       </button>
     </span>
-  )
-}
-
-/** Cuándo entregar una dedicatoria (RF-8.1). */
-const FRANJAS = [
-  { valor: "MANANA", texto: "Por la mañana" },
-  { valor: "TARDE", texto: "Media tarde" },
-  { valor: "NOCHE", texto: "Por la noche" },
-]
-
-/** Dedicar una canción por enlace pegado (RF-8.2). Sin API ni OAuth. */
-export function FormularioCancion() {
-  const [estado, accion, pendiente] = useActionState(dedicarCancion, {})
-  const [borrador, actualizar, olvidar] = useBorrador("nosotros:cancion", {
-    abierto: false,
-    url: "",
-    mensaje: "",
-    franja: "TARDE",
-  })
-
-  useEffect(() => {
-    if (estado.ok) olvidar()
-  }, [estado.ok, olvidar])
-
-  if (!borrador.abierto) {
-    return (
-      <Boton variante="suave" onClick={() => actualizar({ abierto: true })} className="w-full">
-        Dedicar una canción
-      </Boton>
-    )
-  }
-
-  return (
-    <Tarjeta className="aparece">
-      <form action={accion} className="space-y-3">
-        <Campo
-          etiqueta="Enlace (YouTube, Spotify…)"
-          name="url"
-          type="url"
-          required
-          autoFocus
-          placeholder="https://"
-          value={borrador.url}
-          onChange={(e) => actualizar({ url: e.target.value })}
-        />
-        <Campo
-          etiqueta="Dedicatoria (opcional)"
-          name="mensaje"
-          maxLength={500}
-          value={borrador.mensaje}
-          onChange={(e) => actualizar({ mensaje: e.target.value })}
-        />
-        <Seleccion
-          etiqueta="¿Cuándo le llega?"
-          name="franja"
-          opciones={FRANJAS}
-          valor={borrador.franja}
-          onCambio={(v) => actualizar({ franja: v })}
-        />
-        <Aviso>{estado.error}</Aviso>
-        <div className="flex gap-2">
-          <Boton type="submit" disabled={pendiente} className="flex-1">
-            {pendiente ? "Dedicando…" : "Dedicar"}
-          </Boton>
-          <Boton variante="texto" type="button" onClick={olvidar}>
-            Cancelar
-          </Boton>
-        </div>
-      </form>
-    </Tarjeta>
   )
 }

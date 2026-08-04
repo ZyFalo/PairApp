@@ -3,8 +3,8 @@
 import {
   RiArchiveDrawerFill,
   RiArchiveDrawerLine,
-  RiHeart2Fill,
-  RiHeart2Line,
+  RiCalendar2Fill,
+  RiCalendar2Line,
   RiSunFill,
   RiSunLine,
   RiUser3Fill,
@@ -15,11 +15,21 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { pedirReinicio } from "@/lib/borrador"
 
-/** Las cuatro pestañas de §8.1. Ninguna lleva contador: un badge es una deuda (RF-2.0.7). */
+/**
+ * Las cuatro pestañas de §8.1. Ninguna lleva contador: un badge es una deuda
+ * (RF-2.0.7).
+ *
+ * Nosotros va primera desde que su vista de partida es el calendario: es la
+ * pantalla por la que se entra. Conserva su nombre y no pasa a llamarse
+ * "Calendario" porque debajo siguen colgando las películas, la música y los
+ * recuerdos — el mes es su puerta, no todo lo que hay dentro.
+ *
+ * El icono sí es un calendario: dice qué se va a encontrar quien toque.
+ */
 const PESTANAS = [
+  { href: "/nosotros", texto: "Nosotros", Icono: RiCalendar2Line, IconoActivo: RiCalendar2Fill },
   { href: "/hoy", texto: "Hoy", Icono: RiSunLine, IconoActivo: RiSunFill },
   { href: "/cofre", texto: "Cofre", Icono: RiArchiveDrawerLine, IconoActivo: RiArchiveDrawerFill },
-  { href: "/nosotros", texto: "Nosotros", Icono: RiHeart2Line, IconoActivo: RiHeart2Fill },
   { href: "/yo", texto: "Yo", Icono: RiUser3Line, IconoActivo: RiUser3Fill },
 ]
 

@@ -119,11 +119,26 @@ emociones.ts    Las nueve emociones, sus familias y qué implica cada una
 entrega.ts      La matriz de §3.0.15: cómo se presenta un mensaje entrante
 tiempo.ts       Zonas horarias, ventanas, formatos. Todo lo que toca Luxon
 frio.ts         Buzón en frío y ventana de retirada (§6.3, §6.4)
-ciclo.ts        Estimación del próximo periodo (RF-5.2)
+ciclo.ts        Duración de un periodo y estimación del siguiente (RF-5.1, RF-5.2)
 reparacion.ts   Los cuatro gestos y cuándo se ofrecen (§6.8)
-calendario.ts   Generación de archivos .ics
+calendario.ts   La rejilla del mes: qué días se pintan y qué cae en cada uno (M7)
+ics.ts          Generación de archivos .ics para el calendario del teléfono
+once.ts         La ventana de los 11:11 y quién participa en ella (M12)
 juntos.ts       Selector al azar de títulos y aniversarios de recuerdos
 ```
+
+### Dos relojes, y confundirlos coloca las cosas en el día de al lado
+
+Es el error de calendario más difícil de ver, así que conviene tenerlo escrito:
+
+| Qué | Cómo se guarda | Con qué se lee |
+|---|---|---|
+| Periodos, recuerdos | Día suelto, a medianoche **UTC** | `diaSuelto()` — en UTC |
+| Planes, check-ins | Un **instante** real | `diaLocal()` — en la zona de quien mira |
+
+Un recuerdo del 14 de febrero es del 14 de febrero en todas partes. Una cena a
+las once de la noche pertenece al día de quien cena, no al que diga UTC.
+Leerlos con la función equivocada los mueve una casilla y nada avisa.
 
 ---
 
@@ -171,6 +186,23 @@ Dos maneras, y hay que elegir bien:
 
 Lo segundo no es preferencia: costó un bug que impedía enviar mensajes enojados,
 que es la función más importante de la app. Está explicado en `compositor.tsx`.
+
+### Qué puede cruzar de servidor a cliente
+
+**Una función, no.** Los iconos de este proyecto son componentes —o sea,
+funciones—, así que pasar `Icono={RiFilmLine}` desde una página a un componente
+`"use client"` revienta en tiempo de ejecución:
+
+```
+Functions cannot be passed directly to Client Components
+```
+
+Lo que sí cruza es **JSX ya dibujado**. El patrón, en `vistas.tsx`: el
+componente de cliente recibe `children` y solo se ocupa del comportamiento —el
+carril que se desplaza—, mientras las pastillas se pintan en el servidor, que es
+donde el icono se resuelve.
+
+Esto compilaba, pasaba el lint y pasaba las 153 pruebas. Se vio abriendo la app.
 
 ### Borradores
 
@@ -221,6 +253,7 @@ significa esperar o escribir SQL — y lo que cuesta probar, no se prueba.
 ```bash
 pnpm db:escenario              # lista los casos
 pnpm db:escenario frio         # monta uno y dice qué mirar
+pnpm db:escenario calendario   # un mes con periodos, ánimo, planes y aniversario
 pnpm db:escenario limpio       # deja la semilla como estaba
 ```
 
@@ -258,7 +291,15 @@ Honestidad sobre el estado, para que nadie descubra esto por su cuenta:
 - **Sin cobertura de las server actions.** Toda la comprobación de pertenencia
   se ha verificado a mano en el navegador; convendría un test de integración
   como el de aislamiento.
-- **`componentes/juntos.tsx` y `cofre/page.tsx` rondan las 400 líneas.** Están
-  por debajo del límite, pero cerca: el próximo añadido pedirá partirlos.
-- **Las cuatro vistas de Nosotros** podrían ser cuatro componentes; solo se ha
-  extraído la de "Después", que era la que hacía pasar el límite.
+- **`componentes/juntos.tsx` ronda las 400 líneas.** Está por debajo del
+  límite, pero cerca: el próximo añadido pedirá partirlo.
+- **La rejilla trae dos consultas al abrir un día**, una para el mes y otra para
+  el día. Se repiten datos a propósito —traer el detalle de cuarenta y dos
+  casillas sería peor—, pero si el mes se vuelve más pesado habrá que mirarlo.
+- **Un evento anual enseña su hora.** Para un cumpleaños sobra. El modelo tiene
+  `todoElDia` y el formulario todavía no lo usa.
+- **La ventana de los 11:11 no se puede probar en el navegador fuera de los
+  minutos :11 a :15.** `participaEnLaVentana` sí tiene pruebas del motor, pero
+  el camino completo —abrir la app en la ventana con el ajuste puesto— solo se
+  comprueba a la hora buena. Cambiar la zona horaria mueve la hora y nunca el
+  minuto, así que no hay forma de fingirlo.

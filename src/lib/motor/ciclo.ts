@@ -1,3 +1,5 @@
+import { UN_DIA } from "./tiempo"
+
 /**
  * Estimación del próximo periodo (RF-5.2).
  *
@@ -10,6 +12,29 @@
 /** Cuántos ciclos anteriores pesan en la media. Más allá, los viejos estorban. */
 export const CICLOS_PARA_ESTIMAR = 6
 
+/** Cuánto se asume que dura un periodo si no se marcó el último día (RF-5.1). */
+export const DIAS_DE_PERIODO = 5
+
+/**
+ * Cuándo deja de estar en curso un periodo.
+ *
+ * Las fechas se guardan como días sueltos, sin hora. El último día tiene que
+ * contar entero: un periodo que acaba "el día 2" no termina a las 00:00 de ese
+ * día, así que el corte va al comenzar el siguiente.
+ *
+ * Vivía dentro de la página de Nosotros, que es una capa donde no puede estar
+ * una regla del dominio. Ahora la usan la pantalla y el calendario.
+ */
+export function finDelPeriodo(ciclo: { inicio: Date; fin: Date | null }): Date {
+  const ultimoDia = ciclo.fin ?? new Date(ciclo.inicio.getTime() + (DIAS_DE_PERIODO - 1) * UN_DIA)
+  return new Date(ultimoDia.getTime() + UN_DIA)
+}
+
+/** Si un periodo está en curso ahora mismo. */
+export function enCurso(ciclo: { inicio: Date; fin: Date | null }, ahora: Date): boolean {
+  return ciclo.inicio <= ahora && ahora < finDelPeriodo(ciclo)
+}
+
 /**
  * Separación plausible entre dos periodos, en días. Fuera de esta horquilla se
  * descarta el dato: casi siempre es una fecha mal escrita, y una sola cifra
@@ -17,8 +42,6 @@ export const CICLOS_PARA_ESTIMAR = 6
  */
 export const DIAS_MINIMOS = 15
 export const DIAS_MAXIMOS = 60
-
-const UN_DIA = 86_400_000
 
 export type Estimacion = {
   /** Cuándo se estima que empieza el siguiente. */

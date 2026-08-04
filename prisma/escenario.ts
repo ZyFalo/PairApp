@@ -25,6 +25,9 @@ const prisma = new PrismaClient({
 const HORA = 3_600_000
 const DIA = 24 * HORA
 
+/** La zona en la que viven las dos personas de la semilla. */
+const ZONA_SEMILLA = "America/Bogota"
+
 /** Las dos personas del vínculo, tal como las deja `pnpm db:sembrar`. */
 async function personas() {
   const will = await prisma.usuario.findUnique({
@@ -47,6 +50,19 @@ async function limpiarMarcados(vinculoId: string) {
   await prisma.mensaje.deleteMany({ where: { vinculoId, texto: { startsWith: "[escenario]" } } })
   await prisma.checkin.deleteMany({ where: { vinculoId, id: { startsWith: "esc-" } } })
   await prisma.recuerdo.deleteMany({ where: { vinculoId, titulo: { startsWith: "[escenario]" } } })
+  await prisma.evento.deleteMany({ where: { vinculoId, titulo: { startsWith: "[escenario]" } } })
+  // Los ciclos no tienen texto donde dejar la marca, así que se borran los que
+  // caen en la ventana que usa el escenario del calendario: los tres meses
+  // alrededor de hoy. Lo de más atrás, si lo hubiera, se queda.
+  await prisma.ciclo.deleteMany({
+    where: {
+      vinculoId,
+      inicio: {
+        gte: DateTime.utc().minus({ months: 3 }).toJSDate(),
+        lte: DateTime.utc().plus({ months: 1 }).toJSDate(),
+      },
+    },
+  })
 }
 
 /** Registra cómo está alguien, hace `haceHoras` horas. */
@@ -388,6 +404,124 @@ const CASOS: Record<string, Caso> = {
         'El recuerdo debe llevar la marca "Hace un año" (RF-11.2).',
         `Su fecha debe leerse como ${haceUnAno.setLocale("es").toFormat("d 'de' LLLL 'de' yyyy")},`,
         "sin hora y sin desplazarse un día por la zona horaria.",
+      ]
+    },
+  },
+
+  // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  calendario: {
+    descripcion: "Un mes con periodos, ánimo de los dos, planes y un aniversario",
+    async montar() {
+      const { will, ana, vinculoId } = await personas()
+      await limpiarMarcados(vinculoId)
+
+      // Ella lleva su ciclo y deja ver su ánimo: es el único estado en que se
+      // pueden comprobar las dos capas suyas a la vez — y que nunca coinciden.
+      await prisma.usuario.update({
+        where: { id: ana.id },
+        data: { llevaCiclo: true, compartoAnimo: true },
+      })
+      await prisma.usuario.update({ where: { id: will.id }, data: { compartoAnimo: true } })
+
+      // Dos relojes a propósito, y confundirlos coloca las cosas en el día de
+      // al lado: los periodos y los recuerdos son **días sueltos** y se guardan
+      // a medianoche UTC, mientras que un plan es un **instante** y pertenece
+      // al día que sea en la zona de quien lo mira. Un cumpleaños creado a las
+      // 00:00 UTC salía en la casilla del día anterior desde Bogotá.
+      const hoy = DateTime.utc().startOf("day")
+      const hoyLocal = DateTime.now().setZone(ZONA_SEMILLA).startOf("day")
+
+      // Dos periodos seguidos, para que haya con qué estimar el siguiente. El
+      // más reciente empieza hace ocho días: cae dentro del mes que se abre.
+      for (const haceDias of [8, 36]) {
+        await prisma.ciclo.create({
+          data: {
+            vinculoId,
+            usuarioId: ana.id,
+            inicio: hoy.minus({ days: haceDias }).toJSDate(),
+            fin: hoy.minus({ days: haceDias - 4 }).toJSDate(),
+            nivelVisibilidad: "FECHAS_Y_NOTA",
+            notaParaPareja: "Estos días no me preguntes si estoy bien. Trae té y pon una peli.",
+          },
+        })
+      }
+
+      // Ánimo de los dos repartido por el mes. A ella se le pone uno en pleno
+      // periodo a propósito: ese día su punto **no** puede salir (RF-5.6).
+      const dias: [number, "BIEN" | "AGRADECIDO" | "TRISTE" | "INCOMODO" | "ENOJADO", string, number][] = [
+        [1, "BIEN", "ESTOY_CONTIGO", 3],
+        [2, "TRISTE", "ME_FALTA_ALGO", 4],
+        [4, "AGRADECIDO", "ESTOY_CONTIGO", 5],
+        [7, "INCOMODO", "ALGO_PASO", 2],
+        [9, "BIEN", "ESTOY_CONTIGO", 3],
+      ]
+      for (const [haceDias, emocion, grupo, intensidad] of dias) {
+        await checkin(vinculoId, will.id, emocion, grupo as never, intensidad, haceDias * 24)
+        await checkin(vinculoId, ana.id, emocion, grupo as never, intensidad, haceDias * 24 - 2)
+      }
+
+      // Un día con dos registros de distinta fuerza: el calendario tiene que
+      // quedarse con el intenso, no con el último ni con el más repetido.
+      await checkin(vinculoId, will.id, "BIEN", "ESTOY_CONTIGO", 2, 3 * 24)
+      await checkin(vinculoId, will.id, "BIEN", "ESTOY_CONTIGO", 2, 3 * 24 - 1)
+      await checkin(vinculoId, will.id, "ENOJADO", "ALGO_PASO", 5, 3 * 24 - 3)
+
+      await prisma.evento.createMany({
+        data: [
+          {
+            vinculoId,
+            creadorId: will.id,
+            titulo: "[escenario] Cena en el sitio de siempre",
+            inicio: hoyLocal.plus({ days: 3, hours: 21 }).toJSDate(),
+            notas: "Reservar antes de las siete.",
+          },
+          {
+            vinculoId,
+            creadorId: ana.id,
+            titulo: "[escenario] Su cumpleaños",
+            inicio: hoyLocal.plus({ days: 5, hours: 12 }).minus({ years: 27 }).toJSDate(),
+            anual: true,
+          },
+        ],
+      })
+
+      // Deseos de varios días, para que la colección tenga qué enseñar (RF-12.6).
+      // Uno de los días con los dos: es la única forma de ver cómo se leen juntos.
+      await prisma.onceOnce.createMany({
+        data: [
+          { vinculoId, autorId: will.id, texto: "Que te vaya bien mañana.", dia: hoy.minus({ days: 1 }).toFormat("yyyy-MM-dd"), esNoche: false },
+          { vinculoId, autorId: ana.id, texto: "Que se nos pase rápido la semana.", dia: hoy.minus({ days: 1 }).toFormat("yyyy-MM-dd"), esNoche: false },
+          { vinculoId, autorId: ana.id, texto: "Dormir bien de una vez.", dia: hoy.minus({ days: 1 }).toFormat("yyyy-MM-dd"), esNoche: true },
+          { vinculoId, autorId: will.id, texto: "Que el viaje salga.", dia: hoy.minus({ days: 6 }).toFormat("yyyy-MM-dd"), esNoche: true },
+        ],
+      })
+
+      await prisma.recuerdo.create({
+        data: {
+          vinculoId,
+          autorId: will.id,
+          titulo: "[escenario] El día que nos perdimos volviendo",
+          nota: "Acabamos cenando en una gasolinera y fue de las mejores noches.",
+          ocurrioEl: hoy.minus({ years: 2 }).plus({ days: 2 }).toJSDate(),
+        },
+      })
+
+      return [
+        "Abre la app: debe entrar directamente en el calendario del mes.",
+        "En la rejilla: puntos de ánimo, marcas de plan y recuerdo, y franjas de periodo.",
+        "La franja sólida son los días registrados; la punteada, la estimación (RF-5.2).",
+        `Hace 3 días registraste "bien" dos veces y un enojo del 5: el punto debe ser`,
+        "el del enojo — gana el más intenso, nunca el más repetido.",
+        `Los días de su periodo (desde hace 8) no pueden llevar su punto de ánimo:`,
+        "es la correlación que RF-5.6 prohíbe. El tuyo sí sale.",
+        "Toca uno de esos días: sale su nota, y su ánimo tampoco aparece dentro.",
+        "En 5 días hay un cumpleaños anual: debe salir aunque se apuntara hace 27 años.",
+        "Pasa al mes anterior y al siguiente: las franjas y los planes deben seguir cuadrando.",
+        "En la vista 11:11 hay deseos de dos días; los de ayer se leen juntos (RF-12.6).",
+        "En Yo → Ajustes, pon «No participar»: la ventana deja de abrirse, pero la",
+        "colección sigue entera. Salirse del ritual no quema el archivo.",
+        "Y lo que NO puede pasar: ningún día vacío marcado como fallado, ni contadores.",
       ]
     },
   },

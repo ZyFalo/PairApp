@@ -199,6 +199,93 @@ export function Insignia({
 }
 
 /**
+ * Una vista dentro de una pestaña: la pastilla del cofre y la de Nosotros.
+ *
+ * Vive aquí porque estaba escrita dos veces, con un comentario que decía
+ * "gemelo del que usa el cofre" — que es la señal de que debía existir una sola.
+ * Va dentro de `CarrilDeVistas`, que es quien la desplaza a la vista.
+ */
+export function PastillaDeVista({
+  href,
+  activa,
+  texto,
+  Icono,
+}: {
+  href: string
+  activa: boolean
+  texto: string
+  Icono: Icono
+}) {
+  return (
+    <Link
+      href={href}
+      aria-current={activa ? "page" : undefined}
+      className={`pulsable inline-flex shrink-0 items-center justify-center gap-1.5 rounded-[var(--radius-pildora)] px-3.5 py-2 text-[13px] font-medium ${
+        activa
+          ? "bg-[var(--color-acento)] text-[var(--color-sobre-acento)] shadow-[var(--sombra-tinta)]"
+          : "border border-[var(--color-borde)] bg-[var(--color-papel)] text-[var(--color-tinta-suave)]"
+      }`}
+    >
+      <Icono size={15} />
+      {texto}
+    </Link>
+  )
+}
+
+/**
+ * Conmutador de un ajuste que se guarda al tocarlo.
+ *
+ * El estado se lleva aquí y no se espera al servidor: un interruptor que tarda
+ * en moverse se toca dos veces. `alGuardar` recibe el valor que la persona
+ * acaba de elegir.
+ *
+ * `explica` es para los ajustes que cambian lo que ve otra persona. En esos, la
+ * etiqueta sola nunca basta: hay que decir qué pasa al encenderlo.
+ */
+export function Interruptor({
+  etiqueta,
+  explica,
+  activo,
+  alGuardar,
+}: {
+  etiqueta: string
+  explica?: string
+  activo: boolean
+  alGuardar: (activo: boolean) => void
+}) {
+  return (
+    <label className="flex cursor-pointer items-start justify-between gap-4">
+      <span className="space-y-1">
+        <span className="block text-[14.5px] text-[var(--color-tinta)]">{etiqueta}</span>
+        {explica && (
+          <span className="block text-[12.5px] leading-relaxed text-[var(--color-tinta-tenue)]">
+            {explica}
+          </span>
+        )}
+      </span>
+      <input
+        type="checkbox"
+        checked={activo}
+        onChange={(e) => alGuardar(e.target.checked)}
+        className="sr-only"
+      />
+      <span
+        aria-hidden
+        className={`relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition-colors duration-300 ${
+          activo ? "bg-[var(--color-acento)]" : "bg-[var(--color-borde)]"
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 size-5 rounded-full bg-[var(--color-papel-alto)] shadow-[var(--sombra-papel)] transition-[left] duration-300 ${
+            activo ? "left-[22px]" : "left-0.5"
+          }`}
+        />
+      </span>
+    </label>
+  )
+}
+
+/**
  * Desplegable con la misma piel que los campos de texto.
  * Con `valor` y `onCambio` va controlado; sin ellos, a su aire.
  */

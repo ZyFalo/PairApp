@@ -11,10 +11,21 @@ export type Sesion = {
   zonaHoraria: string
   /** Si llevo el registro de mi ciclo. Es mi decisión, no se deduce del género (RF-5.0). */
   llevaCiclo: boolean
+  /** Si dejo que la otra persona vea mi ánimo en el calendario del mes (RF-1.5). */
+  compartoAnimo: boolean
+  /** En qué ventanas de los 11:11 participo (RF-12.1). Nunca se expone de la pareja. */
+  ventanasOnce: "AMBAS" | "MANANA" | "NOCHE" | "NINGUNA"
   /** Hasta cuándo he pedido que la app no me hable. Null si no hay pausa (§12.2). */
   pausaHasta: Date | null
   /** La otra persona del vínculo. Null mientras nadie haya canjeado la invitación. */
-  pareja: { id: string; nombre: string; zonaHoraria: string; llevaCiclo: boolean } | null
+  pareja: {
+    id: string
+    nombre: string
+    zonaHoraria: string
+    llevaCiclo: boolean
+    /** Si ella dejó ver su ánimo día a día. Apagado de partida, lo enciende ella. */
+    compartoAnimo: boolean
+  } | null
 }
 
 /**
@@ -49,6 +60,11 @@ export async function exigirSesion(): Promise<Sesion> {
     genero: yo.usuario.genero,
     zonaHoraria: yo.usuario.zonaHoraria,
     llevaCiclo: yo.usuario.llevaCiclo,
+    compartoAnimo: yo.usuario.compartoAnimo,
+    // El de la pareja no se expone a propósito: quien se sale de los 11:11
+    // tiene derecho a que el otro no lo sepa (RF-12.8), y un campo que no
+    // viaja no se puede filtrar por descuido en una pantalla.
+    ventanasOnce: yo.usuario.ventanasOnce,
     pausaHasta: yo.usuario.pausaHasta,
     pareja: otra
       ? {
@@ -56,6 +72,7 @@ export async function exigirSesion(): Promise<Sesion> {
           nombre: otra.usuario.nombre,
           zonaHoraria: otra.usuario.zonaHoraria,
           llevaCiclo: otra.usuario.llevaCiclo,
+          compartoAnimo: otra.usuario.compartoAnimo,
         }
       : null,
   }

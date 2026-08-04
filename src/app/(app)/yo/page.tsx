@@ -1,94 +1,49 @@
 import {
-  RiHistoryLine,
   RiLogoutBoxLine,
   RiNotification3Line,
   RiSeedlingLine,
   RiSettings3Line,
 } from "@remixicon/react"
+import { InterruptorCiclo, InterruptorCompartirAnimo, VentanasDelOnce } from "@/componentes/ajustes"
 import { ControlPausa, PanelPush } from "@/componentes/avisos"
-import { Apunte, Boton, Insignia, Seccion, Tarjeta, Titulo, Vacio } from "@/componentes/base"
-import { CambiarVisibilidadCiclo, FormularioCiclo, InterruptorCiclo } from "@/componentes/ciclo"
-import { COLOR_GRUPO, ESTILO_GRUPO, ICONO_EMOCION } from "@/componentes/iconos"
+import { Apunte, Boton, Insignia, Seccion, Tarjeta, Titulo } from "@/componentes/base"
+import { CambiarVisibilidadCiclo, FormularioCiclo } from "@/componentes/ciclo"
 import { salir } from "@/lib/acciones/cuenta"
-import { CICLOS_PARA_ESTIMAR, estimarProximoCiclo } from "@/lib/motor/ciclo"
-import { ETIQUETA_VISIBILIDAD, etiquetaDe, grupoDe } from "@/lib/motor/emociones"
-import { diaRelativo, fechaSuelta, formatoLegible } from "@/lib/motor/tiempo"
+import { CICLOS_PARA_ESTIMAR } from "@/lib/motor/ciclo"
+import { fechaSuelta } from "@/lib/motor/tiempo"
 import { dbDeSesion } from "@/lib/sesion"
 
 export const dynamic = "force-dynamic"
 
 /**
- * Mi espacio: cómo he estado, mi ciclo y los ajustes (§8.1).
- * Lo que escribí y aún no he dicho vive en su propia pestaña, no aquí.
+ * Mi espacio: mi ciclo y mis ajustes (§8.1).
+ *
+ * **Ya no vive aquí «cómo he estado».** Ese historial —la tira de colores y su
+ * lista— era una línea de tiempo dentro de una pantalla de ajustes, y su sitio
+ * es la línea de tiempo de verdad: el calendario. La estimación del próximo
+ * periodo se fue con él, a los días punteados de la rejilla.
+ *
+ * Lo que queda es lo que solo puede estar aquí: registrar, decidir qué se
+ * comparte y apagar cosas.
  */
 export default async function PaginaYo() {
   const { db, sesion } = await dbDeSesion()
 
-  const [historial, ciclos] = await Promise.all([
-    db.checkin.findMany({
-      where: { autorId: sesion.usuarioId },
-      orderBy: { creadoEn: "desc" },
-      take: 14,
-    }),
-    // Solo se consulta si lo llevas: quien no registra su ciclo no tiene por
-    // qué ver aparecer la sección, ni siquiera vacía (RF-5.0).
-    sesion.llevaCiclo
-      ? db.ciclo.findMany({
-          where: { usuarioId: sesion.usuarioId },
-          orderBy: { inicio: "desc" },
-          take: CICLOS_PARA_ESTIMAR + 1,
-        })
-      : Promise.resolve([]),
-  ])
+  // Solo se consulta si lo llevas: quien no registra su ciclo no tiene por qué
+  // ver aparecer la sección, ni siquiera vacía (RF-5.0).
+  const ciclos = sesion.llevaCiclo
+    ? await db.ciclo.findMany({
+        where: { usuarioId: sesion.usuarioId },
+        orderBy: { inicio: "desc" },
+        take: CICLOS_PARA_ESTIMAR + 1,
+      })
+    : []
 
   const miCiclo = ciclos[0] ?? null
-  const estimacion = estimarProximoCiclo(ciclos.map((c) => c.inicio))
 
   return (
     <div className="space-y-8">
       <Titulo>{sesion.nombre}</Titulo>
-
-      {/* Historial propio. Solo mío por defecto (RF-1.5) */}
-      <section className="space-y-3">
-        <Seccion Icono={RiHistoryLine}>Cómo he estado</Seccion>
-        {historial.length === 0 ? (
-          <Vacio Icono={RiHistoryLine}>Aún no has registrado nada.</Vacio>
-        ) : (
-          <>
-            {/* La forma de las últimas semanas de un vistazo. Sin números ni
-                medias: aquí no se puntúa a nadie, y menos a uno mismo (§1.2). */}
-            <div className="flex gap-1" aria-hidden>
-              {[...historial].reverse().map((c) => (
-                <span
-                  key={c.id}
-                  className={`h-8 flex-1 rounded-[3px] ${ESTILO_GRUPO[grupoDe(c.emocion)].punto} opacity-70`}
-                />
-              ))}
-            </div>
-            <ul className="space-y-1.5 pt-1">
-              {historial.map((c) => {
-                const Icono = ICONO_EMOCION[c.emocion]
-                return (
-                  <li key={c.id} className="flex items-center gap-3 text-[14px]">
-                    <Icono size={17} className={COLOR_GRUPO[grupoDe(c.emocion)]} />
-                    <span className="text-[var(--color-tinta)]">
-                      {etiquetaDe(c.emocion, sesion.genero)}
-                    </span>
-                    {c.visibilidad !== "COMPLETO" && (
-                      <span className="text-[12px] text-[var(--color-tinta-tenue)]">
-                        {ETIQUETA_VISIBILIDAD[c.visibilidad].corta.toLowerCase()}
-                      </span>
-                    )}
-                    <span className="ml-auto text-[12px] text-[var(--color-tinta-tenue)]">
-                      {formatoLegible(c.creadoEn, sesion.zonaHoraria)}
-                    </span>
-                  </li>
-                )
-              })}
-            </ul>
-          </>
-        )}
-      </section>
 
       {/* Ciclo: solo para quien lo lleva, y ella decide qué comparte (RF-5.3) */}
       {sesion.llevaCiclo && (
@@ -114,23 +69,10 @@ export default async function PaginaYo() {
             </Tarjeta>
           )}
 
-          {/* Siempre con la palabra "estimación" delante: un cuerpo no es un
-              calendario, y dar el cálculo por hecho invita a deducir en vez de
-              preguntar (RF-5.2). */}
-          {estimacion && (
-            <Tarjeta className="space-y-1">
-              <p className="text-[15px]">
-                Estimación del próximo:{" "}
-                {diaRelativo(estimacion.proximoInicio, sesion.zonaHoraria, new Date()).split(
-                  ",",
-                )[0] ?? ""}
-              </p>
-              <Apunte>
-                Sobre {estimacion.sobre} {estimacion.sobre === 1 ? "ciclo" : "ciclos"}, de{" "}
-                {estimacion.duracionMedia} días de media. Es un cálculo, no una promesa.
-              </Apunte>
-            </Tarjeta>
-          )}
+          <Apunte>
+            Lo registrado y lo estimado salen en el calendario, y se dibujan distinto: el cálculo va
+            punteado. Un cuerpo no es un calendario.
+          </Apunte>
 
           <FormularioCiclo />
         </section>
@@ -146,8 +88,13 @@ export default async function PaginaYo() {
 
       <section className="space-y-3">
         <Seccion Icono={RiSettings3Line}>Ajustes</Seccion>
-        <Tarjeta>
+        <Tarjeta className="space-y-5">
           <InterruptorCiclo activo={sesion.llevaCiclo} />
+          <InterruptorCompartirAnimo
+            activo={sesion.compartoAnimo}
+            nombrePareja={sesion.pareja?.nombre ?? null}
+          />
+          <VentanasDelOnce actual={sesion.ventanasOnce} />
         </Tarjeta>
       </section>
 

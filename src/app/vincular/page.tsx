@@ -16,7 +16,7 @@ export default async function PaginaVincular() {
   const cuantos = await prismaCrudo.membresia.count({
     where: { vinculoId: sesion.user.vinculoId },
   })
-  if (cuantos >= 2) redirect("/hoy")
+  if (cuantos >= 2) redirect("/")
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-8 px-6 py-12">

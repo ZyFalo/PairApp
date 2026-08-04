@@ -82,7 +82,7 @@ export async function registrar(
     })
   }
 
-  await signIn("credentials", { correo, contrasena, redirectTo: "/hoy" })
+  await signIn("credentials", { correo, contrasena, redirectTo: "/" })
   return {}
 }
 
@@ -95,7 +95,7 @@ export async function entrar(_previo: ResultadoAccion, datos: FormData): Promise
   if (!correo || !contrasena) return { error: "Faltan datos" }
 
   try {
-    await signIn("credentials", { correo, contrasena, redirectTo: "/hoy" })
+    await signIn("credentials", { correo, contrasena, redirectTo: "/" })
   } catch (error) {
     // signIn lanza una redirección en el camino feliz; hay que dejarla pasar.
     if (error instanceof Error && error.message === "NEXT_REDIRECT") throw error
@@ -132,8 +132,13 @@ export async function crearInvitacion(): Promise<{ codigo: string } | { error: s
   return { codigo }
 }
 
-/** Manda a la pantalla principal si ya hay sesión con vínculo. */
-export async function siYaEntroIrAHoy() {
+/**
+ * Manda adentro si ya hay sesión con vínculo.
+ *
+ * A la raíz y no a una pantalla concreta: es ella la que decide si toca el
+ * calendario o hay algo esperando en Hoy, y esa decisión vive en un solo sitio.
+ */
+export async function siYaEntroIrAlInicio() {
   const sesion = await auth()
-  if (sesion?.user?.vinculoId) redirect("/hoy")
+  if (sesion?.user?.vinculoId) redirect("/")
 }

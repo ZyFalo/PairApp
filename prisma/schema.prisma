@@ -92,6 +92,27 @@ enum GeneroGramatical {
   NEUTRO
 }
 
+/// En qué ventanas de los 11:11 participa cada persona (RF-12.1, RF-12.8).
+///
+/// Un solo ajuste para las dos cosas que pide el documento —elegir ventanas y
+/// poder salirse— porque son la misma pregunta: ¿cuándo se abre esto para mí?
+/// `NINGUNA` no es "sin aviso": es no participar. Ni ventana ni notificación.
+/// Un interruptor que apaga el aviso pero deja la ventana abierta no desactiva
+/// nada, solo lo hace más silencioso.
+///
+/// **Lo que sí se conserva es lo ya escrito.** Salirse del ritual no quema el
+/// archivo: la colección sigue ahí y lo que ella deje se sigue leyendo. Es de
+/// los dos, y dejar de pedir no es dejar de querer leerlo.
+///
+/// **La otra persona nunca se entera** (RF-12.8): quien se sale deja de pedir,
+/// y no pedir ya era indistinguible de haberse olvidado (RF-12.5).
+enum VentanasOnce {
+  AMBAS
+  MANANA
+  NOCHE
+  NINGUNA
+}
+
 // ---------------------------------------------------------------------------
 // Núcleo: personas y vínculo
 // ---------------------------------------------------------------------------
@@ -111,6 +132,18 @@ model Usuario {
   /// "agradecida"), no qué le pasa a nadie en el cuerpo. Deducir lo segundo
   /// de lo primero sería justo la inferencia que RF-5.3 prohíbe.
   llevaCiclo     Boolean          @default(false)
+  /// Si dejo que mi pareja vea mi ánimo día a día en el calendario del mes.
+  ///
+  /// Apagado de partida y por decisión propia, como el de arriba. Existe porque
+  /// el calendario cambia la naturaleza del dato: hasta ahora la pareja solo veía
+  /// mi estado **actual**, que caduca a las 8 h (RF-3.0.7.7); un mes entero es
+  /// otra cosa — el historial es propio salvo que su dueño diga lo contrario
+  /// (RF-1.5). "Hoy estoy triste" y "mira mis últimos treinta días" no son la
+  /// misma frase, y no puede darse la segunda por dicha al decir la primera.
+  ///
+  /// Encenderlo no abre todo: cada día sigue respetando la `Visibilidad` que se
+  /// eligió en ese check-in. Lo privado no reaparece nunca por esta puerta.
+  compartoAnimo  Boolean          @default(false)
   /// Hasta cuándo esta persona no quiere que la app le hable (§12.2, modo pausa).
   ///
   /// Silencia avisos, no entregas: lo que te manden sigue llegando y te espera
@@ -122,6 +155,8 @@ model Usuario {
   /// Horas locales de la pregunta periódica (RF-1.0). Tres por persona,
   /// desfasadas una hora respecto a las de la pareja (RF-1.0.3).
   horasPregunta  Int[]            @default([9, 14, 19])
+  /// En qué ventanas de los 11:11 participo (RF-12.1). Por defecto, las dos.
+  ventanasOnce   VentanasOnce     @default(AMBAS)
   creadoEn       DateTime         @default(now())
 
   membresia          Membresia?
@@ -546,6 +581,12 @@ model Evento {
   inicio      DateTime
   fin         DateTime?
   todoElDia   Boolean  @default(false)
+  /// Se repite cada año en la misma fecha (RF-7.3): cumpleaños, aniversarios.
+  ///
+  /// No se guardan copias, se calcula la ocurrencia al pintar el mes. Sembrar
+  /// una fila por año obligaría a decidir cuántos años por delante —y a que
+  /// editar el cumpleaños de alguien fuera editar veinte filas—.
+  anual       Boolean  @default(false)
   esDePareja  Boolean  @default(true)
   notas       String?  @db.Text
   /// Aviso previo en horas. Null = sin recordatorio.

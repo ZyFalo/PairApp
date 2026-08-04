@@ -4,7 +4,8 @@ import { DateTime } from "luxon"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import type { FranjaDia } from "@/generated/prisma/enums"
-import { diaLocal, ventanaOnceOnce } from "@/lib/motor/tiempo"
+import { LARGO_MAXIMO_DESEO, participaEnLaVentana, ventanaOnceOnce } from "@/lib/motor/once"
+import { diaLocal } from "@/lib/motor/tiempo"
 import { dbDeSesion } from "@/lib/sesion"
 
 export type Resultado = { error?: string; ok?: boolean }
@@ -20,12 +21,19 @@ export type Resultado = { error?: string; ok?: boolean }
 export async function pedirOnceOnce(_previo: Resultado, datos: FormData): Promise<Resultado> {
   const texto = String(datos.get("texto") ?? "").trim()
   if (!texto) return { error: "Escribe tu deseo" }
-  if (texto.length > 140) return { error: "Máximo 140 caracteres" }
+  if (texto.length > LARGO_MAXIMO_DESEO) {
+    return { error: `Máximo ${LARGO_MAXIMO_DESEO} caracteres` }
+  }
 
   const { db, sesion } = await dbDeSesion()
   const ahora = new Date()
   const ventana = ventanaOnceOnce(sesion.zonaHoraria, ahora)
   if (!ventana.abierta) return { error: "La ventana de los 11:11 está cerrada" }
+  // La misma regla que esconde la ventana, comprobada también aquí: una acción
+  // de servidor es un punto de entrada, y esconder un botón no cierra nada.
+  if (!participaEnLaVentana(sesion.ventanasOnce, ventana.esNoche)) {
+    return { error: "Tienes los 11:11 desactivados" }
+  }
 
   const dia = diaLocal(sesion.zonaHoraria, ahora)
   const yaPidio = await db.onceOnce.findFirst({
@@ -60,6 +68,8 @@ const esquemaEvento = z.object({
   // sobre `undefined` daba `false`… pero `.default(true)` lo pisaba y todo plan
   // acababa siendo de los dos. Se lee la presencia de la casilla, no su valor.
   esDePareja: z.preprocess((v) => v === "true", z.boolean()),
+  /** Se repite cada año (RF-7.3). Se lee igual que la casilla de arriba. */
+  anual: z.preprocess((v) => v === "true", z.boolean()),
   notas: z.string().trim().max(2000).optional(),
   avisoHoras: z.coerce.number().int().min(0).max(720).optional(),
 })
@@ -70,7 +80,7 @@ export async function crearEvento(_previo: Resultado, datos: FormData): Promise<
   if (!analizado.success) {
     return { error: analizado.error.issues[0]?.message ?? "Revisa los datos" }
   }
-  const { titulo, inicio, tipo, esDePareja, notas, avisoHoras } = analizado.data
+  const { titulo, inicio, tipo, esDePareja, anual, notas, avisoHoras } = analizado.data
 
   const { db, sesion } = await dbDeSesion()
   await db.evento.create({
@@ -85,6 +95,7 @@ export async function crearEvento(_previo: Resultado, datos: FormData): Promise<
       // quien lo escribe, que es la que tenía en la cabeza al teclearlo.
       inicio: DateTime.fromISO(inicio, { zone: sesion.zonaHoraria }).toJSDate(),
       esDePareja,
+      anual,
       notas: notas || null,
       avisoHoras: avisoHoras || null,
     },
@@ -183,6 +194,61 @@ export async function cambiarRegistroCiclo(activo: boolean): Promise<Resultado> 
 
   revalidatePath("/yo")
   revalidatePath("/nosotros")
+  return { ok: true }
+}
+
+/**
+ * Enciende o apaga que mi ánimo se vea en el calendario del mes (RF-1.5).
+ *
+ * Es una decisión distinta de la visibilidad de cada check-in, y por eso hay
+ * dos mecanismos y no uno: aquella dice *qué se ve hoy*, esta dice *si existe
+ * un historial que mirar*. Compartir cómo estás esta tarde no es lo mismo que
+ * abrir tus últimos seis meses, y dar lo segundo por dicho al decir lo primero
+ * sería inferir — justo lo que §1.2 prohíbe.
+ *
+ * Los dos controles se multiplican, nunca se anulan: con esto encendido, un día
+ * marcado privado sigue sin aparecer.
+ *
+ * `update` y no `updateMany` por lo mismo que en `cambiarRegistroCiclo`:
+ * `Usuario` no lleva `vinculoId` y el cliente acotado reventaría al inyectarlo.
+ * El identificador sale de la sesión, así que la pertenencia ya está probada.
+ */
+export async function cambiarCompartirAnimo(activo: boolean): Promise<Resultado> {
+  const { db, sesion } = await dbDeSesion()
+  await db.usuario.update({
+    where: { id: sesion.usuarioId },
+    data: { compartoAnimo: activo },
+  })
+
+  revalidatePath("/yo")
+  revalidatePath("/nosotros")
+  return { ok: true }
+}
+
+/**
+ * En qué ventanas de los 11:11 participo (RF-12.1), incluida la de salirse
+ * del todo (RF-12.8).
+ *
+ * Un solo ajuste para las dos cosas, porque son la misma pregunta. No se avisa
+ * a nadie ni queda rastro: el documento pide expresamente que la otra persona
+ * no pueda enterarse, y no hace falta esconder nada — dejar de pedir ya era
+ * indistinguible de haberse olvidado (RF-12.5).
+ */
+export async function cambiarVentanasOnce(_previo: Resultado, datos: FormData): Promise<Resultado> {
+  const analizado = z
+    .object({ ventanasOnce: z.enum(["AMBAS", "MANANA", "NOCHE", "NINGUNA"]) })
+    .safeParse(Object.fromEntries(datos))
+  if (!analizado.success) return { error: "No se pudo cambiar" }
+
+  const { db, sesion } = await dbDeSesion()
+  await db.usuario.update({
+    where: { id: sesion.usuarioId },
+    data: { ventanasOnce: analizado.data.ventanasOnce },
+  })
+
+  revalidatePath("/yo")
+  revalidatePath("/nosotros")
+  revalidatePath("/hoy")
   return { ok: true }
 }
 

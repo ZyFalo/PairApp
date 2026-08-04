@@ -1,7 +1,8 @@
 import { DestinoMensaje } from "@/generated/prisma/enums"
 import { prismaCrudo } from "@/lib/db"
 import { leVendriaBienAlgoGuardado } from "@/lib/motor/entrega"
-import { franjaActual, tocaPreguntaPeriodica, ventanaOnceOnce } from "@/lib/motor/tiempo"
+import { participaEnLaVentana, ventanaOnceOnce } from "@/lib/motor/once"
+import { franjaActual, tocaPreguntaPeriodica } from "@/lib/motor/tiempo"
 import { avisar } from "@/lib/push"
 
 export const dynamic = "force-dynamic"
@@ -44,8 +45,11 @@ export async function GET(peticion: Request) {
       }
     }
 
-    // 2. El aviso de los 11:11 (RF-12.1)
-    if (ventanaOnceOnce(usuario.zonaHoraria, ahora).abierta) {
+    // 2. El aviso de los 11:11, solo a quien participa en esa ventana (RF-12.1).
+    //    Quien se salió no recibe nada, y la otra persona no puede notarlo: no
+    //    pedir ya era indistinguible de haberse olvidado (RF-12.5, RF-12.8).
+    const ventana = ventanaOnceOnce(usuario.zonaHoraria, ahora)
+    if (ventana.abierta && participaEnLaVentana(usuario.ventanasOnce, ventana.esNoche)) {
       await avisar(usuario.id, "11:11", "Pide un deseo", "/nosotros")
       hecho.onceOnce++
     }

@@ -7,6 +7,7 @@ import {
   FormularioConflicto,
 } from "@/componentes/conflicto"
 import { formatoLegible } from "@/lib/motor/tiempo"
+import { dbDeSesion } from "@/lib/sesion"
 
 /**
  * La vista "Después" de Nosotros: acuerdos (§6.7) y relatos de conflicto (§6.6).
@@ -14,29 +15,28 @@ import { formatoLegible } from "@/lib/motor/tiempo"
  * Vive en su propio fichero porque es lo que menos se abre y lo que más pesa:
  * dejarla dentro de la página hacía que un día normal cargara con quinientas
  * líneas de algo que casi nunca se mira.
+ *
+ * Trae sus propios datos, como el resto de vistas. Recibirlos por parámetro
+ * obligaba a la página a consultar acuerdos y conflictos para decidir después
+ * que tocaba pintar el calendario.
  */
-export function DespuesDeUnaDiscusion({
-  acuerdos,
-  relatos,
-  usuarioId,
-  nombrePareja,
-  zonaHoraria,
-}: {
-  acuerdos: { id: string; texto: string }[]
-  relatos: {
-    id: string
-    autorId: string
-    creadoEn: Date
-    compartidoEn: Date | null
-    quePaso: string
-    queSenti: string
-    queNecesitaba: string
-    queHariaDistinto: string
-  }[]
-  usuarioId: string
-  nombrePareja: string | null
-  zonaHoraria: string
-}) {
+export async function DespuesDeUnaDiscusion() {
+  const { db, sesion } = await dbDeSesion()
+
+  const [acuerdos, relatos] = await Promise.all([
+    db.acuerdo.findMany({ where: { archivadoEn: null }, orderBy: { creadoEn: "desc" }, take: 20 }),
+    // Los míos, más los suyos que ella haya decidido compartir (RF-6.6.1).
+    db.conflicto.findMany({
+      where: { OR: [{ autorId: sesion.usuarioId }, { compartidoEn: { not: null } }] },
+      orderBy: { creadoEn: "desc" },
+      take: 10,
+    }),
+  ])
+
+  const usuarioId = sesion.usuarioId
+  const nombrePareja = sesion.pareja?.nombre ?? null
+  const zonaHoraria = sesion.zonaHoraria
+
   return (
     <>
       <section className="space-y-3">

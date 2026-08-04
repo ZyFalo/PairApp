@@ -45,6 +45,13 @@
   --color-paso-fondo: #f8ece6;
   --color-paso-borde: #ecd8cd;
 
+  /* ---- La marca de periodo en el calendario (RF-5.5) ---------------------
+     Color propio y no el de ninguna familia de emociones. Pintar el periodo
+     del mismo color que "me falta algo" sugeriría un parentesco entre las dos
+     cosas — que es exactamente la lectura que RF-5.6 existe para no invitar.
+     Un verde apagado: ni alarma, ni rosa de catálogo. */
+  --color-periodo: #7f9a7e;
+
   /* ---- Tipografía ------------------------------------------------------- */
   --font-carta: var(--fuente-fraunces), Georgia, serif;
   --font-interfaz: var(--fuente-dm-sans), ui-sans-serif, system-ui, sans-serif;
@@ -115,6 +122,8 @@
     --color-paso: #c99280;
     --color-paso-fondo: #2a1f1a;
     --color-paso-borde: #3c2d25;
+
+    --color-periodo: #9cba9b;
 
     --sombra-papel:
       0 1px 2px -1px rgb(0 0 0 / 0.5), 0 2px 6px -2px rgb(0 0 0 / 0.4),

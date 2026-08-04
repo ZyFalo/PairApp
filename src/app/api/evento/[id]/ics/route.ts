@@ -1,4 +1,4 @@
-import { comoIcs, nombreDeArchivo } from "@/lib/motor/calendario"
+import { comoIcs, nombreDeArchivo } from "@/lib/motor/ics"
 import { dbDeSesion } from "@/lib/sesion"
 
 export const dynamic = "force-dynamic"

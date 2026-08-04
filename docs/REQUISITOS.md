@@ -1281,14 +1281,29 @@ Cuatro pestañas, nada más:
 
 ```
 ┌──────────┬──────────┬──────────┬──────────┐
-│   Hoy    │  Cofre   │ Nosotros │   Yo     │
+│ Nosotros │   Hoy    │  Cofre   │   Yo     │
 └──────────┴──────────┴──────────┴──────────┘
 ```
 
-- **Hoy** — mi estado, el de mi pareja, lo que hay para mí hoy, el evento próximo. La pantalla que se abre 90 % de las veces.
+- **Nosotros** — el calendario del mes, y detrás música, series, recuerdos y acuerdos. **Es la pantalla por la que se entra.**
+- **Hoy** — mi estado, el de mi pareja y lo que hay para mí hoy. Una acción principal y nada más.
 - **Cofre** — mensajes recibidos, con la vista de guardados destacada. Y el botón de escribir.
-- **Nosotros** — calendario, música, series, recuerdos, acuerdos.
-- **Yo** — mi historial de ánimo, mi ciclo, mis borradores, ajustes.
+- **Yo** — mi ciclo, mis avisos, ajustes.
+
+**RF-8.1.1 Se entra por el calendario, salvo que haya algo esperando.** Si hay
+un mensaje sin leer o algo en el buzón en frío pidiendo decisión, la app abre en
+**Hoy**. Un mensaje que llegó no puede quedarse detrás de una rejilla de días.
+
+**RF-8.1.2 El ánimo día a día vive en el calendario, no en «Yo».** Lo que era un
+historial dentro de una pantalla de ajustes pasa a la línea de tiempo de verdad,
+junto a los planes y los periodos. **Que la pareja lo vea es un interruptor
+propio, apagado de partida**: hasta ahora solo veía el estado actual, que caduca
+a las 8 h (RF-3.0.7.7), y un mes entero es otra cosa (RF-1.5).
+
+**RF-8.1.3 En el calendario, el periodo y el ánimo de la misma persona nunca
+comparten casilla.** Los dos juntos **son** la correlación que RF-5.6 prohíbe.
+En los días con marca de periodo gana la marca y el ánimo no se dibuja — ni en
+la casilla ni al abrir el día.
 
 ### 8.2 Lenguaje visual
 

@@ -8,9 +8,18 @@ import {
 } from "@remixicon/react"
 import Link from "next/link"
 import { AccionesApunte, BotonDesarchivar } from "@/componentes/apuntes"
-import { Apunte, Seccion, Tarjeta, TextoDeCarta, Titulo, Vacio } from "@/componentes/base"
+import {
+  Apunte,
+  PastillaDeVista,
+  Seccion,
+  Tarjeta,
+  TextoDeCarta,
+  Titulo,
+  Vacio,
+} from "@/componentes/base"
 import { BotonGuardar, BotonRetirar, DeshacerEnvio } from "@/componentes/boton-guardar"
 import { COLOR_GRUPO, ICONO_CIERRE, ICONO_EMOCION } from "@/componentes/iconos"
+import { CarrilDeVistas } from "@/componentes/vistas"
 import type { Emocion } from "@/generated/prisma/enums"
 import { DestinoMensaje } from "@/generated/prisma/enums"
 import { loQueLeMande } from "@/lib/consultas/bucle"
@@ -97,11 +106,9 @@ export default async function PaginaCofre({
     <div className="space-y-6">
       <Titulo>Cofre</Titulo>
 
-      {/* Se desplaza en horizontal: cuatro vistas no caben a la vez en un
-          teléfono estrecho, y apretarlas las haría ilegibles. */}
-      <div className="-mx-5 flex gap-1.5 overflow-x-auto px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <CarrilDeVistas>
         {VISTAS.map((v) => (
-          <Pestana
+          <PastillaDeVista
             key={v.clave}
             href={enlaceDeVista(v.clave, busqueda)}
             activa={(vista ?? "") === v.clave}
@@ -109,7 +116,7 @@ export default async function PaginaCofre({
             Icono={v.Icono}
           />
         ))}
-      </div>
+      </CarrilDeVistas>
 
       <Buscador inicial={busqueda} />
 
@@ -349,33 +356,5 @@ function PorHablar({
         </>
       )}
     </div>
-  )
-}
-
-/** Selector entre las vistas del cofre. */
-function Pestana({
-  href,
-  activa,
-  texto,
-  Icono,
-}: {
-  href: string
-  activa: boolean
-  texto: string
-  Icono: typeof RiInboxLine
-}) {
-  return (
-    <Link
-      href={href}
-      aria-current={activa ? "page" : undefined}
-      className={`pulsable inline-flex shrink-0 items-center justify-center gap-1.5 rounded-[var(--radius-pildora)] px-3.5 py-2 text-[13px] font-medium ${
-        activa
-          ? "bg-[var(--color-acento)] text-[var(--color-sobre-acento)] shadow-[var(--sombra-tinta)]"
-          : "border border-[var(--color-borde)] bg-[var(--color-papel)] text-[var(--color-tinta-suave)]"
-      }`}
-    >
-      <Icono size={15} />
-      {texto}
-    </Link>
   )
 }

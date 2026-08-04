@@ -4,13 +4,14 @@ import { Reparacion } from "@/componentes/conflicto"
 import { RevisionEnFrio } from "@/componentes/en-frio"
 import { COLOR_GRUPO, ICONO_EMOCION } from "@/componentes/iconos"
 import { MensajeEntrante } from "@/componentes/mensaje-entrante"
-import { VentanaOnceOnce } from "@/componentes/nosotros"
+import { VentanaOnceOnce } from "@/componentes/once"
 import { ClaseMensaje, Visibilidad } from "@/generated/prisma/enums"
 import { loQueEsperaEnFrio, loQueHayParaMi } from "@/lib/consultas/bucle"
 import { etiquetaDe, grupoDe } from "@/lib/motor/emociones"
 import { estadoVigente } from "@/lib/motor/entrega"
+import { participaEnLaVentana, ventanaOnceOnce } from "@/lib/motor/once"
 import { tocaOfrecerReparacion } from "@/lib/motor/reparacion"
-import { diaLocal, formatoLegible, haceEnPalabras, ventanaOnceOnce } from "@/lib/motor/tiempo"
+import { diaLocal, formatoLegible, haceEnPalabras } from "@/lib/motor/tiempo"
 import { dbDeSesion } from "@/lib/sesion"
 
 export const dynamic = "force-dynamic"
@@ -90,10 +91,12 @@ export default async function PaginaHoy() {
   }
 
   // Los 11:11 también aquí: la ventana dura cuatro minutos y nadie va a
-  // acordarse de cambiar de pestaña a tiempo (RF-12.2).
+  // acordarse de cambiar de pestaña a tiempo (RF-12.2). Solo se abre para quien
+  // participa en esta ventana (RF-12.1).
   const ventana = ventanaOnceOnce(sesion.zonaHoraria, ahora)
+  const meToca = ventana.abierta && participaEnLaVentana(sesion.ventanasOnce, ventana.esNoche)
   const yaPedi =
-    ventana.abierta &&
+    meToca &&
     (await db.onceOnce.findFirst({
       where: {
         autorId: sesion.usuarioId,
@@ -129,7 +132,7 @@ export default async function PaginaHoy() {
 
   return (
     <div className="space-y-7">
-      {ventana.abierta && !yaPedi && <VentanaOnceOnce />}
+      {meToca && !yaPedi && <VentanaOnceOnce />}
 
       {hayQueReparar && sesion.pareja && <Reparacion nombrePareja={sesion.pareja.nombre} />}
 

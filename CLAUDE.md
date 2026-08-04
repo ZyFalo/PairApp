@@ -117,6 +117,9 @@ un salto mental en cada lectura, y ahí es donde se pierden los matices.
   necesita su versión oscura**.
 - **Sin contadores, sin insignias de pendientes, sin cuentas atrás.** Un número
   al lado de una lista convierte una conversación en una deuda (RF-2.0.7).
+  En el calendario esto tiene una forma concreta: **un día sin registro se
+  dibuja igual que un día futuro — vacío.** Nunca en gris de «fallado». Una
+  rejilla que señala los huecos es un cuadro de rachas con otro nombre.
 - **Ningún fichero pasa de 420 líneas.** Cuando uno se acerca, la pregunta no
   es cómo apretarlo: es si de verdad hace **una** cosa. Casi siempre hace tres.
 - **Toda pantalla tiene salida.** Si algo se abre, se cierra sin recargar.
@@ -125,9 +128,12 @@ un salto mental en cada lectura, y ahí es donde se pierden los matices.
 
 ---
 
-## 7. Formularios
+## 7. El límite entre servidor y cliente
 
-Dos patrones, y elegir mal cuesta bugs:
+Aquí se han pagado dos bugs que compilaban, pasaban el lint y pasaban todos los
+tests. Los dos se vieron abriendo la app.
+
+**Formularios.** Dos patrones, y elegir mal cuesta bugs:
 
 - **`<form action={accion}>`** cuando el botón no cambia el estado de la
   pantalla. Es lo normal.
@@ -137,6 +143,15 @@ Dos patrones, y elegir mal cuesta bugs:
 
 Lo segundo no es preferencia: costó un bug que impedía enviar mensajes
 enojados, la función más importante de la app.
+
+**Qué puede cruzar a un componente `"use client"`.** Una función, no — y los
+iconos de este proyecto **son** funciones. Pasar `Icono={RiFilmLine}` desde una
+página revienta con *«Functions cannot be passed directly to Client
+Components»*.
+
+Lo que sí cruza es **JSX ya dibujado**: el componente de cliente recibe
+`children` y se queda solo con el comportamiento. El patrón está en
+`componentes/vistas.tsx`.
 
 ---
 

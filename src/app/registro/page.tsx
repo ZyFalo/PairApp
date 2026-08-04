@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { siYaEntroIrAHoy } from "@/lib/acciones/cuenta"
+import { siYaEntroIrAlInicio } from "@/lib/acciones/cuenta"
 import { FormularioRegistro } from "./formulario"
 
 /** Alta de cuenta. Con código de invitación se entra al vínculo de la pareja. */
@@ -8,7 +8,7 @@ export default async function PaginaRegistro({
 }: {
   searchParams: Promise<{ codigo?: string }>
 }) {
-  await siYaEntroIrAHoy()
+  await siYaEntroIrAlInicio()
   const { codigo } = await searchParams
 
   return (

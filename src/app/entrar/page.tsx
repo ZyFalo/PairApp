@@ -1,10 +1,10 @@
 import Link from "next/link"
-import { siYaEntroIrAHoy } from "@/lib/acciones/cuenta"
+import { siYaEntroIrAlInicio } from "@/lib/acciones/cuenta"
 import { FormularioEntrar } from "./formulario"
 
 /** Pantalla de acceso. */
 export default async function PaginaEntrar() {
-  await siYaEntroIrAHoy()
+  await siYaEntroIrAlInicio()
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-9 px-6 py-12">
