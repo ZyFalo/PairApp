@@ -4,6 +4,7 @@ import { RiLockLine } from "@remixicon/react"
 import { useActionState, useEffect, useState } from "react"
 import { Aviso, Boton, Campo, Seleccion, Tarjeta } from "@/componentes/base"
 import { cambiarVisibilidadCiclo, registrarCiclo } from "@/lib/acciones/nosotros"
+import { useEnfoqueQuieto } from "@/lib/enfoque"
 
 /**
  * Registro de ciclo (M5).
@@ -27,6 +28,7 @@ const EJEMPLO_NOTA = "Por ejemplo: no me preguntes si estoy bien, solo trae té 
  * qué le sirve — la app nunca traduce eso a una etiqueta de "sensible" (RF-5.4).
  */
 export function FormularioCiclo() {
+  const enfocar = useEnfoqueQuieto<HTMLInputElement>()
   const [estado, accion, pendiente] = useActionState(registrarCiclo, {})
   const [abierto, setAbierto] = useState(false)
 
@@ -45,7 +47,7 @@ export function FormularioCiclo() {
   return (
     <Tarjeta className="aparece">
       <form action={accion} className="space-y-3">
-        <Campo etiqueta="Primer día" name="inicio" type="date" required autoFocus />
+        <Campo etiqueta="Primer día" name="inicio" type="date" required ref={enfocar} />
         <Campo etiqueta="Último día (opcional)" name="fin" type="date" />
 
         <Seleccion

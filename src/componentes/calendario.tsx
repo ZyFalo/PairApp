@@ -74,6 +74,7 @@ function PasoDeMes({ mes, atras = false }: { mes: Mes; atras?: boolean }) {
   return (
     <Link
       href={`/nosotros?mes=${mes}`}
+      scroll={false}
       aria-label={atras ? "Mes anterior" : "Mes siguiente"}
       className="pulsable rounded-full p-2 text-[var(--color-tinta-tenue)] hover:text-[var(--color-acento)]"
     >
@@ -92,6 +93,11 @@ function PasoDeMes({ mes, atras = false }: { mes: Mes; atras?: boolean }) {
  * Apretadas y no repartidas por el alto de la casilla: con las marcas pegadas
  * al borde de abajo, una franja de periodo quedaba a medio camino entre su
  * semana y la siguiente y no se sabía de cuál era.
+ *
+ * `scroll={false}` porque el día se abre **debajo** de la rejilla y sin él la
+ * navegación te devuelve al principio de la página: tocabas el 14 y perdías de
+ * vista el propio calendario. Aquí no se cambia de pantalla, se despliega un
+ * detalle de la que ya estás mirando, y eso no mueve a nadie de sitio.
  */
 function Casilla({ casilla, abierta }: { casilla: CasillaLlena; abierta: boolean }) {
   const { dia, numero, esDelMes, esHoy } = casilla
@@ -99,6 +105,7 @@ function Casilla({ casilla, abierta }: { casilla: CasillaLlena; abierta: boolean
   return (
     <Link
       href={`/nosotros?mes=${dia.slice(0, 7)}&dia=${dia}`}
+      scroll={false}
       aria-current={esHoy ? "date" : undefined}
       className={`pulsable flex aspect-square flex-col items-center gap-[3px] rounded-[var(--radius-suave)] px-0.5 pb-1 pt-1.5 transition-colors ${
         abierta

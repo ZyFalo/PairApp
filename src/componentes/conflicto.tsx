@@ -12,6 +12,7 @@ import {
   repararCon,
 } from "@/lib/acciones/conflicto"
 import { useBorrador } from "@/lib/borrador"
+import { useEnfoqueQuieto } from "@/lib/enfoque"
 import { GESTOS } from "@/lib/motor/reparacion"
 
 /**
@@ -224,6 +225,7 @@ export function EstadoConflicto({ id, compartido }: { id: string; compartido: bo
 
 /** Apuntar un acuerdo (§6.7). Corto a propósito: si no cabe, no es un acuerdo. */
 export function FormularioAcuerdo() {
+  const enfocar = useEnfoqueQuieto<HTMLTextAreaElement>()
   const [estado, accion, pendiente] = useActionState(crearAcuerdo, {})
   const [borrador, actualizar, olvidar] = useBorrador("acuerdo", { abierto: false, texto: "" })
 
@@ -247,8 +249,7 @@ export function FormularioAcuerdo() {
           rows={2}
           maxLength={500}
           required
-          // biome-ignore lint/a11y/noAutofocus: el foco es el punto de abrirlo
-          autoFocus
+          ref={enfocar}
           aria-label="El acuerdo"
           placeholder="Cuando uno diga «pausa», paramos veinte minutos."
           value={borrador.texto}

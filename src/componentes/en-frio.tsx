@@ -8,6 +8,7 @@ import { Apunte, Aviso, Boton, Tarjeta, TextoDeCarta } from "@/componentes/base"
 import { COLOR_GRUPO, ICONO_EMOCION } from "@/componentes/iconos"
 import type { Emocion } from "@/generated/prisma/enums"
 import { dejarloIr, enviarDelFrio } from "@/lib/acciones/entregas"
+import { useEnfoqueQuieto } from "@/lib/enfoque"
 import { etiquetaDe, grupoDe } from "@/lib/motor/emociones"
 
 type Props = {
@@ -29,6 +30,7 @@ type Props = {
  * escribirlo ya era el punto, y la app no tiene opinión sobre cuál eliges.
  */
 export function RevisionEnFrio(props: Props) {
+  const enfocar = useEnfoqueQuieto<HTMLTextAreaElement>()
   const router = useRouter()
   const [editando, setEditando] = useState(false)
   const [texto, setTexto] = useState(props.texto)
@@ -72,8 +74,7 @@ export function RevisionEnFrio(props: Props) {
             onChange={(e) => setTexto(e.target.value)}
             rows={6}
             maxLength={4000}
-            // biome-ignore lint/a11y/noAutofocus: el foco es el punto de tocar "Editarlo"
-            autoFocus
+            ref={enfocar}
             aria-label="Tu mensaje"
             className="carta w-full resize-none rounded-[var(--radius-suave)] border border-[var(--color-borde)] bg-[var(--color-papel)] p-3 text-[17px] leading-relaxed outline-none focus:border-[var(--color-acento-suave)]"
           />

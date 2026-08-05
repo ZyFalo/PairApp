@@ -23,6 +23,7 @@ import {
   votarTitulo,
 } from "@/lib/acciones/juntos"
 import { useBorrador } from "@/lib/borrador"
+import { useEnfoqueQuieto } from "@/lib/enfoque"
 import { ESTADOS_TITULO, elegirParaEstaNoche, type Sorteable } from "@/lib/motor/juntos"
 
 const TIPOS = [
@@ -32,6 +33,7 @@ const TIPOS = [
 
 /** Añadir algo a la lista compartida (RF-9.1). */
 export function FormularioTitulo() {
+  const enfocar = useEnfoqueQuieto<HTMLInputElement>()
   const [estado, accion, pendiente] = useActionState(anadirTitulo, {})
   const [borrador, actualizar, olvidar] = useBorrador("titulo", {
     abierto: false,
@@ -61,7 +63,7 @@ export function FormularioTitulo() {
           name="nombre"
           required
           maxLength={200}
-          autoFocus
+          ref={enfocar}
           value={borrador.nombre}
           onChange={(e) => actualizar({ nombre: e.target.value })}
         />
@@ -316,6 +318,7 @@ function FormularioVoto({
 
 /** Guardar un momento que merece quedarse (RF-11.1). */
 export function FormularioRecuerdo() {
+  const enfocar = useEnfoqueQuieto<HTMLInputElement>()
   const [estado, accion, pendiente] = useActionState(crearRecuerdo, {})
   const [borrador, actualizar, olvidar] = useBorrador("recuerdo", {
     abierto: false,
@@ -344,7 +347,7 @@ export function FormularioRecuerdo() {
           name="titulo"
           required
           maxLength={200}
-          autoFocus
+          ref={enfocar}
           value={borrador.titulo}
           onChange={(e) => actualizar({ titulo: e.target.value })}
         />

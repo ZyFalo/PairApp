@@ -288,7 +288,14 @@ body > * {
       box-shadow 220ms ease,
       background-color 220ms ease,
       border-color 220ms ease,
-      color 220ms ease;
+      color 220ms ease,
+      /* Las dos que faltaban, y las dos se veían. `opacity` porque un botón que
+         se deshabilita al enviar salta a `opacity-40` de golpe, justo en el
+         momento en que la persona está mirándolo. `filter` porque el botón
+         sólido aclara al pasar por encima con `brightness`, y sin declararla
+         aquí ese aclarado tampoco transicionaba. */
+      opacity 220ms ease,
+      filter 220ms ease;
   }
   .pulsable:active {
     transform: scale(0.975);

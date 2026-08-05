@@ -6,6 +6,7 @@ import { Apunte, Aviso, Boton, Campo, Insignia, Seleccion, Tarjeta } from "@/com
 import { guardarPlanComoRecuerdo } from "@/lib/acciones/juntos"
 import { borrarEvento, crearEvento } from "@/lib/acciones/nosotros"
 import { useBorrador } from "@/lib/borrador"
+import { useEnfoqueQuieto } from "@/lib/enfoque"
 
 /**
  * Añadir y quitar planes del calendario compartido (M7).
@@ -32,6 +33,7 @@ const AVISOS = [
  * y pulsa "añadir" quiere un plan el 14, no volver a teclear la fecha.
  */
 export function FormularioEvento({ fechaSugerida }: { fechaSugerida?: string }) {
+  const enfocar = useEnfoqueQuieto<HTMLInputElement>()
   const [estado, accion, pendiente] = useActionState(crearEvento, {})
   const [borrador, actualizar, olvidar] = useBorrador("nosotros:plan", {
     abierto: false,
@@ -76,7 +78,7 @@ export function FormularioEvento({ fechaSugerida }: { fechaSugerida?: string }) 
           name="titulo"
           required
           maxLength={120}
-          autoFocus
+          ref={enfocar}
           value={borrador.titulo}
           onChange={(e) => actualizar({ titulo: e.target.value })}
         />

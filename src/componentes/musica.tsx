@@ -4,6 +4,7 @@ import { useActionState, useEffect } from "react"
 import { Aviso, Boton, Campo, Seleccion, Tarjeta } from "@/componentes/base"
 import { dedicarCancion } from "@/lib/acciones/nosotros"
 import { useBorrador } from "@/lib/borrador"
+import { useEnfoqueQuieto } from "@/lib/enfoque"
 
 /**
  * Dedicatorias musicales (M8). Solo enlace pegado: sin API de Spotify, sin
@@ -19,6 +20,7 @@ const FRANJAS = [
 
 /** Dedicar una canción por enlace pegado (RF-8.2). */
 export function FormularioCancion() {
+  const enfocar = useEnfoqueQuieto<HTMLInputElement>()
   const [estado, accion, pendiente] = useActionState(dedicarCancion, {})
   const [borrador, actualizar, olvidar] = useBorrador("nosotros:cancion", {
     abierto: false,
@@ -47,7 +49,7 @@ export function FormularioCancion() {
           name="url"
           type="url"
           required
-          autoFocus
+          ref={enfocar}
           placeholder="https://"
           value={borrador.url}
           onChange={(e) => actualizar({ url: e.target.value })}
