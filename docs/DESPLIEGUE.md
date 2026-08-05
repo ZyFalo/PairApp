@@ -142,6 +142,23 @@ curl -H "Authorization: Bearer TU_SECRETO" https://TU-DOMINIO/api/cron/despachar
 
 ---
 
+## Las contraseñas
+
+**No hay recuperación por correo, y es deliberado** (PLAN.md §0.1.2). La app no
+manda correos: sin dominio verificado, un proveedor transaccional solo escribe a
+la dirección del dueño de la cuenta, así que el enlace de la otra persona nunca
+llegaría. Y para dos personas que entran una vez y quedan con la sesión abierta
+noventa días, el flujo no compensa.
+
+La consecuencia: **si alguien olvida su contraseña y cambia de teléfono, no hay
+vuelta** salvo tocar la base a mano. Guardad las dos en un gestor de contraseñas
+el día que las creéis.
+
+Si algún día hay dominio propio, volver al enlace mágico es cambiar el proveedor
+de Auth.js. La puerta no está cerrada.
+
+---
+
 ## Las copias de seguridad
 
 **Esto no es opcional.** No es una base de datos cualquiera: es el archivo de
