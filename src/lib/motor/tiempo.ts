@@ -54,6 +54,19 @@ export function diaSuelto(dia: Date): string {
 }
 
 /**
+ * El día suelto al que pertenece un instante, listo para guardar en una columna
+ * `@db.Date`.
+ *
+ * Es el puente entre los dos relojes del proyecto: un plan es un **instante** y
+ * un recuerdo es un **día sin hora**. Pasar del uno al otro sin la zona lo mueve
+ * de casilla — una cena del viernes a las once de la noche se guardaría como
+ * recuerdo del sábado.
+ */
+export function comoDiaSuelto(momento: Date, zonaHoraria: string): Date {
+  return new Date(`${diaLocal(zonaHoraria, momento)}T00:00:00.000Z`)
+}
+
+/**
  * La inversa: de la clave de un día a cómo se dice. "2026-08-04" → "4 de
  * agosto de 2026".
  *
@@ -91,6 +104,28 @@ export function haceEnPalabras(cuando: Date, ahoraUtc: Date, zonaHoraria: string
   if (dias === 1) return "ayer"
   if (dias < 7) return `hace ${dias} días`
   return "hace más de una semana"
+}
+
+/**
+ * Cuándo fue algo, sin techo: "ayer", "hace 3 días", "en marzo".
+ *
+ * `haceEnPalabras` se detiene en «hace más de una semana» porque se escribió
+ * para el buzón en frío, donde nada tiene más de un día. Aquí hace falta llegar
+ * más atrás: RF-3.11.2 pide literalmente *«Esto lo guardaste en marzo»*, y esa
+ * frase es media función — lo que la hace sonar a alguien y no a un sistema.
+ *
+ * El año solo se dice si no es este. «En marzo de 2026» estando en 2026 es la
+ * clase de precisión que delata a una máquina.
+ */
+export function cuandoFue(cuando: Date, ahoraUtc: Date, zonaHoraria: string): string {
+  const fecha = DateTime.fromJSDate(cuando, { zone: "utc" }).setZone(zonaHoraria).setLocale("es")
+  const hoy = DateTime.fromJSDate(ahoraUtc, { zone: "utc" }).setZone(zonaHoraria)
+  const dias = Math.round(-fecha.startOf("day").diff(hoy.startOf("day"), "days").days)
+
+  if (dias < 7) return haceEnPalabras(cuando, ahoraUtc, zonaHoraria)
+  return fecha.year === hoy.year
+    ? `en ${fecha.toFormat("LLLL")}`
+    : `en ${fecha.toFormat("LLLL 'de' yyyy")}`
 }
 
 /**

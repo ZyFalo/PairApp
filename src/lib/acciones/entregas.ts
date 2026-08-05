@@ -253,3 +253,48 @@ export async function retirarGuardado(mensajeId: string) {
   // Sale de "enviados" y entra en "por hablar", las dos en el cofre.
   revalidatePath("/cofre")
 }
+
+/**
+ * Abrir lo que la otra persona dejó guardado y todavía no ha salido (RF-3.6).
+ *
+ * Se llama desde el botón discreto de un mal día, y **lo pide quien lo recibe**:
+ * es la diferencia entre ofrecer y empujar. Un mensaje de amor entregado solo,
+ * en el pico de un mal momento, se lee como invalidación (RF-3.4).
+ *
+ * Crea la entrega de verdad en vez de enseñar el texto sin más, porque el
+ * estado de entrega es un hecho que no se puede falsear (RF-3.17.4): quien lo
+ * escribió tiene que ver «le llegó» en su cofre, y lo vio.
+ *
+ * `findFirst` acotado antes de crear: el identificador viene del navegador y
+ * las operaciones por identificador único no llevan el filtro del vínculo (ver
+ * `lib/db.ts`).
+ */
+export async function abrirLoQueMeDejo(mensajeId: string): Promise<Resultado> {
+  const { db, sesion } = await dbDeSesion()
+
+  const mensaje = await db.mensaje.findFirst({
+    where: {
+      id: mensajeId,
+      destino: DestinoMensaje.CUANDO_LE_SIRVA,
+      autorId: { not: sesion.usuarioId },
+      entrega: null,
+      eliminadoEn: null,
+    },
+  })
+  if (!mensaje) return { error: "Ya no está disponible" }
+
+  const ahora = new Date()
+  await db.entrega.create({
+    data: {
+      vinculoId: sesion.vinculoId,
+      mensajeId: mensaje.id,
+      destinatarioId: sesion.usuarioId,
+      entregadaEn: ahora,
+      llegadaEn: ahora,
+    },
+  })
+
+  revalidatePath("/hoy")
+  revalidatePath("/cofre")
+  return { ok: true }
+}

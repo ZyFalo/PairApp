@@ -110,7 +110,15 @@ export type CasillaLlena = CasillaDeMes & {
 /** Todo lo que hubo o habrá un día concreto, para la hoja que se abre al tocarlo. */
 export type ElDia = {
   dia: Dia
-  planes: { id: string; titulo: string; inicio: Date; notas: string | null; anual: boolean }[]
+  planes: {
+    id: string
+    titulo: string
+    inicio: Date
+    notas: string | null
+    anual: boolean
+    /** Si ya ocurrió. Solo entonces se puede guardar como recuerdo (RF-7.7). */
+    pasado: boolean
+  }[]
   recuerdos: { id: string; titulo: string; nota: string | null; ocurrioEl: Date }[]
   deseos: { id: string; texto: string; mio: boolean }[]
   miAnimo: CapaAnimo | null

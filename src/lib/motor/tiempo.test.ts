@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { horasDesfasadas, tocaPreguntaPeriodica } from "./tiempo"
+import { cuandoFue, horasDesfasadas, tocaPreguntaPeriodica } from "./tiempo"
 
 /**
  * Horarios y ventanas (RF-1.0, RF-12.2).
@@ -26,5 +26,28 @@ describe("las seis preguntas diarias", () => {
 
   it("el desfase no se sale del día", () => {
     expect(horasDesfasadas([23])).toEqual([0])
+  })
+})
+
+/**
+ * Sin techo, al contrario que `haceEnPalabras`. RF-3.11.2 pide literalmente
+ * «Esto lo guardaste en marzo», y esa frase es media función.
+ */
+describe("cuándo fue algo, sin techo", () => {
+  const BOGOTA = "America/Bogota"
+  const AHORA = new Date("2026-08-04T16:00:00Z")
+
+  it("lo reciente se dice como lo diría alguien", () => {
+    expect(cuandoFue(new Date("2026-08-03T16:00:00Z"), AHORA, BOGOTA)).toBe("ayer")
+    expect(cuandoFue(new Date("2026-08-01T16:00:00Z"), AHORA, BOGOTA)).toBe("hace 3 días")
+  })
+
+  it("más atrás se nombra el mes, y no «hace más de una semana»", () => {
+    expect(cuandoFue(new Date("2026-03-14T16:00:00Z"), AHORA, BOGOTA)).toBe("en marzo")
+  })
+
+  /** «En marzo de 2026» estando en 2026 delata a una máquina. */
+  it("el año solo si no es este", () => {
+    expect(cuandoFue(new Date("2025-03-14T16:00:00Z"), AHORA, BOGOTA)).toBe("en marzo de 2025")
   })
 })

@@ -1,8 +1,9 @@
 "use client"
 
-import { RiCloseLine, RiDeleteBin6Line } from "@remixicon/react"
+import { RiCloseLine, RiDeleteBin6Line, RiImage2Line } from "@remixicon/react"
 import { useActionState, useEffect, useState, useTransition } from "react"
-import { Aviso, Boton, Campo, Seleccion, Tarjeta } from "@/componentes/base"
+import { Apunte, Aviso, Boton, Campo, Insignia, Seleccion, Tarjeta } from "@/componentes/base"
+import { guardarPlanComoRecuerdo } from "@/lib/acciones/juntos"
 import { borrarEvento, crearEvento } from "@/lib/acciones/nosotros"
 import { useBorrador } from "@/lib/borrador"
 
@@ -188,6 +189,45 @@ export function BotonBorrarEvento({ id, titulo }: { id: string; titulo: string }
       >
         <RiCloseLine size={15} />
       </button>
+    </span>
+  )
+}
+
+/**
+ * Guardar un plan que ya pasó como recuerdo (RF-7.7).
+ *
+ * Solo aparece en los planes pasados, y ahí es donde el gesto tiene sentido: el
+ * plan ya tiene título y fecha, así que guardarlo cuesta un toque. Si costara
+ * abrir un formulario, no se haría nunca — y estos son justo los recuerdos que
+ * se pierden, los de un viernes cualquiera.
+ *
+ * El plan no se borra: sigue en su día. Pasó, y el calendario cuenta lo que pasó.
+ */
+export function BotonGuardarComoRecuerdo({ eventoId }: { eventoId: string }) {
+  const [estado, setEstado] = useState<"listo" | "guardado" | string>("listo")
+  const [ocupado, empezar] = useTransition()
+
+  if (estado === "guardado") {
+    return <Insignia Icono={RiImage2Line}>Guardado en recuerdos</Insignia>
+  }
+
+  return (
+    <span className="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        disabled={ocupado}
+        onClick={() =>
+          empezar(async () => {
+            const resultado = await guardarPlanComoRecuerdo(eventoId)
+            setEstado(resultado.error ?? "guardado")
+          })
+        }
+        className="pulsable inline-flex items-center gap-1.5 text-[13px] text-[var(--color-tinta-tenue)] hover:text-[var(--color-acento)]"
+      >
+        <RiImage2Line size={15} />
+        {ocupado ? "Guardando…" : "Guardar como recuerdo"}
+      </button>
+      {estado !== "listo" && <Apunte>{estado}</Apunte>}
     </span>
   )
 }

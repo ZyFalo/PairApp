@@ -1,17 +1,19 @@
 import { Apunte, Tarjeta } from "@/componentes/base"
 import { Checkin } from "@/componentes/checkin"
 import { Reparacion } from "@/componentes/conflicto"
+import { AlgoParaHoy } from "@/componentes/consuelo"
 import { RevisionEnFrio } from "@/componentes/en-frio"
 import { COLOR_GRUPO, ICONO_EMOCION } from "@/componentes/iconos"
 import { MensajeEntrante } from "@/componentes/mensaje-entrante"
 import { VentanaOnceOnce } from "@/componentes/once"
 import { ClaseMensaje, Visibilidad } from "@/generated/prisma/enums"
 import { loQueEsperaEnFrio, loQueHayParaMi } from "@/lib/consultas/bucle"
+import { algoParaUnDiaFlojo } from "@/lib/consultas/consuelo"
 import { etiquetaDe, grupoDe } from "@/lib/motor/emociones"
 import { estadoVigente } from "@/lib/motor/entrega"
 import { participaEnLaVentana, ventanaOnceOnce } from "@/lib/motor/once"
 import { tocaOfrecerReparacion } from "@/lib/motor/reparacion"
-import { diaLocal, formatoLegible, haceEnPalabras } from "@/lib/motor/tiempo"
+import { cuandoFue, diaLocal, formatoLegible, haceEnPalabras } from "@/lib/motor/tiempo"
 import { dbDeSesion } from "@/lib/sesion"
 
 export const dynamic = "force-dynamic"
@@ -24,7 +26,7 @@ export default async function PaginaHoy() {
   const { db, sesion } = await dbDeSesion()
   const ahora = new Date()
 
-  const [miUltimo, suUltimo, pendiente, enFrio] = await Promise.all([
+  const [miUltimo, suUltimo, pendiente, enFrio, consuelo] = await Promise.all([
     db.checkin.findFirst({
       where: { autorId: sesion.usuarioId },
       orderBy: { creadoEn: "desc" },
@@ -37,6 +39,8 @@ export default async function PaginaHoy() {
       : null,
     loQueHayParaMi(),
     loQueEsperaEnFrio(),
+    // Qué ofrecer si hoy es de los flojos y no hay nada nuevo esperando (RF-3.6).
+    algoParaUnDiaFlojo(),
   ])
 
   // Un mensaje pendiente manda sobre todo lo demás.
@@ -135,6 +139,17 @@ export default async function PaginaHoy() {
       {meToca && !yaPedi && <VentanaOnceOnce />}
 
       {hayQueReparar && sesion.pareja && <Reparacion nombrePareja={sesion.pareja.nombre} />}
+
+      {/* Se ofrece, no se empuja: llega sin notificación y se puede ignorar.
+          Si no hay nada que dar, aquí no aparece nada — que es el quinto
+          peldaño de la escalera y el más frecuente (RF-3.6). */}
+      {consuelo && (
+        <AlgoParaHoy
+          consuelo={consuelo}
+          nombrePareja={sesion.pareja?.nombre ?? null}
+          cuando={(fecha) => cuandoFue(fecha, ahora, sesion.zonaHoraria)}
+        />
+      )}
 
       {/* Cómo está ella. La ausencia nunca se enuncia (RF-3.0.2). */}
       {sesion.pareja &&

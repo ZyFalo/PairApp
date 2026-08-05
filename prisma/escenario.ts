@@ -477,6 +477,14 @@ const CASOS: Record<string, Caso> = {
             notas: "Reservar antes de las siete.",
           },
           {
+            // Uno ya pasado, para poder guardarlo como recuerdo (RF-7.7).
+            vinculoId,
+            creadorId: ana.id,
+            titulo: "[escenario] El concierto",
+            inicio: hoyLocal.minus({ days: 4 }).plus({ hours: 20 }).toJSDate(),
+            notas: "Llegamos tarde y aun así valió la pena.",
+          },
+          {
             vinculoId,
             creadorId: ana.id,
             titulo: "[escenario] Su cumpleaños",
@@ -522,6 +530,66 @@ const CASOS: Record<string, Caso> = {
         "En Yo → Ajustes, pon «No participar»: la ventana deja de abrirse, pero la",
         "colección sigue entera. Salirse del ritual no quema el archivo.",
         "Y lo que NO puede pasar: ningún día vacío marcado como fallado, ni contadores.",
+      ]
+    },
+  },
+
+  // -------------------------------------------------------------------------
+  fallback: {
+    descripcion: "Estás en carencia y NO hay nada guardado: la escalera de RF-3.6",
+    async montar() {
+      const { will, ana, vinculoId } = await personas()
+      await limpiarMarcados(vinculoId)
+      await prisma.guardado.deleteMany({ where: { vinculoId } })
+
+      // Tú, en carencia y hace poco: es la única puerta que abre el fallback.
+      // Recién registrado: la carencia dura 60 minutos y en el borde no cuenta.
+      await checkin(vinculoId, will.id, "TRISTE", "ME_FALTA_ALGO", 4, 0.25)
+
+      // Peldaño 1: un mensaje suyo que TÚ guardaste en el cofre.
+      const suyo = await mensaje({
+        vinculoId,
+        autorId: ana.id,
+        emocion: "AGRADECIDO",
+        clase: "PRESENCIA",
+        destino: "AHORA",
+        texto: "Me acordé de cuando te reíste tanto que no podías respirar.",
+        haceHoras: 30 * 24,
+      })
+      const entrega = await entregar(vinculoId, suyo.id, will.id, 30 * 24 * 60)
+      // Visto hace un mes: si no, secuestra la pantalla de Hoy y tapa lo que
+      // este escenario quiere enseñar. Un mensaje pendiente manda sobre todo.
+      await prisma.entrega.update({
+        where: { id: entrega.id },
+        data: { vistaEn: new Date(Date.now() - 29 * DIA) },
+      })
+      await prisma.guardado.create({
+        data: { vinculoId, mensajeId: suyo.id, usuarioId: will.id },
+      })
+
+      // Peldaño 2: el mensaje de reserva (RF-2.7). Sin disparadores, así que el
+      // cron nunca lo manda solo — existe justo para cuando no hay nada más.
+      await mensaje({
+        vinculoId,
+        autorId: ana.id,
+        emocion: "AGRADECIDO",
+        clase: "PRESENCIA",
+        destino: "CUANDO_LE_SIRVA",
+        texto: "Si estás leyendo esto es porque hoy pesa. Aquí sigo.",
+        haceHoras: 60 * 24,
+      })
+
+      return [
+        "Abre Hoy. Debe salir una tarjeta discreta: «Esto lo guardaste…» y el mensaje.",
+        "Sin notificación y sin ceremonia: se ofrece, no se empuja (RF-3.11.2).",
+        "",
+        "Para ver el segundo peldaño, borra el guardado y recarga:",
+        "  docker exec pairapp-db psql -U pairapp -d pairapp -c 'delete from guardado;'",
+        "Sale el botón «Hay algo que te dejó guardado» si queda algún «cuando le sirva»",
+        "sin entregar. Al pulsarlo se entrega de verdad y sigue el flujo normal.",
+        "",
+        "Para el tercero, borra también ese mensaje: sale un recuerdo.",
+        "Y sin nada de lo anterior no sale NADA, que es el quinto peldaño (RF-3.6).",
       ]
     },
   },

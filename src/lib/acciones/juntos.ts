@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import type { EstadoTitulo, TipoTitulo } from "@/generated/prisma/enums"
+import { comoDiaSuelto } from "@/lib/motor/tiempo"
 import { dbDeSesion } from "@/lib/sesion"
 
 export type Resultado = { error?: string; ok?: boolean }
@@ -150,4 +151,43 @@ export async function borrarRecuerdo(id: string) {
   const { db } = await dbDeSesion()
   await db.recuerdo.deleteMany({ where: { id } })
   revalidatePath("/nosotros")
+}
+
+/**
+ * Guarda un plan que ya pasó como recuerdo (RF-7.7).
+ *
+ * El plan tiene título y fecha, así que no hay nada que teclear: la cena del
+ * viernes se queda como el recuerdo del viernes. La nota es opcional y se
+ * añade después, editando el recuerdo — aquí lo que importa es que el gesto
+ * cueste un toque, o no se hace.
+ *
+ * `findFirst` antes de crear porque va acotado al vínculo, y de ahí salen el
+ * título y la fecha: si el identificador fuera de otra pareja, no aparece
+ * (RNF-4, y el matiz de `lib/db.ts` sobre las operaciones por identificador).
+ *
+ * El evento **no se borra**. Sigue en su día del calendario, que es donde pasó.
+ */
+export async function guardarPlanComoRecuerdo(eventoId: string): Promise<Resultado> {
+  const { db, sesion } = await dbDeSesion()
+
+  const evento = await db.evento.findFirst({ where: { id: eventoId } })
+  if (!evento) return { error: "No encontramos ese plan" }
+
+  const yaGuardado = await db.recuerdo.findFirst({
+    where: { titulo: evento.titulo, ocurrioEl: comoDiaSuelto(evento.inicio, sesion.zonaHoraria) },
+  })
+  if (yaGuardado) return { error: "Ese plan ya está entre los recuerdos" }
+
+  await db.recuerdo.create({
+    data: {
+      vinculoId: sesion.vinculoId,
+      autorId: sesion.usuarioId,
+      titulo: evento.titulo,
+      nota: evento.notas,
+      ocurrioEl: comoDiaSuelto(evento.inicio, sesion.zonaHoraria),
+    },
+  })
+
+  revalidatePath("/nosotros")
+  return { ok: true }
 }

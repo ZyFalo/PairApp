@@ -162,6 +162,7 @@ export async function loQuePasaEnElMes(mes: Mes): Promise<CasillaLlena[]> {
  */
 export async function elDia(dia: Dia): Promise<ElDia> {
   const { db, sesion } = await dbDeSesion()
+  const ahora = new Date()
   const zona = sesion.zonaHoraria
   const { desde, hasta } = limitesDelDia(dia, zona)
   const desdeCiclos = new Date(desde.getTime() - DIAS_DE_PERIODO * UN_DIA)
@@ -229,6 +230,9 @@ export async function elDia(dia: Dia): Promise<ElDia> {
       inicio: p.inicio,
       notas: p.notas,
       anual: p.anual,
+      // Un anual nunca cuenta como pasado: su próxima vuelta siempre está por
+      // venir, y guardarlo como recuerdo cada año sería un recuerdo al año.
+      pasado: !p.anual && p.inicio < ahora,
     })),
     recuerdos: recuerdosDeHoy.map((r) => ({
       id: r.id,

@@ -9,7 +9,7 @@ import {
 } from "@remixicon/react"
 import Link from "next/link"
 import { Apunte, Insignia, Seccion, Tarjeta } from "@/componentes/base"
-import { BotonBorrarEvento } from "@/componentes/calendario-plan"
+import { BotonBorrarEvento, BotonGuardarComoRecuerdo } from "@/componentes/calendario-plan"
 import { COLOR_GRUPO, ICONO_EMOCION } from "@/componentes/iconos"
 import type { CapaAnimo, ElDia } from "@/lib/motor/calendario"
 import { etiquetaDe } from "@/lib/motor/emociones"
@@ -80,6 +80,13 @@ export function HojaDelDia({
                     <p className="pt-0.5 text-[13.5px] text-[var(--color-tinta-tenue)]">
                       {plan.notas}
                     </p>
+                  )}
+                  {/* Solo en lo que ya pasó (RF-7.7): el plan trae título y
+                      fecha, así que guardarlo cuesta un toque. */}
+                  {plan.pasado && (
+                    <div className="pt-1">
+                      <BotonGuardarComoRecuerdo eventoId={plan.id} />
+                    </div>
                   )}
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
