@@ -216,6 +216,16 @@ const IconoEnojado = ICONO_EMOCION.ENOJADO
 /**
  * La pantalla del umbral (§6.1). No juzga el contenido: enuncia un hecho y
  * ofrece opciones del mismo peso. "Enviar ahora" no dice "de todas formas".
+ *
+ * **La señal de espera dice cuál se pulsó, no que algo va.** Antes «Enviando…»
+ * salía siempre en el primer botón: quien elegía «Guardarlo y decidir mañana»
+ * leía que su mensaje estaba saliendo hacia la otra persona, que es justo lo
+ * contrario de lo que acababa de decidir. Y este es el sitio de la app donde
+ * peor sienta esa confusión.
+ *
+ * Por eso el pulsado **conserva su etiqueta** y solo añade el trazo: aquí el
+ * texto del botón es la decisión, y sustituirlo la borra en el momento de
+ * tomarla. Los otros dos se atenúan.
  */
 function UmbralEnojo({
   pendiente,
@@ -228,6 +238,8 @@ function UmbralEnojo({
   onGuardarParaMi: () => void
   onVolver: () => void
 }) {
+  const [elegido, setElegido] = useState<"enviar" | "guardar" | null>(null)
+
   return (
     <div className="space-y-3 rounded-[var(--radius-tarjeta)] border border-[var(--color-paso-borde)] bg-[var(--color-paso-fondo)] p-4">
       {/* El icono es el de la propia emoción, no un triángulo de alarma: el
@@ -237,12 +249,28 @@ function UmbralEnojo({
         Escribiste esto enojado.
       </p>
       <div className="grid gap-2">
-        <Boton variante="suave" onClick={onEnviarAhora} disabled={pendiente}>
-          {pendiente ? "Enviando…" : "Enviar ahora"}
+        <Boton
+          variante="suave"
+          disabled={pendiente}
+          ocupado={pendiente && elegido === "enviar"}
+          onClick={() => {
+            setElegido("enviar")
+            onEnviarAhora()
+          }}
+        >
+          Enviar ahora
         </Boton>
         {/* No es "solo para mí" sin más: se guarda en frío y la app vuelve a
             preguntar dentro de doce horas (§6.3). */}
-        <Boton variante="suave" onClick={onGuardarParaMi} disabled={pendiente}>
+        <Boton
+          variante="suave"
+          disabled={pendiente}
+          ocupado={pendiente && elegido === "guardar"}
+          onClick={() => {
+            setElegido("guardar")
+            onGuardarParaMi()
+          }}
+        >
           Guardarlo y decidir mañana
         </Boton>
         <Boton variante="texto" onClick={onVolver} disabled={pendiente}>

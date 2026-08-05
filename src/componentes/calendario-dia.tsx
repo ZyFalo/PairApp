@@ -11,6 +11,7 @@ import {
 import Link from "next/link"
 import { Apunte, Insignia, Seccion, Tarjeta } from "@/componentes/base"
 import { BotonBorrarEvento, BotonGuardarComoRecuerdo } from "@/componentes/calendario-plan"
+import { EnCamino } from "@/componentes/espera"
 import { COLOR_GRUPO, ICONO_EMOCION } from "@/componentes/iconos"
 import type { CapaAnimo, ElDia } from "@/lib/motor/calendario"
 import { etiquetaDe } from "@/lib/motor/emociones"
@@ -52,12 +53,20 @@ export function HojaDelDia({
     <Tarjeta alzada className="aparece space-y-5">
       <div className="flex items-start justify-between gap-3">
         <h2 className="carta text-[19px] leading-snug">{fechaDeClave(dia.dia)}</h2>
+        {/* `scroll={false}` por lo mismo que al abrir: cerrar el día tampoco es
+            cambiar de pantalla, y sin esto la página saltaba al principio justo
+            al plegar lo que estabas mirando. Se le había pasado a la casilla y
+            se le había pasado también aquí. */}
         <Link
           href={`/nosotros?mes=${mes}`}
+          scroll={false}
           aria-label="Cerrar el día"
           className="pulsable shrink-0 rounded-full p-1 text-[var(--color-tinta-tenue)] hover:text-[var(--color-acento)]"
         >
-          <RiCloseLine size={18} />
+          {/* Se apaga en vez de encenderse: esto va a desaparecer, no a llegar. */}
+          <EnCamino modo="apaga">
+            <RiCloseLine size={18} />
+          </EnCamino>
         </Link>
       </div>
 

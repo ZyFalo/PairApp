@@ -13,6 +13,7 @@ import {
 import { motion } from "motion/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { EnCamino } from "@/componentes/espera"
 import { pedirReinicio } from "@/lib/borrador"
 
 /**
@@ -59,19 +60,31 @@ export function Pestanas() {
                     pedirReinicio(p.href)
                   }}
                 >
-                  <Icono
-                    size={21}
-                    className={
-                      activa ? "text-[var(--color-acento)]" : "text-[var(--color-tinta-tenue)]"
-                    }
-                  />
-                  <span
-                    className={`text-[11px] font-medium tracking-wide ${
-                      activa ? "text-[var(--color-acento)]" : "text-[var(--color-tinta-tenue)]"
-                    }`}
-                  >
-                    {p.texto}
-                  </span>
+                  {/* El icono y el nombre se encienden en cuanto se toca, sin
+                      esperar a que llegue la pantalla. Es la espera más
+                      repetida de la app —cambiar de pestaña son cuatro rutas
+                      dinámicas— y hasta ahora no pasaba absolutamente nada
+                      entre el dedo y el contenido nuevo.
+
+                      Dentro del `<Link>` porque `useLinkStatus` lee el contexto
+                      que publica el enlace; desde fuera devuelve siempre falso. */}
+                  <EnCamino modo="enciende">
+                    <Icono
+                      size={21}
+                      className={
+                        activa ? "text-[var(--color-acento)]" : "text-[var(--color-tinta-tenue)]"
+                      }
+                    />
+                  </EnCamino>
+                  <EnCamino modo="enciende">
+                    <span
+                      className={`text-[11px] font-medium tracking-wide ${
+                        activa ? "text-[var(--color-acento)]" : "text-[var(--color-tinta-tenue)]"
+                      }`}
+                    >
+                      {p.texto}
+                    </span>
+                  </EnCamino>
                 </Link>
                 {activa && (
                   // El indicador se desliza entre pestañas en vez de parpadear

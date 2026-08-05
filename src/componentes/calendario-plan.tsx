@@ -179,7 +179,7 @@ export function FormularioEvento({ fechaSugerida }: { fechaSugerida?: string }) 
  */
 export function BotonBorrarEvento({ id, titulo }: { id: string; titulo: string }) {
   const [confirmando, setConfirmando] = useState(false)
-  const [, empezar] = useTransition()
+  const [borrando, empezar] = useTransition()
 
   if (!confirmando) {
     return (
@@ -196,18 +196,32 @@ export function BotonBorrarEvento({ id, titulo }: { id: string; titulo: string }
 
   return (
     <span className="flex shrink-0 items-center gap-1">
+      {/* El callback va `async` y con `await`: soltar la promesa —`() => void
+          borrarEvento(id)`— da la transición por terminada en el acto, así que
+          el botón revivía antes de que el plan hubiera desaparecido y un
+          segundo toque mandaba el borrado dos veces.
+
+          Y como es un `<button>` propio y no un `Boton`, el apagado hay que
+          escribirlo a mano. */}
       <button
         type="button"
-        onClick={() => empezar(() => void borrarEvento(id))}
+        disabled={borrando}
+        aria-busy={borrando || undefined}
+        onClick={() =>
+          empezar(async () => {
+            await borrarEvento(id)
+          })
+        }
         className="pulsable rounded-[var(--radius-pildora)] bg-[var(--color-acento-tenue)] px-2.5 py-1 text-[12px] font-medium text-[var(--color-acento-hondo)]"
       >
-        Quitar
+        {borrando ? "Quitando…" : "Quitar"}
       </button>
       <button
         type="button"
+        disabled={borrando}
         onClick={() => setConfirmando(false)}
         aria-label="Cancelar"
-        className="pulsable rounded-full p-1 text-[var(--color-tinta-tenue)]"
+        className="pulsable rounded-full p-1 text-[var(--color-tinta-tenue)] disabled:opacity-40"
       >
         <RiCloseLine size={15} />
       </button>

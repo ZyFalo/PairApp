@@ -253,6 +253,45 @@ body > * {
   .escalonado > *:nth-child(4) { animation-delay: 220ms; }
   .escalonado > *:nth-child(5) { animation-delay: 280ms; }
   .escalonado > *:nth-child(6) { animation-delay: 340ms; }
+
+  /* Un hueco reservado mientras llega lo que va a ocupar ese sitio.
+     Respira despacio en vez de barrer un brillo en diagonal: el barrido es la
+     firma de un kit de componentes y §8.2 pide justo lo contrario. */
+  .respira {
+    animation: respira 2400ms ease-in-out infinite alternate;
+  }
+
+  /* Los tres puntos de algo que está de camino. Solo opacidad: ni rebote ni
+     desplazamiento — §8.2 pide movimiento lento y sin sobresaltos. */
+  .trazo > span {
+    animation: trazo 1400ms ease-in-out infinite;
+  }
+  .trazo > span:nth-child(2) { animation-delay: 180ms; }
+  .trazo > span:nth-child(3) { animation-delay: 360ms; }
+}
+
+/* Sin animación, los tres puntos se quedan puestos y quietos: la señal sigue
+   estando, solo que sin moverse. */
+.trazo > span {
+  opacity: 0.6;
+}
+
+@keyframes respira {
+  from { opacity: 0.5; }
+  to { opacity: 0.85; }
+}
+
+@keyframes trazo {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+
+/* Lo que ya dejó de ser verdad mientras llega lo nuevo: los resultados de una
+   búsqueda anterior, por ejemplo. Nunca lo que la persona está leyendo. */
+.viaja {
+  opacity: 0.45;
+  pointer-events: none;
+  transition: opacity 220ms ease;
 }
 
 @keyframes aparece {

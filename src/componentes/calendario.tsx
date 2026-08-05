@@ -1,6 +1,8 @@
 import { RiArrowLeftSLine, RiArrowRightSLine } from "@remixicon/react"
 import Link from "next/link"
 import { Apunte } from "@/componentes/base"
+import { EnCamino } from "@/componentes/espera"
+import { Esqueleto } from "@/componentes/esqueleto"
 import { ESTILO_GRUPO } from "@/componentes/iconos"
 import type { CasillaLlena } from "@/lib/motor/calendario"
 import { DIAS_SEMANA, type Mes, mesVecino, nombreDelMes } from "@/lib/motor/calendario"
@@ -78,7 +80,12 @@ function PasoDeMes({ mes, atras = false }: { mes: Mes; atras?: boolean }) {
       aria-label={atras ? "Mes anterior" : "Mes siguiente"}
       className="pulsable rounded-full p-2 text-[var(--color-tinta-tenue)] hover:text-[var(--color-acento)]"
     >
-      <Icono size={20} />
+      {/* La flecha se queda encendida hasta que llega el mes. El prefetch no
+          sirve aquí: la ruta es dinámica y el mes viaja en la URL, así que hay
+          viaje al servidor sí o sí. */}
+      <EnCamino modo="enciende">
+        <Icono size={20} />
+      </EnCamino>
     </Link>
   )
 }
@@ -98,6 +105,11 @@ function PasoDeMes({ mes, atras = false }: { mes: Mes; atras?: boolean }) {
  * navegación te devuelve al principio de la página: tocabas el 14 y perdías de
  * vista el propio calendario. Aquí no se cambia de pantalla, se despliega un
  * detalle de la que ya estás mirando, y eso no mueve a nadie de sitio.
+ *
+ * Y por eso mismo hace falta `EnCamino`: al conservar el desplazamiento, la
+ * pantalla se queda **literalmente idéntica** a como estaba mientras el
+ * servidor busca los datos del día. Se marca la casilla con el mismo dibujo que
+ * tendrá cuando esté abierta, así que al llegar no cambia nada de sitio.
  */
 function Casilla({ casilla, abierta }: { casilla: CasillaLlena; abierta: boolean }) {
   const { dia, numero, esDelMes, esHoy } = casilla
@@ -107,7 +119,7 @@ function Casilla({ casilla, abierta }: { casilla: CasillaLlena; abierta: boolean
       href={`/nosotros?mes=${dia.slice(0, 7)}&dia=${dia}`}
       scroll={false}
       aria-current={esHoy ? "date" : undefined}
-      className={`pulsable flex aspect-square flex-col items-center gap-[3px] rounded-[var(--radius-suave)] px-0.5 pb-1 pt-1.5 transition-colors ${
+      className={`pulsable relative flex aspect-square flex-col items-center gap-[3px] rounded-[var(--radius-suave)] px-0.5 pb-1 pt-1.5 transition-colors ${
         abierta
           ? "bg-[var(--color-acento-tenue)] ring-1 ring-[var(--color-acento-suave)]"
           : esHoy
@@ -115,6 +127,8 @@ function Casilla({ casilla, abierta }: { casilla: CasillaLlena; abierta: boolean
             : "hover:bg-[var(--color-lienzo-hondo)]"
       }`}
     >
+      <EnCamino modo="marca" />
+
       <span
         className={`text-[12.5px] tabular-nums ${
           esHoy
@@ -202,6 +216,51 @@ function BandasDeCiclo({ mia, suya }: { mia: string | null; suya: string | null 
         ) : null,
       )}
     </span>
+  )
+}
+
+/**
+ * El hueco del mes mientras llegan sus datos.
+ *
+ * Vive aquí, pegado al marcado que imita, y no en `esqueleto.tsx`: si una de
+ * las dos rejillas cambia y la otra no, se ve en el mismo diff.
+ *
+ * Puede existir porque **la forma se conoce de antemano**: `rejillaDelMes`
+ * siempre devuelve seis semanas, así que nada salta al llegar. Las iniciales de
+ * los días son las de verdad —son constantes—, y el nombre del mes no: ese
+ * depende de cuál se esté pidiendo.
+ *
+ * Las casillas van **vacías, con solo una barrita donde iría el número**.
+ * Cuarenta y dos cuadrados rellenos se leerían como cuarenta y dos días
+ * marcados, que es justo lo que la rejilla no puede decir nunca (§6).
+ */
+export function EsqueletoDeMes() {
+  return (
+    <section aria-busy className="space-y-3">
+      <div className="flex items-center justify-center py-2">
+        <Esqueleto className="h-5 w-36" />
+      </div>
+
+      <div className="grid grid-cols-7 gap-1">
+        {DIAS_SEMANA.map((d) => (
+          <span
+            key={d.nombre}
+            className="text-center text-[11px] font-medium text-[var(--color-tinta-tenue)]"
+          >
+            {d.inicial}
+          </span>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-7 gap-1">
+        {Array.from({ length: 42 }, (_, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: casillas sin identidad
+          <span key={i} className="flex aspect-square justify-center pt-1.5">
+            <Esqueleto className="h-3 w-4 rounded-sm" />
+          </span>
+        ))}
+      </div>
+    </section>
   )
 }
 

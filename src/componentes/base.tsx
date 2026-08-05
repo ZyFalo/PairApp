@@ -1,5 +1,6 @@
 import Link from "next/link"
 import type { ComponentProps, ReactNode } from "react"
+import { EnCamino } from "@/componentes/espera"
 import type { Icono } from "@/componentes/iconos"
 
 /**
@@ -7,13 +8,53 @@ import type { Icono } from "@/componentes/iconos"
  * propia, y un kit genérico haría que la app se pareciera a cualquier otra.
  */
 
-/** Botón. Uno principal por pantalla; el resto en suave o texto. */
+/**
+ * Tres puntos: algo está de camino.
+ *
+ * `bg-current` a propósito. Así sirve igual sobre el botón sólido y sobre el
+ * suave, sin una variable de color nueva —y por tanto sin la versión oscura que
+ * toda variable nueva arrastra (§6)—.
+ */
+export function TrazoDeEspera() {
+  return (
+    <span aria-hidden className="trazo inline-flex items-center gap-1">
+      <span className="size-1 rounded-full bg-current" />
+      <span className="size-1 rounded-full bg-current" />
+      <span className="size-1 rounded-full bg-current" />
+    </span>
+  )
+}
+
+/**
+ * Botón. Uno principal por pantalla; el resto en suave o texto.
+ *
+ * **`ocupado` es lo que dice que la acción va.** Y hay dos formas de decirlo,
+ * porque no siempre significa lo mismo:
+ *
+ * - Con `textoOcupado`, la etiqueta se sustituye: «Enviando…». Vale cuando ese
+ *   botón era lo único que se podía pulsar.
+ * - Sin él, la etiqueta **se conserva** y detrás aparece el trazo. Es lo que
+ *   hace falta cuando hay varios botones y lo que importa es *cuál* se pulsó:
+ *   en el umbral del enojo y en los gestos de reparación el texto del botón
+ *   **es** la decisión, y borrarlo justo al tomarla deja a la persona sin saber
+ *   qué acaba de elegir.
+ *
+ * `disabled:opacity-100` mientras está ocupado por lo mismo: el que se pulsó se
+ * queda a la vista, y los que se atenúan son sus hermanos —cada uno por su
+ * propio `disabled`—. Así la pantalla dice quién ganó.
+ */
 export function Boton({
   children,
   variante = "solido",
   className = "",
+  ocupado = false,
+  textoOcupado,
   ...props
-}: ComponentProps<"button"> & { variante?: "solido" | "suave" | "texto" }) {
+}: ComponentProps<"button"> & {
+  variante?: "solido" | "suave" | "texto"
+  ocupado?: boolean
+  textoOcupado?: string
+}) {
   const estilos = {
     solido:
       "text-[var(--color-sobre-acento)] bg-gradient-to-b from-[var(--color-acento)] to-[var(--color-acento-hondo)] shadow-[var(--sombra-tinta)] hover:brightness-[1.06]",
@@ -24,10 +65,21 @@ export function Boton({
 
   return (
     <button
-      className={`pulsable rounded-[var(--radius-suave)] px-5 py-3.5 text-[15px] font-medium disabled:opacity-40 ${estilos} ${className}`}
+      className={`pulsable rounded-[var(--radius-suave)] px-5 py-3.5 text-[15px] font-medium disabled:opacity-40 ${
+        ocupado ? "disabled:opacity-100" : ""
+      } ${estilos} ${className}`}
+      aria-busy={ocupado || undefined}
       {...props}
+      disabled={ocupado || props.disabled}
     >
-      {children}
+      {ocupado && textoOcupado ? (
+        textoOcupado
+      ) : (
+        <span className="inline-flex items-center gap-2">
+          {children}
+          {ocupado && <TrazoDeEspera />}
+        </span>
+      )}
     </button>
   )
 }
@@ -224,12 +276,17 @@ export function PastillaDeVista({
     <Link
       href={href}
       aria-current={activa ? "page" : undefined}
-      className={`pulsable inline-flex shrink-0 items-center justify-center gap-1.5 rounded-[var(--radius-pildora)] px-3.5 py-2 text-[13px] font-medium ${
+      className={`pulsable relative inline-flex shrink-0 items-center justify-center gap-1.5 rounded-[var(--radius-pildora)] px-3.5 py-2 text-[13px] font-medium ${
         activa
           ? "bg-[var(--color-acento)] text-[var(--color-sobre-acento)] shadow-[var(--sombra-tinta)]"
           : "border border-[var(--color-borde)] bg-[var(--color-papel)] text-[var(--color-tinta-suave)]"
       }`}
     >
+      {/* La pastilla tocada se marca mientras el servidor responde, pero **no**
+          adopta el relleno de la activa: dos rellenos a la vez dirían que estás
+          en dos sitios. Va dentro del `<Link>` porque `useLinkStatus` lee el
+          contexto que publica el propio enlace. */}
+      <EnCamino modo="marca" />
       <Icono size={15} />
       {texto}
     </Link>

@@ -105,10 +105,19 @@ export function RevisionEnFrio(props: Props) {
           </Boton>
         )}
 
+        {/* `async` con `await` y no `() => void dejarloIr(…)`: soltar la promesa
+            da la transición por terminada en el acto, así que el botón se
+            apagaba y volvía a encenderse antes de que pasara nada. En esta
+            pantalla —decidir qué hacer con algo escrito enojado— un botón que
+            parpadea y revive se lee como que no funcionó, y se vuelve a pulsar. */}
         <Boton
           variante="suave"
-          onClick={() => empezar(() => void dejarloIr(props.mensajeId))}
-          disabled={ocupado}
+          onClick={() =>
+            empezar(async () => {
+              await dejarloIr(props.mensajeId)
+            })
+          }
+          ocupado={ocupado}
         >
           <span className="inline-flex items-center gap-2">
             <RiArchiveLine size={17} />
