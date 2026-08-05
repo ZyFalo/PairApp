@@ -128,8 +128,38 @@ ics.ts          Generación de archivos .ics para el calendario del teléfono
 once.ts         La ventana de los 11:11 y quién participa en ella (M12)
 avisos.ts       Cuándo puede la app tocar el hombro, y con qué palabras (M4)
 modulos.ts      Qué módulos usa una pareja, y cómo se le pregunta (RF-0.7)
+novedades.ts    Cuánto dura «lo último» y cómo se cuenta (RF-7.10)
 juntos.ts       Selector al azar de títulos y aniversarios de recuerdos
 ```
+
+### «Lo último»: lo que hizo la otra persona, junto
+
+La app tiene once módulos y lo que se añade en uno no se ve desde los demás. El
+calendario juntó los hechos **con fecha**; `Novedad` junta los **recientes**.
+
+**Cada acción anota la suya**, en la misma llamada que crea la cosa: no hay un
+observador que mire la base y deduzca qué ha cambiado. Si alguien añade una
+función nueva y no la anota, no sale en la lista — y eso es preferible a una
+lista que adivina (§1.2).
+
+| Quién anota | Cuándo |
+|---|---|
+| `acciones/nosotros.ts` → `crearEvento` | al crear el plan |
+| `acciones/juntos.ts` → `anadirTitulo`, `anadirDesdeTmdb` | al añadirlo |
+| `acciones/juntos.ts` → `crearRecuerdo`, `guardarPlanComoRecuerdo` | al guardarlo |
+| `acciones/conflicto.ts` → `crearAcuerdo` | al escribirlo |
+| `api/cron/despachar` | al **entregar** la dedicatoria, no al dedicarla |
+
+La canción es la única que no nace en su acción, y no es un descuido: se dedica
+para una franja del día y hasta su hora no ha pasado nada que contar.
+
+**Lo que no entra nunca**: el bucle emocional. Ni cómo está alguien, ni lo que te
+escribió, ni los relatos de un conflicto. Un mensaje suyo con un botón de
+«apartar» al lado sería el peor gesto de la app.
+
+Lo que impide que sea una bandeja de entrada no es la buena voluntad de nadie:
+**caduca sola** a los siete días y solo se ven cuatro a la vez. Sin contador y
+sin insignia (RF-2.0.7); lo que sobra no se anuncia.
 
 ### Cuándo avisa la app
 
@@ -262,6 +292,22 @@ app siga abierta y desaparece al cerrarla. Cambiar de pestaña no puede borrar u
 mensaje a medio escribir.
 
 Se sale con el **segundo toque** en la pestaña en la que ya estás.
+
+**Ningún campo lleva `autoFocus`.** Va `ref={enfocar}` con `useEnfoqueQuieto`
+(`lib/enfoque.ts`), que enfoca con `preventScroll`. `autoFocus` hace dos cosas a
+la vez —poner el cursor y desplazar el documento hasta él— y no deja separarlas:
+como estos formularios se montan **ya abiertos** cuando hay borrador, entrar en
+«Ver juntos» con algo empezado te dejaba de golpe al final de la lista, sin
+haber pedido ir ahí. Lo que se recuerda es el borrador, no dónde estabas
+mirando.
+
+### Navegar sin perder el sitio
+
+Los `<Link>` que solo **despliegan un detalle** de la pantalla que ya estás
+mirando llevan `scroll={false}`: abrir un día del calendario o pasar de mes no
+es cambiar de pantalla, y devolver a nadie al principio de la página por eso
+hace perder de vista el propio calendario. Los que sí cambian de pantalla —las
+pastillas de vista— no lo llevan.
 
 ---
 

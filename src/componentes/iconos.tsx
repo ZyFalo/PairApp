@@ -1,13 +1,17 @@
 import {
+  RiCalendarEventLine,
   RiChat3Line,
   RiCloudyLine,
   RiEmpathizeLine,
+  RiFilmLine,
   RiGameLine,
   RiHandHeartLine,
   RiHazeLine,
   RiHeart3Line,
   RiHeartsLine,
+  RiImage2Line,
   RiMoonFoggyLine,
+  RiMusic2Line,
   RiOpenArmLine,
   RiPauseCircleLine,
   RiQuestionLine,
@@ -19,7 +23,13 @@ import {
   RiWindyLine,
 } from "@remixicon/react"
 import type { ComponentType } from "react"
-import type { CierreHilo, Emocion, GrupoEmocion, Necesidad } from "@/generated/prisma/enums"
+import type {
+  CierreHilo,
+  Emocion,
+  GrupoEmocion,
+  Necesidad,
+  TipoNovedad,
+} from "@/generated/prisma/enums"
 
 /**
  * Todo icono de la app vive aquí. No se usan emojis en ninguna pantalla: cada
@@ -85,6 +95,21 @@ export const ICONO_NECESIDAD: Record<Necesidad, Icono> = {
   CONTACTO: RiOpenArmLine,
   SOLUCIONES: RiToolsLine,
   NO_SE: RiQuestionLine,
+}
+
+/**
+ * De qué módulo viene cada novedad (RF-7.10).
+ *
+ * Es el mismo icono que lleva su pestaña en Nosotros, y no uno propio: el icono
+ * es lo que dice a dónde vas a ir al pulsar. Uno distinto obligaría a leer la
+ * línea entera para saber de qué se trata.
+ */
+export const ICONO_NOVEDAD: Record<TipoNovedad, Icono> = {
+  PLAN: RiCalendarEventLine,
+  CANCION: RiMusic2Line,
+  TITULO: RiFilmLine,
+  RECUERDO: RiImage2Line,
+  ACUERDO: RiHandHeartLine,
 }
 
 /** Las cuatro respuestas de un toque (§3.3). */

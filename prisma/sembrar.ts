@@ -45,7 +45,7 @@ async function main() {
       horasPregunta: [9, 14, 19],
     },
   })
-  const ana = await prisma.usuario.create({
+  const cata = await prisma.usuario.create({
     data: {
       correo: CORREO_B,
       contrasenaHash,
@@ -62,7 +62,7 @@ async function main() {
   await prisma.membresia.createMany({
     data: [
       { usuarioId: will.id, vinculoId: vinculo.id },
-      { usuarioId: ana.id, vinculoId: vinculo.id },
+      { usuarioId: cata.id, vinculoId: vinculo.id },
     ],
   })
 
@@ -72,7 +72,7 @@ async function main() {
   const calido = await prisma.mensaje.create({
     data: {
       vinculoId: vinculo.id,
-      autorId: ana.id,
+      autorId: cata.id,
       emocion: "AGRADECIDO",
       clase: "PRESENCIA",
       destino: "AHORA",
@@ -99,7 +99,7 @@ async function main() {
   const incomodo = await prisma.mensaje.create({
     data: {
       vinculoId: vinculo.id,
-      autorId: ana.id,
+      autorId: cata.id,
       emocion: "INCOMODO",
       clase: "CONVERSACION",
       destino: "AHORA",
@@ -151,7 +151,7 @@ async function main() {
     data: [
       {
         vinculoId: vinculo.id,
-        autorId: ana.id,
+        autorId: cata.id,
         emocion: "INCOMODO",
         grupo: "ALGO_PASO",
         intensidad: 3,
@@ -183,7 +183,7 @@ async function main() {
   await prisma.dedicatoria.create({
     data: {
       vinculoId: vinculo.id,
-      autorId: ana.id,
+      autorId: cata.id,
       url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
       titulo: "Nuestra canción",
       mensaje: "Para cuando te levantes.",
@@ -194,7 +194,7 @@ async function main() {
   await prisma.ciclo.create({
     data: {
       vinculoId: vinculo.id,
-      usuarioId: ana.id,
+      usuarioId: cata.id,
       // Empezó anteayer: así la nota se ve al entrar, que es lo que hay que probar
       inicio: new Date(Date.now() - 2 * 24 * 3_600_000),
       nivelVisibilidad: "FECHAS_Y_NOTA",

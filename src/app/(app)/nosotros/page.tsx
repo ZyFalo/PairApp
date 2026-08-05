@@ -7,10 +7,12 @@ import {
   RiMusic2Line,
   RiSparkling2Line,
 } from "@remixicon/react"
-import { Apunte, PastillaDeVista, Seccion, Tarjeta, Titulo } from "@/componentes/base"
+import { PastillaDeVista, Titulo } from "@/componentes/base"
 import type { Icono } from "@/componentes/iconos"
+import { LoUltimo } from "@/componentes/novedades"
 import { VentanaOnceOnce } from "@/componentes/once"
 import { CarrilDeVistas } from "@/componentes/vistas"
+import { loUltimo } from "@/lib/consultas/novedades"
 import { type ClaveModulo, soloElCalendario } from "@/lib/motor/modulos"
 import { participaEnLaVentana, ventanaOnceOnce } from "@/lib/motor/once"
 import { diaLocal } from "@/lib/motor/tiempo"
@@ -61,27 +63,39 @@ export default async function PaginaNosotros({
   const { db, sesion } = await dbDeSesion()
   const ahora = new Date()
   const ventana = ventanaOnceOnce(sesion.zonaHoraria, ahora)
-  const hoy = diaLocal(sesion.zonaHoraria, ahora)
-
-  const onceHoy = sesion.modulos.once
-    ? await db.onceOnce.findMany({ where: { dia: hoy }, orderBy: { creadoEn: "asc" } })
-    : []
-  // La ventana solo se abre para quien participa en ella (RF-12.1) y si la
-  // pareja usa el ritual. Los deseos que ya hay se siguen leyendo aunque uno se
-  // haya salido: son de los dos.
-  const meToca =
-    sesion.modulos.once &&
-    ventana.abierta &&
-    participaEnLaVentana(sesion.ventanasOnce, ventana.esNoche)
-  const yaPedi = onceHoy.some(
-    (o) => o.autorId === sesion.usuarioId && o.esNoche === ventana.esNoche,
-  )
-  const losDos = onceHoy.filter((o) => o.esNoche === ventana.esNoche).length === 2
 
   const visibles = VISTAS.filter((v) => v.modulo === null || sesion.modulos[v.modulo])
   // Una vista de un módulo apagado no se pinta aunque se escriba su URL a mano:
   // esconder la pastilla no cierra la puerta. Se cae al calendario.
   const vistaPintada = visibles.some((v) => v.clave === vista) ? (vista ?? "") : ""
+
+  /**
+   * La ventana de los 11:11 se abre **en cualquier vista** y por encima de todo
+   * lo demás (RF-12.9). Es lo único de la app que dura cuatro minutos: si estás
+   * mirando las películas a las 11:11, tiene que llegarte ahí o se pierde.
+   *
+   * Solo para quien participa en esa ventana (RF-12.1) y si la pareja usa el
+   * ritual. Los deseos ya escritos son otra cosa y viven en su vista: no
+   * caducan, y tenerlos delante en las seis pantallas empujaba hacia abajo el
+   * contenido de todas para enseñar algo ya leído.
+   */
+  const meToca =
+    sesion.modulos.once &&
+    ventana.abierta &&
+    participaEnLaVentana(sesion.ventanasOnce, ventana.esNoche)
+  const yaPedi =
+    meToca &&
+    (await db.onceOnce.findFirst({
+      where: {
+        dia: diaLocal(sesion.zonaHoraria, ahora),
+        esNoche: ventana.esNoche,
+        autorId: sesion.usuarioId,
+      },
+    })) !== null
+
+  // «Lo último» solo encima del calendario: es la pantalla en la que se entra,
+  // y en las demás sería otra vez lo mismo estorbando en todas partes.
+  const novedades = vistaPintada === "" ? await loUltimo() : []
 
   return (
     <div className="space-y-7">
@@ -103,47 +117,34 @@ export default async function PaginaNosotros({
         </CarrilDeVistas>
       )}
 
-      {/* Los 11:11 — la única función simultánea de la app (RF-12.9). Fuera de
-          las vistas: cuatro minutos no esperan a que cambies de pestaña. */}
-      {(meToca || onceHoy.length > 0) && (
-        <section className="space-y-3">
-          <Seccion Icono={RiSparkling2Line}>11:11</Seccion>
-          {meToca && !yaPedi && <VentanaOnceOnce />}
-          {losDos && (
-            <p className="carta text-center text-[17px] text-[var(--color-acento)]">
-              Los dos pidieron a la vez.
-            </p>
-          )}
-          {onceHoy.length > 0 && (
-            <ul className="space-y-2">
-              {onceHoy.map((o) => (
-                <li key={o.id}>
-                  <Tarjeta className="aparece">
-                    <p className="carta text-[16px]">{o.texto}</p>
-                    <Apunte>
-                      {o.autorId === sesion.usuarioId ? "Tú" : (sesion.pareja?.nombre ?? "Ella")}
-                    </Apunte>
-                  </Tarjeta>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+      {meToca && !yaPedi && <VentanaOnceOnce />}
+
+      {sesion.pareja && (
+        <LoUltimo
+          novedades={novedades}
+          nombrePareja={sesion.pareja.nombre}
+          zonaHoraria={sesion.zonaHoraria}
+        />
       )}
 
-      {vistaPintada === "once" ? (
-        <VistaOnce />
-      ) : vistaPintada === "ver" ? (
-        <VistaVerJuntos />
-      ) : vistaPintada === "musica" ? (
-        <VistaMusica />
-      ) : vistaPintada === "recuerdos" ? (
-        <VistaRecuerdos />
-      ) : vistaPintada === "despues" ? (
-        <DespuesDeUnaDiscusion />
-      ) : (
-        <VistaCalendario mes={mes} dia={dia} />
-      )}
+      {/* La `key` reinicia la animación al cambiar de vista y **solo** entonces:
+          abrir un día del calendario deja la misma clave, así que la rejilla no
+          parpadea cada vez que se toca una casilla. */}
+      <div key={vistaPintada} className="aparece">
+        {vistaPintada === "once" ? (
+          <VistaOnce />
+        ) : vistaPintada === "ver" ? (
+          <VistaVerJuntos />
+        ) : vistaPintada === "musica" ? (
+          <VistaMusica />
+        ) : vistaPintada === "recuerdos" ? (
+          <VistaRecuerdos />
+        ) : vistaPintada === "despues" ? (
+          <DespuesDeUnaDiscusion />
+        ) : (
+          <VistaCalendario mes={mes} dia={dia} />
+        )}
+      </div>
 
       {!sesion.pareja && (
         <p className="flex items-center justify-center gap-2 pt-2 text-center text-[13px] text-[var(--color-tinta-tenue)]">

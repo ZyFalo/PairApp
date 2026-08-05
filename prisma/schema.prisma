@@ -256,6 +256,7 @@ model Vinculo {
   titulos       Titulo[]
   votosTitulo   VotoTitulo[]
   recuerdos     Recuerdo[]
+  novedades     Novedad[]
   suscripciones SuscripcionPush[]
 
   @@map("vinculo")
@@ -752,4 +753,55 @@ model SuscripcionPush {
 
   @@index([vinculoId, usuarioId])
   @@map("suscripcion_push")
+}
+
+/// Qué clase de cosa se añadió a la vida en común.
+///
+/// Aquí **solo entra lo compartido**: un plan, una canción, un título, un
+/// recuerdo, un acuerdo. Lo del bucle emocional —cómo está alguien, lo que te
+/// escribió— no aparece nunca en esta lista, y no es un olvido: un mensaje suyo
+/// con un botón de «apartar» al lado sería el peor gesto de la app.
+enum TipoNovedad {
+  PLAN
+  CANCION
+  TITULO
+  RECUERDO
+  ACUERDO
+}
+
+/// Algo que hizo la otra persona y todavía no has visto (RF-7.10).
+///
+/// Existe porque la app tiene once módulos y lo que se añade en uno no se ve
+/// desde los demás: una canción dedicada esperaba en Música a que a alguien se
+/// le ocurriera entrar. El calendario juntó los hechos **con fecha**; esto junta
+/// los hechos **recientes**, que no son los mismos.
+///
+/// **No es una bandeja de entrada.** Sin contador, sin insignia y sin nada que
+/// se acumule: caduca sola a los pocos días (RF-2.0.7). Una lista que crece
+/// mientras no la atiendes convierte a la pareja en una cola de tareas, que es
+/// justo lo que esta app no quiere ser.
+model Novedad {
+  id        String      @id @default(cuid())
+  vinculoId String
+  /// Quién lo hizo. Solo la ve el otro: nadie necesita que le anuncien lo suyo.
+  autorId   String
+  tipo      TipoNovedad
+  /// Con las palabras de quien lo añadió —el título del plan, el nombre de la
+  /// película—, nunca un texto compuesto por la app (§1.2).
+  titulo    String
+  /// A dónde lleva «Ver», ya resuelto: la ruta depende del módulo y esta tabla
+  /// no tiene por qué saber de rutas cada vez que se lee.
+  enlace    String
+  creadaEn  DateTime    @default(now())
+  /// Cuándo la apartó quien la recibía. Null = sigue estando.
+  ///
+  /// Se aparta la **novedad**, no la cosa: la canción sigue en Música y el plan
+  /// en el calendario. Por eso no se borra la fila — hacerlo dejaría el gesto
+  /// indistinguible de un borrado de verdad.
+  apartadaEn DateTime?
+
+  vinculo Vinculo @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
+
+  @@index([vinculoId, apartadaEn, creadaEn])
+  @@map("novedad")
 }

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import type { EstadoTitulo, TipoTitulo } from "@/generated/prisma/enums"
+import { anotar } from "@/lib/acciones/novedades"
 import { comoDiaSuelto } from "@/lib/motor/tiempo"
 import { dbDeSesion } from "@/lib/sesion"
 import { buscar, type Candidato, ficha } from "@/lib/tmdb"
@@ -42,6 +43,8 @@ export async function anadirTitulo(_previo: Resultado, datos: FormData): Promise
       minutos: minutos ?? null,
     },
   })
+
+  await anotar("TITULO", nombre, "/nosotros?vista=ver")
 
   revalidatePath("/nosotros")
   return { ok: true }
@@ -90,6 +93,8 @@ export async function anadirDesdeTmdb(
       minutos: detalle?.minutos ?? null,
     },
   })
+
+  await anotar("TITULO", detalle?.nombre || respaldo.nombre, "/nosotros?vista=ver")
 
   revalidatePath("/nosotros")
   return { ok: true }
@@ -191,6 +196,8 @@ export async function crearRecuerdo(_previo: Resultado, datos: FormData): Promis
     },
   })
 
+  await anotar("RECUERDO", titulo, "/nosotros?vista=recuerdos")
+
   revalidatePath("/nosotros")
   return { ok: true }
 }
@@ -236,6 +243,8 @@ export async function guardarPlanComoRecuerdo(eventoId: string): Promise<Resulta
       ocurrioEl: comoDiaSuelto(evento.inicio, sesion.zonaHoraria),
     },
   })
+
+  await anotar("RECUERDO", evento.titulo, "/nosotros?vista=recuerdos")
 
   revalidatePath("/nosotros")
   return { ok: true }

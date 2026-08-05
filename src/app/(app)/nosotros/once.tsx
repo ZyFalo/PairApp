@@ -1,6 +1,6 @@
 import { RiSparkling2Line } from "@remixicon/react"
 import { Apunte, Seccion, Tarjeta, Vacio } from "@/componentes/base"
-import { fechaDeClave } from "@/lib/motor/tiempo"
+import { diaLocal, fechaDeClave } from "@/lib/motor/tiempo"
 import { dbDeSesion } from "@/lib/sesion"
 
 /**
@@ -18,6 +18,11 @@ import { dbDeSesion } from "@/lib/sesion"
  *
  * Por eso tampoco se dice nada de los días sin deseo. Se listan los que hay y
  * ya está; los huecos entre fechas no se nombran.
+ *
+ * **Aquí y solo aquí.** Los deseos del día estuvieron un tiempo delante en las
+ * seis vistas de Nosotros, y empujaban hacia abajo el contenido de todas para
+ * enseñar algo que ya se había leído. Lo que sigue saliendo en cualquier
+ * pantalla es la ventana de cuatro minutos, que es lo único que caduca.
  */
 export async function VistaOnce() {
   const { db, sesion } = await dbDeSesion()
@@ -49,11 +54,18 @@ export async function VistaOnce() {
     else porDia.set(deseo.dia, [deseo])
   }
 
+  const hoy = diaLocal(sesion.zonaHoraria, new Date())
+
   return (
     <div className="space-y-6">
       {[...porDia].map(([dia, delDia]) => (
         <section key={dia} className="space-y-2">
           <Seccion Icono={RiSparkling2Line}>{fechaDeClave(dia)}</Seccion>
+          {dia === hoy && coincidieron(delDia) && (
+            <p className="carta text-center text-[17px] text-[var(--color-acento)]">
+              Los dos pidieron a la vez.
+            </p>
+          )}
           <ul className="space-y-2">
             {delDia.map((deseo) => (
               <li key={deseo.id}>
@@ -71,4 +83,19 @@ export async function VistaOnce() {
       ))}
     </div>
   )
+}
+
+/**
+ * Si los dos pidieron en la **misma** ventana.
+ *
+ * Por ventana y no por día: uno por la mañana y otro por la noche son dos
+ * gestos separados por doce horas, y llamarlos coincidencia sería la app
+ * interpretando (§1.2). Lo que tiene gracia es haber estado pensando en lo
+ * mismo a la vez.
+ */
+function coincidieron(delDia: { autorId: string; esNoche: boolean }[]): boolean {
+  return [false, true].some((esNoche) => {
+    const enLaVentana = delDia.filter((d) => d.esNoche === esNoche)
+    return new Set(enLaVentana.map((d) => d.autorId)).size === 2
+  })
 }

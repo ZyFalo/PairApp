@@ -4,6 +4,7 @@ import { DateTime } from "luxon"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { ClaseMensaje, DestinoMensaje, Emocion, type FranjaDia } from "@/generated/prisma/enums"
+import { anotar } from "@/lib/acciones/novedades"
 import { LARGO_MAXIMO_DESEO, participaEnLaVentana, ventanaOnceOnce } from "@/lib/motor/once"
 import { diaLocal } from "@/lib/motor/tiempo"
 import { dbDeSesion } from "@/lib/sesion"
@@ -109,6 +110,8 @@ export async function crearEvento(_previo: Resultado, datos: FormData): Promise<
       })
     : null
 
+  const cuando = DateTime.fromISO(inicio, { zone: sesion.zonaHoraria }).toJSDate()
+
   await db.evento.create({
     data: {
       vinculoId: sesion.vinculoId,
@@ -119,7 +122,7 @@ export async function crearEvento(_previo: Resultado, datos: FormData): Promise<
       // en la del servidor —UTC en producción—, así que un plan a las nueve de
       // la noche acababa siendo a las cuatro de la tarde. Se ancla a la zona de
       // quien lo escribe, que es la que tenía en la cabeza al teclearlo.
-      inicio: DateTime.fromISO(inicio, { zone: sesion.zonaHoraria }).toJSDate(),
+      inicio: cuando,
       esDePareja,
       anual,
       notas: notas || null,
@@ -127,6 +130,15 @@ export async function crearEvento(_previo: Resultado, datos: FormData): Promise<
       capsulaId: mensaje?.id ?? null,
     },
   })
+
+  // Lleva al día del plan, no a la vista: quien pulsa quiere ver **cuándo** es,
+  // y eso solo se lee en su casilla del mes.
+  const dia = diaLocal(sesion.zonaHoraria, cuando)
+  await anotar("PLAN", titulo, `/nosotros?mes=${dia.slice(0, 7)}&dia=${dia}`)
+
+  // La cápsula no se anuncia. Quien la recibe no sabe que existe hasta que
+  // llega (RF-7.6): decir aquí que hay algo esperando sería la cuenta atrás que
+  // el propio requisito prohíbe.
 
   revalidatePath("/nosotros")
   return { ok: true }

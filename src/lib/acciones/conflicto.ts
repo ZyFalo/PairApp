@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { DestinoMensaje } from "@/generated/prisma/enums"
+import { anotar } from "@/lib/acciones/novedades"
 import { claseDe } from "@/lib/motor/emociones"
 import { gestoDe } from "@/lib/motor/reparacion"
 import { dbDeSesion } from "@/lib/sesion"
@@ -135,6 +136,13 @@ export async function crearAcuerdo(_previo: Resultado, datos: FormData): Promise
   await db.acuerdo.create({
     data: { vinculoId: sesion.vinculoId, texto, creadorId: sesion.usuarioId },
   })
+
+  // El acuerdo sí sale en «Lo último», y es el único del módulo que lo hace: es
+  // lo que **los dos** decidieron, y por eso puede anunciarse. Lo demás de
+  // «Después» —los relatos de un conflicto, la reparación— no aparece nunca
+  // ahí: eso se lee cuando se está listo para leerlo, no porque la app lo saque
+  // a la pantalla de entrada con un aspa al lado.
+  await anotar("ACUERDO", texto, "/nosotros?vista=despues")
 
   revalidatePath("/nosotros")
   return { ok: true }

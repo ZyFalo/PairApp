@@ -34,15 +34,15 @@ async function personas() {
     where: { correo: "will@pairapp.local" },
     include: { membresia: true },
   })
-  const ana = await prisma.usuario.findUnique({
+  const cata = await prisma.usuario.findUnique({
     where: { correo: "cata@pairapp.local" },
     include: { membresia: true },
   })
 
-  if (!will?.membresia || !ana?.membresia) {
+  if (!will?.membresia || !cata?.membresia) {
     throw new Error("Falta la semilla. Ejecuta antes: pnpm db:sembrar")
   }
-  return { will, ana, vinculoId: will.membresia.vinculoId }
+  return { will, cata, vinculoId: will.membresia.vinculoId }
 }
 
 /** Borra lo que un escenario anterior haya dejado puesto. */
@@ -51,6 +51,7 @@ async function limpiarMarcados(vinculoId: string) {
   await prisma.checkin.deleteMany({ where: { vinculoId, id: { startsWith: "esc-" } } })
   await prisma.recuerdo.deleteMany({ where: { vinculoId, titulo: { startsWith: "[escenario]" } } })
   await prisma.evento.deleteMany({ where: { vinculoId, titulo: { startsWith: "[escenario]" } } })
+  await prisma.novedad.deleteMany({ where: { vinculoId, titulo: { startsWith: "[escenario]" } } })
   // Los ciclos no tienen texto donde dejar la marca, así que se borran los que
   // caen en la ventana que usa el escenario del calendario: los tres meses
   // alrededor de hoy. Lo de más atrás, si lo hubiera, se queda.
@@ -158,10 +159,10 @@ const CASOS: Record<string, Caso> = {
   reparar: {
     descripcion: "Los dos en «algo pasó»: aparece el botón de reparación",
     async montar() {
-      const { will, ana, vinculoId } = await personas()
+      const { will, cata, vinculoId } = await personas()
       await limpiarMarcados(vinculoId)
       await checkin(vinculoId, will.id, "ENOJADO", "ALGO_PASO", 4)
-      await checkin(vinculoId, ana.id, "INCOMODO", "ALGO_PASO", 3)
+      await checkin(vinculoId, cata.id, "INCOMODO", "ALGO_PASO", 3)
       return [
         "Entra como Will y abre Hoy.",
         'Arriba debe salir "Los dos están en un mal momento" con cuatro frases.',
@@ -174,13 +175,13 @@ const CASOS: Record<string, Caso> = {
   nombrar: {
     descripcion: "Los dos enojados y ella te escribe: la tercera celda de la matriz",
     async montar() {
-      const { will, ana, vinculoId } = await personas()
+      const { will, cata, vinculoId } = await personas()
       await limpiarMarcados(vinculoId)
       await prisma.entrega.deleteMany({ where: { vinculoId, destinatarioId: will.id, vistaEn: null } })
       await checkin(vinculoId, will.id, "ENOJADO", "ALGO_PASO", 4)
       const m = await mensaje({
         vinculoId,
-        autorId: ana.id,
+        autorId: cata.id,
         emocion: "ENOJADO",
         clase: "CONVERSACION",
         destino: "AHORA",
@@ -199,14 +200,14 @@ const CASOS: Record<string, Caso> = {
   amortiguador: {
     descripcion: "Estás en carencia y te llega algo difícil: entra el amortiguador",
     async montar() {
-      const { will, ana, vinculoId } = await personas()
+      const { will, cata, vinculoId } = await personas()
       await limpiarMarcados(vinculoId)
       await prisma.entrega.deleteMany({ where: { vinculoId, destinatarioId: will.id, vistaEn: null } })
       await checkin(vinculoId, will.id, "TRISTE", "ME_FALTA_ALGO", 4)
       // Algo cálido suyo que ya salió hacia mí: es lo que se pone delante
       const calido = await mensaje({
         vinculoId,
-        autorId: ana.id,
+        autorId: cata.id,
         emocion: "AGRADECIDO",
         clase: "PRESENCIA",
         destino: "AHORA",
@@ -223,7 +224,7 @@ const CASOS: Record<string, Caso> = {
       })
       const dificil = await mensaje({
         vinculoId,
-        autorId: ana.id,
+        autorId: cata.id,
         emocion: "INCOMODO",
         clase: "CONVERSACION",
         destino: "AHORA",
@@ -242,7 +243,7 @@ const CASOS: Record<string, Caso> = {
   retirar: {
     descripcion: "Un mensaje recién enviado y sin abrir: todavía se puede retirar",
     async montar() {
-      const { will, ana, vinculoId } = await personas()
+      const { will, cata, vinculoId } = await personas()
       await limpiarMarcados(vinculoId)
       const m = await mensaje({
         vinculoId,
@@ -252,7 +253,7 @@ const CASOS: Record<string, Caso> = {
         destino: "AHORA",
         texto: "Esto lo mandé sin pensarlo dos veces.",
       })
-      await entregar(vinculoId, m.id, ana.id)
+      await entregar(vinculoId, m.id, cata.id)
       return [
         "Entra como Will y ve a Cofre → Enviados.",
         'Debe salir "Retirarlo" en acento (§6.4.1). Tienes DOS MINUTOS.',
@@ -265,9 +266,9 @@ const CASOS: Record<string, Caso> = {
   guardado: {
     descripcion: "Ella está en carencia y hay algo guardado para ese momento",
     async montar() {
-      const { will, ana, vinculoId } = await personas()
+      const { will, cata, vinculoId } = await personas()
       await limpiarMarcados(vinculoId)
-      await checkin(vinculoId, ana.id, "ME_SIENTO_SOLO", "ME_FALTA_ALGO", 4)
+      await checkin(vinculoId, cata.id, "ME_SIENTO_SOLO", "ME_FALTA_ALGO", 4)
       await mensaje({
         vinculoId,
         autorId: will.id,
@@ -290,7 +291,7 @@ const CASOS: Record<string, Caso> = {
   once: {
     descripcion: "Abre la ventana de los 11:11 moviendo la zona horaria de los dos",
     async montar() {
-      const { will, ana, vinculoId } = await personas()
+      const { will, cata, vinculoId } = await personas()
       const ahora = DateTime.utc()
 
       /**
@@ -323,7 +324,7 @@ const CASOS: Record<string, Caso> = {
       const zona = `UTC${desfase >= 0 ? "+" : ""}${desfase}`
 
       await prisma.usuario.updateMany({
-        where: { id: { in: [will.id, ana.id] } },
+        where: { id: { in: [will.id, cata.id] } },
         data: { zonaHoraria: zona },
       })
       await prisma.onceOnce.deleteMany({ where: { vinculoId } })
@@ -349,9 +350,9 @@ const CASOS: Record<string, Caso> = {
   "zona-normal": {
     descripcion: "Devuelve a los dos a America/Bogota",
     async montar() {
-      const { will, ana } = await personas()
+      const { will, cata } = await personas()
       await prisma.usuario.updateMany({
-        where: { id: { in: [will.id, ana.id] } },
+        where: { id: { in: [will.id, cata.id] } },
         data: { zonaHoraria: "America/Bogota" },
       })
       return ["Los dos vuelven a America/Bogota."]
@@ -362,13 +363,13 @@ const CASOS: Record<string, Caso> = {
   caducado: {
     descripcion: "Tu último check-in tiene 9 h: el motor deja de tenerlo en cuenta",
     async montar() {
-      const { will, ana, vinculoId } = await personas()
+      const { will, cata, vinculoId } = await personas()
       await limpiarMarcados(vinculoId)
       await prisma.entrega.deleteMany({ where: { vinculoId, destinatarioId: will.id, vistaEn: null } })
       await checkin(vinculoId, will.id, "TRISTE", "ME_FALTA_ALGO", 5, 9)
       const m = await mensaje({
         vinculoId,
-        autorId: ana.id,
+        autorId: cata.id,
         emocion: "INCOMODO",
         clase: "CONVERSACION",
         destino: "AHORA",
@@ -413,13 +414,13 @@ const CASOS: Record<string, Caso> = {
   calendario: {
     descripcion: "Un mes con periodos, ánimo de los dos, planes y un aniversario",
     async montar() {
-      const { will, ana, vinculoId } = await personas()
+      const { will, cata, vinculoId } = await personas()
       await limpiarMarcados(vinculoId)
 
       // Ella lleva su ciclo y deja ver su ánimo: es el único estado en que se
       // pueden comprobar las dos capas suyas a la vez — y que nunca coinciden.
       await prisma.usuario.update({
-        where: { id: ana.id },
+        where: { id: cata.id },
         data: { llevaCiclo: true, compartoAnimo: true },
       })
       await prisma.usuario.update({ where: { id: will.id }, data: { compartoAnimo: true } })
@@ -438,7 +439,7 @@ const CASOS: Record<string, Caso> = {
         await prisma.ciclo.create({
           data: {
             vinculoId,
-            usuarioId: ana.id,
+            usuarioId: cata.id,
             inicio: hoy.minus({ days: haceDias }).toJSDate(),
             fin: hoy.minus({ days: haceDias - 4 }).toJSDate(),
             nivelVisibilidad: "FECHAS_Y_NOTA",
@@ -458,7 +459,7 @@ const CASOS: Record<string, Caso> = {
       ]
       for (const [haceDias, emocion, grupo, intensidad] of dias) {
         await checkin(vinculoId, will.id, emocion, grupo as never, intensidad, haceDias * 24)
-        await checkin(vinculoId, ana.id, emocion, grupo as never, intensidad, haceDias * 24 - 2)
+        await checkin(vinculoId, cata.id, emocion, grupo as never, intensidad, haceDias * 24 - 2)
       }
 
       // Un día con dos registros de distinta fuerza: el calendario tiene que
@@ -479,14 +480,14 @@ const CASOS: Record<string, Caso> = {
           {
             // Uno ya pasado, para poder guardarlo como recuerdo (RF-7.7).
             vinculoId,
-            creadorId: ana.id,
+            creadorId: cata.id,
             titulo: "[escenario] El concierto",
             inicio: hoyLocal.minus({ days: 4 }).plus({ hours: 20 }).toJSDate(),
             notas: "Llegamos tarde y aun así valió la pena.",
           },
           {
             vinculoId,
-            creadorId: ana.id,
+            creadorId: cata.id,
             titulo: "[escenario] Su cumpleaños",
             inicio: hoyLocal.plus({ days: 5, hours: 12 }).minus({ years: 27 }).toJSDate(),
             anual: true,
@@ -499,8 +500,8 @@ const CASOS: Record<string, Caso> = {
       await prisma.onceOnce.createMany({
         data: [
           { vinculoId, autorId: will.id, texto: "Que te vaya bien mañana.", dia: hoy.minus({ days: 1 }).toFormat("yyyy-MM-dd"), esNoche: false },
-          { vinculoId, autorId: ana.id, texto: "Que se nos pase rápido la semana.", dia: hoy.minus({ days: 1 }).toFormat("yyyy-MM-dd"), esNoche: false },
-          { vinculoId, autorId: ana.id, texto: "Dormir bien de una vez.", dia: hoy.minus({ days: 1 }).toFormat("yyyy-MM-dd"), esNoche: true },
+          { vinculoId, autorId: cata.id, texto: "Que se nos pase rápido la semana.", dia: hoy.minus({ days: 1 }).toFormat("yyyy-MM-dd"), esNoche: false },
+          { vinculoId, autorId: cata.id, texto: "Dormir bien de una vez.", dia: hoy.minus({ days: 1 }).toFormat("yyyy-MM-dd"), esNoche: true },
           { vinculoId, autorId: will.id, texto: "Que el viaje salga.", dia: hoy.minus({ days: 6 }).toFormat("yyyy-MM-dd"), esNoche: true },
         ],
       })
@@ -538,7 +539,7 @@ const CASOS: Record<string, Caso> = {
   fallback: {
     descripcion: "Estás en carencia y NO hay nada guardado: la escalera de RF-3.6",
     async montar() {
-      const { will, ana, vinculoId } = await personas()
+      const { will, cata, vinculoId } = await personas()
       await limpiarMarcados(vinculoId)
       await prisma.guardado.deleteMany({ where: { vinculoId } })
 
@@ -549,7 +550,7 @@ const CASOS: Record<string, Caso> = {
       // Peldaño 1: un mensaje suyo que TÚ guardaste en el cofre.
       const suyo = await mensaje({
         vinculoId,
-        autorId: ana.id,
+        autorId: cata.id,
         emocion: "AGRADECIDO",
         clase: "PRESENCIA",
         destino: "AHORA",
@@ -571,7 +572,7 @@ const CASOS: Record<string, Caso> = {
       // cron nunca lo manda solo — existe justo para cuando no hay nada más.
       await mensaje({
         vinculoId,
-        autorId: ana.id,
+        autorId: cata.id,
         emocion: "AGRADECIDO",
         clase: "PRESENCIA",
         destino: "CUANDO_LE_SIRVA",
@@ -590,6 +591,76 @@ const CASOS: Record<string, Caso> = {
         "",
         "Para el tercero, borra también ese mensaje: sale un recuerdo.",
         "Y sin nada de lo anterior no sale NADA, que es el quinto peldaño (RF-3.6).",
+      ]
+    },
+  },
+
+  // -------------------------------------------------------------------------
+  novedades: {
+    descripcion: "Cuatro cosas que hizo Cata en cuatro módulos: el panel «Lo último»",
+    async montar() {
+      const { will, cata, vinculoId } = await personas()
+      await limpiarMarcados(vinculoId)
+
+      const hoy = DateTime.now().setZone(ZONA_SEMILLA)
+      const dia = hoy.plus({ days: 3 }).toFormat("yyyy-MM-dd")
+
+      // El plan existe de verdad, no solo su aviso: pulsar «Ver» abre su
+      // casilla del mes, y si el evento no estuviera ahí se vería un día vacío.
+      await prisma.evento.create({
+        data: {
+          vinculoId,
+          creadorId: cata.id,
+          titulo: "[escenario] Cena en el sitio de siempre",
+          inicio: hoy.plus({ days: 3 }).set({ hour: 21, minute: 0 }).toJSDate(),
+        },
+      })
+
+      /**
+       * Las cuatro, de más antigua a más reciente y de módulos distintos: es la
+       * única forma de comprobar de un vistazo que el orden es el correcto y que
+       * cada línea lleva el icono de su pestaña.
+       *
+       * Una de ellas de hace seis días, al borde de la ventana de siete: la
+       * quinta que se añada la empuja fuera y así se ve que el tope funciona.
+       */
+      const cuatro = [
+        { tipo: "CANCION" as const, titulo: "[escenario] Una canción para esta noche", enlace: "/nosotros?vista=musica", haceHoras: 2 },
+        { tipo: "PLAN" as const, titulo: "[escenario] Cena en el sitio de siempre", enlace: `/nosotros?mes=${dia.slice(0, 7)}&dia=${dia}`, haceHoras: 20 },
+        { tipo: "TITULO" as const, titulo: "[escenario] La que dijiste el otro día", enlace: "/nosotros?vista=ver", haceHoras: 50 },
+        { tipo: "RECUERDO" as const, titulo: "[escenario] El domingo en la playa", enlace: "/nosotros?vista=recuerdos", haceHoras: 6 * 24 },
+      ]
+
+      for (const n of cuatro) {
+        await prisma.novedad.create({
+          data: {
+            vinculoId,
+            autorId: cata.id,
+            tipo: n.tipo,
+            titulo: n.titulo,
+            enlace: n.enlace,
+            creadaEn: hoy.minus({ hours: n.haceHoras }).toJSDate(),
+          },
+        })
+      }
+
+      // Una suya, para comprobar que a su autor no se le anuncia lo propio.
+      await prisma.novedad.create({
+        data: {
+          vinculoId,
+          autorId: will.id,
+          tipo: "TITULO",
+          titulo: "[escenario] Esta la añadiste tú",
+          enlace: "/nosotros?vista=ver",
+        },
+      })
+
+      return [
+        "Entra como will@pairapp.local y abre Nosotros.",
+        "Arriba del calendario salen CUATRO líneas, la canción primero.",
+        "La quinta es tuya y NO debe aparecer: nadie se anuncia lo suyo.",
+        "«Ver» lleva a su módulo y la quita. El aspa la quita sin ir.",
+        "Nada de esto lleva número al lado, ni en la pestaña ni en el panel.",
       ]
     },
   },

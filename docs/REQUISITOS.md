@@ -917,6 +917,22 @@ Formato guiado, basado en Comunicación No Violenta, con cuatro campos:
 
 ✅ *Decisión cerrada (D29).*
 
+#### 7.10 Lo último
+
+**RF-7.10 Lo que hizo la otra persona, junto y encima del calendario.** La app tiene once módulos y lo que se añade en uno no se ve desde los demás: una canción dedicada espera en Música a que a alguien se le ocurra entrar. RF-7.5 resolvió esto para lo que tiene fecha; esto lo resuelve para lo que no la tiene.
+
+**RF-7.10.1 Qué entra.** Solo lo que se añade a la vida en común: un plan, una canción **ya entregada**, un título, un recuerdo, un acuerdo. La canción se anuncia al entregarse y no al dedicarse, porque hasta su franja no ha pasado nada que contar.
+
+**RF-7.10.2 Qué no entra, y no es un olvido.** Nada del bucle emocional: ni cómo está alguien, ni lo que te escribió, ni los relatos de un conflicto. Un mensaje suyo con un botón de «apartar» al lado sería el peor gesto de la app. Eso vive en Hoy y se lee cuando se está listo para leerlo.
+
+**RF-7.10.3 Solo lo de la otra persona.** Nadie necesita que le anuncien lo suyo. Una lista donde salen los propios movimientos deja de ser noticia para ser un registro de actividad.
+
+**RF-7.10.4 Dos salidas, y ninguna borra nada.** Ir a la cosa —que la aparta por el camino, porque ya no hay nada que avisar— o quitarla de la lista. La canción sigue en Música y el plan en el calendario.
+
+**RF-7.10.5 No es una bandeja de entrada.** Sin contador, sin insignia y sin nada que se acumule (RF-2.0.7). Lo que lo impide no es que la gente la atienda: **caduca sola** a los pocos días y hay un tope de cuántas se ven a la vez. Lo que sobra no se anuncia — decir «y tres más» sería el contador que esto existe para no tener.
+
+**RF-7.10.6 Solo en el calendario.** No aparece en las demás vistas de Nosotros: repetirlo en todas empujaría hacia abajo el contenido de cada una para enseñar lo mismo. La única excepción por encima de esto es la ventana de los 11:11 (RF-12.9), que dura cuatro minutos y sí sale en cualquier pantalla.
+
 ---
 
 ### M8 — Dedicatorias musicales

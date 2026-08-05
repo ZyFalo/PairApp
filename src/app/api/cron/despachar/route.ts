@@ -1,4 +1,4 @@
-import { DestinoMensaje } from "@/generated/prisma/enums"
+import { DestinoMensaje, TipoNovedad } from "@/generated/prisma/enums"
 import { prismaCrudo } from "@/lib/db"
 import { HORA_DE_LA_CAPSULA, textoDeSuAnimo, tocaAvisarDeSuAnimo } from "@/lib/motor/avisos"
 import { limitesDelDia } from "@/lib/motor/calendario"
@@ -254,8 +254,28 @@ export async function GET(peticion: Request) {
         usuario.id,
         "Te dedicaron una canción",
         dedicatoria.titulo ?? undefined,
-        "/nosotros",
+        "/nosotros?vista=musica",
       )
+      /**
+       * La novedad se anota **al entregar** y no al dedicar (RF-7.10).
+       *
+       * Es la única de las cinco que no nace en su acción, y no es un descuido:
+       * una dedicatoria se escribe para una franja del día y hasta que llega su
+       * hora no ha pasado nada que contar. Anotarla al dedicarla adelantaría la
+       * canción de la noche a las once de la mañana.
+       *
+       * Con `prismaCrudo` porque aquí no hay sesión de nadie: el cron no es una
+       * persona usando la app. El vínculo sale de la propia dedicatoria.
+       */
+      await prismaCrudo.novedad.create({
+        data: {
+          vinculoId,
+          autorId: dedicatoria.autorId,
+          tipo: TipoNovedad.CANCION,
+          titulo: dedicatoria.titulo ?? "Una canción",
+          enlace: "/nosotros?vista=musica",
+        },
+      })
       hecho.dedicatorias++
     }
   }
