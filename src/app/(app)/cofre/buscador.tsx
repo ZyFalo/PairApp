@@ -2,7 +2,7 @@
 
 import { RiCloseLine, RiSearchLine } from "@remixicon/react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 /** Milisegundos de calma antes de buscar. Escribir no debería disparar una consulta por tecla. */
 const ESPERA = 250
@@ -19,16 +19,32 @@ export function Buscador({ inicial }: { inicial: string }) {
   const ruta = usePathname()
   const parametros = useSearchParams()
   const [texto, setTexto] = useState(inicial)
+  /** Lo último que este campo mandó a la URL. */
+  const mio = useRef(inicial)
 
-  // Si la URL cambia por fuera (tocar una vista, ir atrás), el campo la sigue.
-  useEffect(() => setTexto(inicial), [inicial])
+  /**
+   * Si la URL cambia **por fuera** —tocar una vista, ir atrás— el campo la
+   * sigue. Si el cambio es el eco de lo que acabo de mandar yo, no.
+   *
+   * Sin esa distinción la app se comía letras, y de la peor forma: solo al
+   * escribir rápido. Tecleas «hola», a los 250 ms sale la consulta de «hol», y
+   * cuando la respuesta vuelve el efecto pone «hol» en el campo — borrando la
+   * «a» que ya habías escrito. Cuanto más deprisa escribes, más se pierde.
+   */
+  useEffect(() => {
+    if (inicial === mio.current) return
+    mio.current = inicial
+    setTexto(inicial)
+  }, [inicial])
 
   useEffect(() => {
     if (texto === inicial) return
     const temporizador = setTimeout(() => {
       const siguientes = new URLSearchParams(parametros)
-      if (texto.trim()) siguientes.set("q", texto.trim())
+      const limpio = texto.trim()
+      if (limpio) siguientes.set("q", limpio)
       else siguientes.delete("q")
+      mio.current = limpio
       router.replace(`${ruta}?${siguientes}`, { scroll: false })
     }, ESPERA)
     return () => clearTimeout(temporizador)

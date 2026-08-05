@@ -3,7 +3,7 @@
 import { RiHeart3Line, RiMoonClearLine, RiPauseCircleLine, RiQuillPenLine } from "@remixicon/react"
 import { AnimatePresence, motion } from "motion/react"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { type DatosAdjunto, VistaAdjunto } from "@/componentes/adjunto"
 import { Apunte, Boton, Tarjeta, TextoDeCarta } from "@/componentes/base"
 import { COLOR_GRUPO, ICONO_EMOCION, ICONO_NECESIDAD } from "@/componentes/iconos"
@@ -252,15 +252,31 @@ function Lectura({
   const Icono = ICONO_EMOCION[emocion]
   const IconoNecesidad = necesidad ? ICONO_NECESIDAD[necesidad as Necesidad] : null
 
-  async function cerrarSinResponder() {
-    await marcarVisto(entregaId)
-    router.push("/hoy")
+  /**
+   * Las salidas de un mensaje leído no decían nada y no se apagaban: se podían
+   * pulsar tres veces mientras la primera iba de camino.
+   *
+   * El pulsado **conserva su texto y su icono** y solo añade el trazo; el otro
+   * se atenúa. Aquí «Ahora no puedo» y «Leerlo y volver» hacen cosas distintas
+   * —una avisa a la otra persona, la otra no—, así que borrar la etiqueta justo
+   * al elegir dejaría a quien la lee sin saber qué acaba de decir.
+   *
+   * La tarjeta con el mensaje no se toca. Lo que se atenúa son las salidas,
+   * nunca lo que la persona está leyendo.
+   */
+  const [saliendo, empezar] = useTransition()
+  const [salida, setSalida] = useState<"volver" | "rato" | null>(null)
+
+  function salirCon(clave: "volver" | "rato", hacer: () => Promise<unknown>) {
+    setSalida(clave)
+    empezar(async () => {
+      await hacer()
+      router.push("/hoy")
+    })
   }
 
-  async function necesitoUnRato() {
-    await avisarNecesitoUnRato(entregaId)
-    router.push("/hoy")
-  }
+  const cerrarSinResponder = () => salirCon("volver", () => marcarVisto(entregaId))
+  const necesitoUnRato = () => salirCon("rato", () => avisarNecesitoUnRato(entregaId))
 
   return (
     <section className="space-y-5">
@@ -310,12 +326,17 @@ function Lectura({
         {esPresencia ? (
           // Un mensaje de presencia no espera respuesta: tratarlo como algo que
           // la exige lo convierte en deuda (§3.2).
-          <Boton variante="suave" onClick={cerrarSinResponder}>
+          <Boton
+            variante="suave"
+            onClick={cerrarSinResponder}
+            disabled={saliendo}
+            ocupado={saliendo && salida === "volver"}
+          >
             Guardarlo y volver
           </Boton>
         ) : (
           <>
-            <Boton onClick={onResponder}>
+            <Boton onClick={onResponder} disabled={saliendo}>
               <span className="inline-flex items-center gap-2">
                 <RiQuillPenLine size={17} />
                 Responder
@@ -326,14 +347,24 @@ function Lectura({
                 dejaba encerrado entre responder o irte por la pestaña, y al
                 irte quedaba sin leer para siempre. */}
             {esDificilDeResponder(emocion) ? (
-              <Boton variante="suave" onClick={necesitoUnRato}>
+              <Boton
+                variante="suave"
+                onClick={necesitoUnRato}
+                disabled={saliendo}
+                ocupado={saliendo && salida === "rato"}
+              >
                 <span className="inline-flex items-center gap-2">
                   <RiPauseCircleLine size={17} />
                   Ahora no puedo
                 </span>
               </Boton>
             ) : (
-              <Boton variante="suave" onClick={cerrarSinResponder}>
+              <Boton
+                variante="suave"
+                onClick={cerrarSinResponder}
+                disabled={saliendo}
+                ocupado={saliendo && salida === "volver"}
+              >
                 Leerlo y volver
               </Boton>
             )}

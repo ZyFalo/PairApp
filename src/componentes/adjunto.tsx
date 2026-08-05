@@ -22,16 +22,28 @@ export function VistaAdjunto({ adjunto, alt }: { adjunto: DatosAdjunto; alt: str
   return <Foto url={adjunto.url} alt={alt} />
 }
 
-/** La foto, con el mismo grosor de papel que el resto de superficies. */
+/**
+ * La foto, con el mismo grosor de papel que el resto de superficies.
+ *
+ * **El hueco está reservado desde el primer fotograma.** Antes la tarjeta se
+ * revelaba con la imagen midiendo cero y el texto se iba hacia abajo cuando la
+ * foto aterrizaba — mientras la persona estaba leyendo. La revelación de un
+ * mensaje dura 950 ms a propósito, para dar tiempo; que la pantalla siguiera
+ * moviéndose después le quitaba el sentido a la única pantalla de la app
+ * diseñada para ir despacio.
+ *
+ * Sin `.respira`: no es un esqueleto que informe de nada, es el sitio de la
+ * foto. Un rectángulo latiendo dentro de una carta sería ruido.
+ *
+ * Y sin `loading="lazy"`: la imagen está a la vista desde el primer momento, así
+ * que aplazarla solo retrasa lo único que aquí importa que llegue pronto.
+ */
 function Foto({ url, alt }: { url: string; alt: string }) {
   return (
-    // biome-ignore lint/performance/noImgElement: imagen externa, ya optimizada en la nube
-    <img
-      src={url}
-      alt={alt}
-      loading="lazy"
-      className="w-full rounded-[var(--radius-suave)] border border-[var(--color-borde-suave)] object-cover shadow-[var(--sombra-papel)]"
-    />
+    <span className="block aspect-[4/3] w-full overflow-hidden rounded-[var(--radius-suave)] border border-[var(--color-borde-suave)] bg-[var(--color-lienzo-hondo)] shadow-[var(--sombra-papel)]">
+      {/* biome-ignore lint/performance/noImgElement: imagen externa, ya optimizada en la nube */}
+      <img src={url} alt={alt} className="aparece size-full object-cover" />
+    </span>
   )
 }
 

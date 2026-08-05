@@ -24,12 +24,18 @@ export function AccionesApunte({
   hayPareja: boolean
 }) {
   const [enviando, empezar] = useTransition()
+  /**
+   * `decirloAhora` devuelve un `Resultado` y se tiraba. Sin pareja en el
+   * vínculo, la persona pulsaba sobre algo que le costó escribir y no pasaba
+   * absolutamente nada.
+   */
+  const [error, setError] = useState<string | null>(null)
   const [confirmando, setConfirmando] = useState(false)
 
   // Enviar es irreversible: un toque de más no debería bastar para que salga.
   if (confirmando) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {/* Es el mismo verbo que ya dice «Enviando…» en el compositor: se
             copia, no se inventa uno nuevo. Y la X se apaga con él — una vez
             lanzado no queda nada que cancelar. */}
@@ -39,7 +45,8 @@ export function AccionesApunte({
           aria-busy={enviando || undefined}
           onClick={() =>
             empezar(async () => {
-              await decirloAhora(mensajeId)
+              const resultado = await decirloAhora(mensajeId)
+              if (resultado.error) setError(resultado.error)
             })
           }
           className="pulsable inline-flex items-center gap-1.5 rounded-[var(--radius-pildora)] bg-[var(--color-acento)] px-3 py-1.5 text-[12.5px] font-medium text-[var(--color-sobre-acento)] disabled:opacity-100"
@@ -56,6 +63,7 @@ export function AccionesApunte({
         >
           <RiCloseLine size={16} />
         </button>
+        {error && <span className="text-[12.5px] text-[var(--color-tinta-suave)]">{error}</span>}
       </div>
     )
   }

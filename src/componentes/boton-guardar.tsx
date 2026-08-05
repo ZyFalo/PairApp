@@ -86,23 +86,34 @@ export function DeshacerEnvio({
 }) {
   const [confirmando, setConfirmando] = useState(false)
   const [yendo, empezar] = useTransition()
+  /**
+   * `retirarEnviado` devuelve un `Resultado` y hasta ahora se tiraba. La
+   * ventana de arrepentimiento son dos minutos: si ya pasó, la tarjeta
+   * reaparecía tal cual y quien lo intentó se quedaba sin saber si su pareja va
+   * a leer eso o no. En esta pantalla esa duda es lo peor que puede pasar.
+   */
+  const [error, setError] = useState<string | null>(null)
 
   if (puedeRetirar) {
     return (
-      <button
-        type="button"
-        disabled={yendo}
-        aria-busy={yendo || undefined}
-        onClick={() =>
-          empezar(async () => {
-            await retirarEnviado(mensajeId)
-          })
-        }
-        className="pulsable inline-flex items-center gap-1.5 text-[13px] text-[var(--color-acento)] disabled:opacity-100"
-      >
-        <RiArrowGoBackLine size={15} />
-        {yendo ? "Retirándolo…" : "Retirarlo"}
-      </button>
+      <span className="inline-flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          disabled={yendo}
+          aria-busy={yendo || undefined}
+          onClick={() =>
+            empezar(async () => {
+              const resultado = await retirarEnviado(mensajeId)
+              if (resultado.error) setError(resultado.error)
+            })
+          }
+          className="pulsable inline-flex items-center gap-1.5 text-[13px] text-[var(--color-acento)] disabled:opacity-100"
+        >
+          <RiArrowGoBackLine size={15} />
+          {yendo ? "Retirándolo…" : "Retirarlo"}
+        </button>
+        {error && <span className="text-[12.5px] text-[var(--color-tinta-suave)]">{error}</span>}
+      </span>
     )
   }
 
