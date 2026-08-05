@@ -1,7 +1,9 @@
 import { DestinoMensaje } from "@/generated/prisma/enums"
 import { prismaCrudo } from "@/lib/db"
+import { HORA_DE_LA_CAPSULA, textoDeSuAnimo, tocaAvisarDeSuAnimo } from "@/lib/motor/avisos"
 import { limitesDelDia } from "@/lib/motor/calendario"
-import { leVendriaBienAlgoGuardado } from "@/lib/motor/entrega"
+import { etiquetaDe } from "@/lib/motor/emociones"
+import { estadoVigente, leVendriaBienAlgoGuardado } from "@/lib/motor/entrega"
 import { participaEnLaVentana, ventanaOnceOnce } from "@/lib/motor/once"
 import { diaLocal, franjaActual, tocaPreguntaPeriodica } from "@/lib/motor/tiempo"
 import { avisar } from "@/lib/push"
@@ -26,6 +28,7 @@ export async function GET(peticion: Request) {
   const ahora = new Date()
   const hecho = {
     preguntas: 0,
+    animos: 0,
     onceOnce: 0,
     guardados: 0,
     capsulas: 0,
@@ -51,6 +54,84 @@ export async function GET(peticion: Request) {
         await avisar(usuario.id, "¿Cómo estás?", undefined, "/hoy")
         hecho.preguntas++
       }
+    }
+
+    // 1.5 El aviso de que la otra persona registró cómo está (RF-3.0.1).
+    //
+    // **Es el aviso que convierte la app en presencia en lugar de un diario**, y
+    // el que faltaba: hasta ahora nadie se enteraba de nada hasta abrir la app.
+    //
+    // Sale desde el cron y no al registrar, a propósito: así da tiempo a que se
+    // escriba el mensaje y sale **uno** —«está triste, te dejó algo»— en vez de
+    // dos seguidos por el mismo gesto.
+    const suyos = await prismaCrudo.checkin.findMany({
+      where: {
+        vinculoId,
+        autorId: { not: usuario.id },
+        avisadoEn: null,
+        creadoEn: { gte: new Date(ahora.getTime() - 2 * 3_600_000) },
+      },
+      orderBy: { creadoEn: "desc" },
+      include: { mensajes: { where: { destino: { not: DestinoMensaje.SOLO_PARA_MI } } } },
+    })
+
+    for (const registro of suyos) {
+      // Se marca siempre, aunque no llegue a sonar. Y eso incluye el horario de
+      // silencio: un registro de las 23:30 **no se guarda para las ocho**.
+      //
+      // No es un descuido, es la caducidad. Un estado deja de gobernar nada a
+      // las ocho horas (RF-3.0.7.7), y el silencio dura nueve: lo que se
+      // anunciara por la mañana ya no sería verdad. «Cata está triste» sobre un
+      // registro de anoche es peor que no decir nada — y al abrir la app lo ve
+      // igual, que es donde vive el estado de verdad.
+      await prismaCrudo.checkin.update({
+        where: { id: registro.id },
+        data: { avisadoEn: ahora },
+      })
+
+      if (
+        !tocaAvisarDeSuAnimo(usuario.frecuenciaAnimo, registro.visibilidad, registro.intensidad)
+      ) {
+        continue
+      }
+
+      // Solo el más reciente se anuncia: si registró tres veces en dos horas,
+      // el aviso es de cómo está ahora, no de cómo estuvo.
+      if (registro.id !== suyos[0].id) continue
+
+      const autor = await prismaCrudo.usuario.findUnique({
+        where: { id: registro.autorId },
+        select: { nombre: true, genero: true },
+      })
+      const mio = await prismaCrudo.checkin.findFirst({
+        where: { autorId: usuario.id },
+        orderBy: { creadoEn: "desc" },
+      })
+
+      await avisar(
+        usuario.id,
+        textoDeSuAnimo({
+          nombre: autor?.nombre ?? "Tu pareja",
+          emocion: registro.emocion,
+          visibilidad: registro.visibilidad,
+          etiqueta: etiquetaDe(registro.emocion, autor?.genero ?? "NEUTRO"),
+          dejoMensaje: registro.mensajes.length > 0,
+          // Atenuar según cómo está quien lo lee, y solo si su estado sigue
+          // vigente: el de hace nueve horas ya no gobierna nada (RF-3.0.7.7).
+          grupoDeQuienLee:
+            mio &&
+            estadoVigente(
+              { emocion: mio.emocion, intensidad: mio.intensidad, creadoEn: mio.creadoEn },
+              ahora,
+            )
+              ? mio.grupo
+              : null,
+        }),
+        undefined,
+        "/hoy",
+        "de_ella",
+      )
+      hecho.animos++
     }
 
     // 2. El aviso de los 11:11, solo a quien participa en esa ventana (RF-12.1).
@@ -107,7 +188,7 @@ export async function GET(peticion: Request) {
               llegadaEn: ahora,
             },
           })
-          await avisar(usuario.id, "Hay algo que te dejó", undefined, "/hoy")
+          await avisar(usuario.id, "Hay algo que te dejó", undefined, "/hoy", "de_ella")
           hecho.guardados++
         }
       }
@@ -123,14 +204,26 @@ export async function GET(peticion: Request) {
       diaLocal(usuario.zonaHoraria, ahora),
       usuario.zonaHoraria,
     )
-    const conCapsula = await prismaCrudo.evento.findMany({
-      where: {
-        vinculoId,
-        inicio: { gte: arrancaHoy, lte: acabaHoy },
-        capsula: { is: { autorId: { not: usuario.id }, entrega: null, eliminadoEn: null } },
-      },
-      include: { capsula: true },
-    })
+    // A partir de las nueve de su mañana, no en la primera pasada tras la
+    // medianoche: una cápsula escrita para una cena llegaba a las 00:07.
+    const horaLocal = Number(
+      new Intl.DateTimeFormat("es", {
+        hour: "numeric",
+        hour12: false,
+        timeZone: usuario.zonaHoraria,
+      }).format(ahora),
+    )
+    const conCapsula =
+      horaLocal < HORA_DE_LA_CAPSULA
+        ? []
+        : await prismaCrudo.evento.findMany({
+            where: {
+              vinculoId,
+              inicio: { gte: arrancaHoy, lte: acabaHoy },
+              capsula: { is: { autorId: { not: usuario.id }, entrega: null, eliminadoEn: null } },
+            },
+            include: { capsula: true },
+          })
 
     for (const plan of conCapsula) {
       if (!plan.capsula) continue
@@ -142,7 +235,7 @@ export async function GET(peticion: Request) {
           llegadaEn: ahora,
         },
       })
-      await avisar(usuario.id, "Hay algo que te dejó", plan.titulo, "/hoy")
+      await avisar(usuario.id, "Hay algo que te dejó", plan.titulo, "/hoy", "de_ella")
       hecho.capsulas++
     }
 

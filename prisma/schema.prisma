@@ -92,6 +92,20 @@ enum GeneroGramatical {
   NEUTRO
 }
 
+/// Cuándo quiero que me avisen de cómo está la otra persona (RF-1.4, RF-3.0.4).
+///
+/// Por defecto solo lo intenso, y no es tacañería: si el teléfono vibra cada vez
+/// que alguien toca un botón, en una semana se silencia la app entera y entonces
+/// no llega ni lo que importa.
+///
+/// Es preferencia de quien **recibe**. No puede abrir nada que quien registra
+/// haya cerrado: lo privado no llega ni con `SIEMPRE` (RF-1.3).
+enum FrecuenciaDeAnimo {
+  SIEMPRE
+  SOLO_INTENSO
+  NUNCA
+}
+
 /// En qué ventanas de los 11:11 participa cada persona (RF-12.1, RF-12.8).
 ///
 /// Un solo ajuste para las dos cosas que pide el documento —elegir ventanas y
@@ -157,6 +171,14 @@ model Usuario {
   horasPregunta  Int[]            @default([9, 14, 19])
   /// En qué ventanas de los 11:11 participo (RF-12.1). Por defecto, las dos.
   ventanasOnce   VentanasOnce     @default(AMBAS)
+  /// Cuándo quiero enterarme de cómo está (RF-1.4). Por defecto, solo lo intenso.
+  frecuenciaAnimo FrecuenciaDeAnimo @default(SOLO_INTENSO)
+  /// Cuándo salió el último aviso hacia esta persona.
+  ///
+  /// Es lo que permite espaciar lo que decide la app. Sin este dato, las seis
+  /// fuentes de aviso del cron no se conocen entre sí y un martes cualquiera
+  /// pueden salir seis seguidas (M4).
+  ultimoAvisoEn  DateTime?
   /// Cuándo **esta persona** pasó por «empezar» (RF-0.7).
   ///
   /// Va aquí y no solo en `Vinculo` porque la configuración tiene dos mitades y
@@ -287,6 +309,12 @@ model Checkin {
   intensidad  Int          @default(3)
   necesidad   Necesidad?
   visibilidad Visibilidad  @default(COMPLETO)
+  /// Cuándo se avisó a la otra persona de este registro (RF-3.0.1).
+  ///
+  /// El aviso no sale al registrar sino en la siguiente pasada del cron, y es a
+  /// propósito: así da tiempo a escribir el mensaje y sale **un** aviso —«está
+  /// triste, te dejó algo»— en vez de dos seguidos por el mismo gesto.
+  avisadoEn   DateTime?
   creadoEn    DateTime     @default(now())
 
   vinculo  Vinculo   @relation(fields: [vinculoId], references: [id], onDelete: Cascade)

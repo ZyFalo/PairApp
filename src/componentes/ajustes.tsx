@@ -4,6 +4,7 @@ import { useActionState, useState, useTransition } from "react"
 import { Aviso, Interruptor, Seleccion } from "@/componentes/base"
 import {
   cambiarCompartirAnimo,
+  cambiarFrecuenciaAnimo,
   cambiarRegistroCiclo,
   cambiarVentanasOnce,
 } from "@/lib/acciones/ajustes"
@@ -40,6 +41,58 @@ export function InterruptorCiclo({ activo }: { activo: boolean }) {
         empezar(() => void cambiarRegistroCiclo(siguiente))
       }}
     />
+  )
+}
+
+/** Cuándo quiero enterarme de cómo está (RF-1.4). */
+const FRECUENCIAS = [
+  { valor: "SOLO_INTENSO", texto: "Solo cuando sea fuerte" },
+  { valor: "SIEMPRE", texto: "Siempre" },
+  { valor: "NUNCA", texto: "Nunca" },
+]
+
+/**
+ * Cuándo avisarme de su ánimo (RF-1.4, RF-3.0.4).
+ *
+ * Por defecto solo lo intenso, y no es tacañería: si el teléfono vibra cada vez
+ * que la otra persona toca un botón, en una semana se silencia la app entera y
+ * entonces no llega ni lo que importa.
+ *
+ * No abre nada que ella haya cerrado: lo que registre en privado no llega ni
+ * con «siempre» puesto (RF-1.3).
+ */
+export function FrecuenciaDelAnimo({
+  actual,
+  nombrePareja,
+}: {
+  actual: string
+  nombrePareja: string | null
+}) {
+  const [estado, accion] = useActionState(cambiarFrecuenciaAnimo, {})
+  const [elegida, setElegida] = useState(actual)
+  const [, empezar] = useTransition()
+
+  return (
+    <div className="space-y-2">
+      <Seleccion
+        etiqueta={`Avisarme de cómo está ${nombrePareja ?? "la otra persona"}`}
+        name="frecuenciaAnimo"
+        opciones={FRECUENCIAS}
+        valor={elegida}
+        onCambio={(valor) => {
+          setElegida(valor)
+          const datos = new FormData()
+          datos.set("frecuenciaAnimo", valor)
+          empezar(() => accion(datos))
+        }}
+      />
+      <span className="block text-[12.5px] leading-relaxed text-[var(--color-tinta-tenue)]">
+        {elegida === "NUNCA"
+          ? "No te llegará ningún aviso. Lo verás al abrir la app."
+          : "Nada de esto abre lo que registre en privado."}
+      </span>
+      <Aviso>{estado.error}</Aviso>
+    </div>
   )
 }
 

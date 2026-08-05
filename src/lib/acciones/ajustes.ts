@@ -113,6 +113,31 @@ export async function cambiarVentanasOnce(_previo: Resultado, datos: FormData): 
   return { ok: true }
 }
 
+/**
+ * Cuándo quiero enterarme de cómo está la otra persona (RF-1.4, RF-3.0.4).
+ *
+ * Es preferencia de quien **recibe**, y no puede abrir nada que quien registra
+ * haya cerrado: lo privado no llega ni con «siempre» (RF-1.3).
+ */
+export async function cambiarFrecuenciaAnimo(
+  _previo: Resultado,
+  datos: FormData,
+): Promise<Resultado> {
+  const analizado = z
+    .object({ frecuenciaAnimo: z.enum(["SIEMPRE", "SOLO_INTENSO", "NUNCA"]) })
+    .safeParse(Object.fromEntries(datos))
+  if (!analizado.success) return { error: "No se pudo cambiar" }
+
+  const { db, sesion } = await dbDeSesion()
+  await db.usuario.update({
+    where: { id: sesion.usuarioId },
+    data: { frecuenciaAnimo: analizado.data.frecuenciaAnimo },
+  })
+
+  revalidatePath("/yo")
+  return { ok: true }
+}
+
 // ---------------------------------------------------------------------------
 // De los dos
 // ---------------------------------------------------------------------------

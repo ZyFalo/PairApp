@@ -16,6 +16,8 @@ export type Sesion = {
   compartoAnimo: boolean
   /** En qué ventanas de los 11:11 participo (RF-12.1). Nunca se expone de la pareja. */
   ventanasOnce: "AMBAS" | "MANANA" | "NOCHE" | "NINGUNA"
+  /** Cuándo quiero enterarme de cómo está (RF-1.4). Mía, no suya. */
+  frecuenciaAnimo: "SIEMPRE" | "SOLO_INTENSO" | "NUNCA"
   /** Hasta cuándo he pedido que la app no me hable. Null si no hay pausa (§12.2). */
   pausaHasta: Date | null
   /**
@@ -91,6 +93,7 @@ export async function exigirSesion(): Promise<Sesion> {
     // tiene derecho a que el otro no lo sepa (RF-12.8), y un campo que no
     // viaja no se puede filtrar por descuido en una pantalla.
     ventanasOnce: yo.usuario.ventanasOnce,
+    frecuenciaAnimo: yo.usuario.frecuenciaAnimo,
     pausaHasta: yo.usuario.pausaHasta,
     modulos: {
       musica: vinculo.usaMusica,

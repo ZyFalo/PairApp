@@ -5,7 +5,12 @@ import {
   RiSeedlingLine,
   RiSettings3Line,
 } from "@remixicon/react"
-import { InterruptorCiclo, InterruptorCompartirAnimo, VentanasDelOnce } from "@/componentes/ajustes"
+import {
+  FrecuenciaDelAnimo,
+  InterruptorCiclo,
+  InterruptorCompartirAnimo,
+  VentanasDelOnce,
+} from "@/componentes/ajustes"
 import { ControlPausa, PanelPush } from "@/componentes/avisos"
 import { Apunte, Boton, Insignia, Seccion, Tarjeta, Titulo } from "@/componentes/base"
 import { CambiarVisibilidadCiclo, FormularioCiclo } from "@/componentes/ciclo"
@@ -83,9 +88,17 @@ export default async function PaginaYo() {
       <section className="space-y-3">
         <Seccion Icono={RiNotification3Line}>Avisos</Seccion>
         <PanelPush />
-        <Tarjeta>
+        <Tarjeta className="space-y-5">
+          <FrecuenciaDelAnimo
+            actual={sesion.frecuenciaAnimo}
+            nombrePareja={sesion.pareja?.nombre ?? null}
+          />
           <ControlPausa hasta={sesion.pausaHasta} zonaHoraria={sesion.zonaHoraria} />
         </Tarjeta>
+        <Apunte>
+          De once de la noche a ocho de la mañana no suena nada. Lo que te manden llega igual y te
+          espera al abrir.
+        </Apunte>
       </section>
 
       {/* Lo mío: nadie más lo ve ni lo cambia (RF-5.0, RF-1.5, RF-12.8). */}

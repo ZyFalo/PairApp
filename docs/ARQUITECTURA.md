@@ -126,9 +126,32 @@ reparacion.ts   Los cuatro gestos y cuándo se ofrecen (§6.8)
 calendario.ts   La rejilla del mes: qué días se pintan y qué cae en cada uno (M7)
 ics.ts          Generación de archivos .ics para el calendario del teléfono
 once.ts         La ventana de los 11:11 y quién participa en ella (M12)
+avisos.ts       Cuándo puede la app tocar el hombro, y con qué palabras (M4)
 modulos.ts      Qué módulos usa una pareja, y cómo se le pregunta (RF-0.7)
 juntos.ts       Selector al azar de títulos y aniversarios de recuerdos
 ```
+
+### Cuándo avisa la app
+
+Todo aviso sale por `lib/push.ts → avisar()`, y **es la única puerta**. Ahí se
+aplican los tres frenos, y estar en un solo sitio es lo que impide que un aviso
+nuevo se salte alguno por descuido.
+
+| Freno | Qué hace |
+|---|---|
+| Modo pausa | Alguien pidió que la app se calle (§12.2) |
+| Horario de silencio | De 23:00 a 08:00 no suena nada (RF-4.3) |
+| Espaciado | 90 minutos entre avisos **de rutina** (M4) |
+
+Hay **dos clases de aviso** y no molestan igual. Lo que hace la otra persona
+—registró, te escribió, llegó su cápsula— respeta el silencio y nada más:
+enterarte de que te escribió no puede depender de cuántas veces vibró antes el
+teléfono. Lo que decide la app —la pregunta del día, una dedicatoria, un
+recordatorio— respeta además el espaciado.
+
+**Los tres silencian el aviso, nunca la entrega.** Lo que te manden llega igual
+y te espera al abrir: retenerlo haría que el cofre de quien escribió dijera «le
+llegó» cuando no es verdad (RF-3.17.4).
 
 ### Los dos tipos de ajuste, y por qué están separados
 
