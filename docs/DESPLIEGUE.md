@@ -113,7 +113,7 @@ misma cabecera. Un servicio menos que pagar.
 
 ## 6. Las cuentas
 
-**No ejecutes `pnpm db:sembrar` en producción**: crea a Will y Ana con una
+**No ejecutes `pnpm db:sembrar` en producción**: crea a Will y Cata con una
 contraseña conocida, y son para desarrollo.
 
 Entrad por la app:

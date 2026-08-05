@@ -33,7 +33,7 @@ npx web-push generate-vapid-keys        # el par VAPID
 | | Correo | Contraseña |
 |---|---|---|
 | Él | `will@pairapp.local` | `pairapp123` |
-| Ella | `ana@pairapp.local` | `pairapp123` |
+| Ella | `cata@pairapp.local` | `pairapp123` |
 
 Ábrelas **en dos navegadores distintos** (o una en ventana privada) para ver el
 bucle de las dos partes a la vez.
@@ -50,7 +50,7 @@ cuenta.
 
 ### 2. Mensajes y estado de ánimo — *el bucle*
 
-Como **Will** verás un mensaje de Ana esperando: un *incómodo* con su necesidad
+Como **Will** verás un mensaje de Cata esperando: un *incómodo* con su necesidad
 declarada (*escucha*). Léelo y responde. Fíjate en que la caja de respuesta no
 aparece de golpe: primero está el mensaje, solo.
 
@@ -86,7 +86,7 @@ miniatura solo con el oEmbed público — sin API, sin claves.
 
 ### 7. Periodo
 
-En **Yo → Registrar periodo**. Con los tres niveles de visibilidad. Si Ana elige
+En **Yo → Registrar periodo**. Con los tres niveles de visibilidad. Si Cata elige
 compartir su nota, Will la ve en **Nosotros** — con las palabras de ella, nunca
 traducidas a una etiqueta.
 

@@ -436,7 +436,7 @@ El razonamiento detrás de cada hueco:
 
 **RF-2.5 Inventario visible.** Panel que muestra cuántos mensajes guardados tengo por emoción destino: *"Triste: 4 · Preocupada: 1 · Enojada: 0"*. Es un inventario, no un marcador: solo lo ve su autor, y nunca genera alertas de culpa.
 
-**RF-2.6 Aviso de inventario bajo.** Si ella ha registrado una emoción dos veces en la última semana y no queda nada guardado para eso, me llega un aviso discreto: *"Ana ha estado preocupada últimamente y no queda nada guardado para eso."* Ella nunca lo ve.
+**RF-2.6 Aviso de inventario bajo.** Si ella ha registrado una emoción dos veces en la última semana y no queda nada guardado para eso, me llega un aviso discreto: *"Cata ha estado preocupada últimamente y no queda nada guardado para eso."* Ella nunca lo ve.
 
 **RF-2.7 Mensaje de reserva.** Cada persona debería mantener al menos uno sin disparador específico, marcado como "para cualquier mal momento". El sistema lo usa si no hay nada más que entregar.
 
@@ -454,12 +454,12 @@ Cuando ella registra cómo está, a mí me llega un aviso. Esto es lo que convie
 
 **RF-3.0.1 Contenido del aviso.** Cómo está, y si me dejó algo:
 
-> *"Ana está triste. Te dejó un mensaje."*
-> *"Ana está agradecida."*
+> *"Cata está triste. Te dejó un mensaje."*
+> *"Cata está agradecida."*
 
 **RF-3.0.2 La ausencia nunca se enuncia.** Si no dejó mensaje, el aviso simplemente no lo menciona. **Nunca** se escribe *"no te dejó nada"*: convierte un silencio en un reproche.
 
-**RF-3.0.3 Respeta la visibilidad elegida** (RF-1.3). Si registró en modo "solo el color", el aviso dice *"Ana no está bien"* sin más detalle.
+**RF-3.0.3 Respeta la visibilidad elegida** (RF-1.3). Si registró en modo "solo el color", el aviso dice *"Cata no está bien"* sin más detalle.
 
 **RF-3.0.4 Frecuencia** según RF-1.4: siempre, solo si intensidad ≥ 4, o nunca. Por defecto, solo si ≥ 4.
 
@@ -468,7 +468,7 @@ Cuando ella registra cómo está, a mí me llega un aviso. Esto es lo que convie
 **RF-3.0.6 Si está mal y no dejó mensaje**, al abrir la app se me ofrece tomar la iniciativa, con opciones de un toque:
 
 ```
-        Ana está triste.
+        Cata está triste.
 
   [ Escribirle ]  [ Enviarle algo guardado ]  [ Solo estar ]
 ```
@@ -482,7 +482,7 @@ Hasta aquí el motor solo miraba el estado de **quien recibe** para decidir qué
 **RF-3.0.7** Si tengo un mensaje de *conversación* esperando y mi último check-in es una emoción desagradable con intensidad ≥ 3, la app **amortigua la presentación**:
 
 ```
-        Ana te escribió.
+        Cata te escribió.
 
   Antes de abrirlo — algo que te dejó ella:
 
@@ -540,7 +540,7 @@ El caso más peligroso de la app, y el único donde **el amortiguador debe desac
 ```
         Los dos están enojados.
 
-     Ana te escribió hace un momento.
+     Cata te escribió hace un momento.
 
 
   [ Leerlo ahora ]   [ Mañana por la mañana ]
@@ -728,7 +728,7 @@ Separar *lo que siento* de *lo que digo* es comunicación emocional básica, y h
 **RF-3.18** Al redactar una respuesta, puedo adjuntar mi propio estado, **usando el mismo vocabulario de las nueve emociones** (RF-1.1). No es una escala nueva ni una valoración del mensaje que recibí:
 
 ```
-  Tu respuesta a Ana
+  Tu respuesta a Cata
 
   ┌───────────────────────────────┐
   │ …                             │
@@ -778,10 +778,10 @@ Separar *lo que siento* de *lo que digo* es comunicación emocional básica, y h
 
 **RF-4.1** Web Push (VAPID). Tipos: mensaje recibido, ánimo de la pareja (según RF-1.4), pregunta periódica (RF-1.0), evento del calendario, dedicatoria musical, petición de ayuda.
 
-**RF-4.1.1 Atenuación por estado del receptor.** Si quien va a recibir la notificación está en el grupo *"Algo pasó"*, la vista previa se reduce al mínimo: *"Ana te escribió."*, sin la emoción. Un *"Ana está enojada"* en la pantalla de bloqueo a las 23:00 es una bomba; el detalle puede esperar a que abra la app.
+**RF-4.1.1 Atenuación por estado del receptor.** Si quien va a recibir la notificación está en el grupo *"Algo pasó"*, la vista previa se reduce al mínimo: *"Cata te escribió."*, sin la emoción. Un *"Cata está enojada"* en la pantalla de bloqueo a las 23:00 es una bomba; el detalle puede esperar a que abra la app.
 **RF-4.2** Cada tipo se activa/desactiva por separado.
 **RF-4.3** Horario de silencio configurable (por defecto 23:00–08:00). Las entregas se acumulan y esperan.
-**RF-4.4** Ninguna notificación revela contenido sensible en la vista previa. *"Ana te dejó algo"*, nunca el texto.
+**RF-4.4** Ninguna notificación revela contenido sensible en la vista previa. *"Cata te dejó algo"*, nunca el texto.
 
 > ⚠️ **Restricción técnica crítica:** en iOS, Web Push solo funciona si la PWA está **instalada en la pantalla de inicio** (Safari 16.4+). El onboarding debe guiar explícitamente ese paso, y la app debe detectar y avisar si no está instalada.
 
@@ -987,7 +987,7 @@ Hay dos cosas que suenan casi igual y son opuestas:
 
 | ❌ Interpretar a mi pareja | ✅ Acompañarme a mí |
 |---|---|
-| *"Lo que Ana necesita es que la escuches sin dar soluciones"* | *"¿Qué sentiste al leer esto?"* |
+| *"Lo que Cata necesita es que la escuches sin dar soluciones"* | *"¿Qué sentiste al leer esto?"* |
 | *"Está enojada porque se siente sola últimamente"* | *"Esto es lo que ella escribió, literal: …"* |
 | *"Te está pidiendo espacio"* | *"Ella marcó que necesita **escucha**"* (dato que **ella** declaró) |
 | Concluye sobre alguien ausente | Devuelve a lo que hay y señala lo que falta |
@@ -1023,7 +1023,7 @@ Después escribo yo. Y si quiero, el espejo (§6.5) revisa antes de enviar.
 
 ##### 10.3.3 Ejemplo completo
 
-> **Ana escribió, enojada:**
+> **Cata escribió, enojada:**
 > *"Otra vez llegaste tarde y ni avisaste. Ya ni sé para qué hacemos planes si siempre terminas priorizando cualquier otra cosa."*
 >
 > **Mi impulso:** *"No es cierto, tuve una junta que se alargó, no es mi culpa."*
@@ -1363,7 +1363,7 @@ Esta lista importa más que la anterior, porque cada punto es un patrón que exi
 
 **RF-8.3.5** Se puede desactivar por completo. Con la mascota apagada, las mismas pantallas funcionan sin ella.
 
-> Su valor es de encuadre: recibir *"Ana está enojada"* de una pantalla del sistema se siente como una alerta; recibirlo de una paloma que trae un sobre se siente como una carta. Mismo dato, temperatura distinta. Ahí acaba su trabajo.
+> Su valor es de encuadre: recibir *"Cata está enojada"* de una pantalla del sistema se siente como una alerta; recibirlo de una paloma que trae un sobre se siente como una carta. Mismo dato, temperatura distinta. Ahí acaba su trabajo.
 
 ❓ *Decisión abierta:* nombre de la app. "PairApp" es funcional pero frío. Algunas ideas: **Faro** (algo que guía cuando estás perdido), **Cerca**, **Nudo**, **Contigo**, **Refugio**, **Puente**. Mi favorita es *Faro*.
 

@@ -16,7 +16,7 @@ const prisma = new PrismaClient({
 })
 
 const CORREO_A = "will@pairapp.local"
-const CORREO_B = "ana@pairapp.local"
+const CORREO_B = "cata@pairapp.local"
 const CONTRASENA = "pairapp123"
 
 async function main() {
@@ -49,7 +49,7 @@ async function main() {
     data: {
       correo: CORREO_B,
       contrasenaHash,
-      nombre: "Ana",
+      nombre: "Cata",
       genero: "FEMENINO",
       // Lo enciende ella, no lo deduce la app de su género (RF-5.0)
       llevaCiclo: true,
@@ -68,7 +68,7 @@ async function main() {
 
   const hace = (horas: number) => new Date(Date.now() - horas * 3_600_000)
 
-  // Un mensaje cálido de Ana, que sirve de amortiguador cuando Will esté mal.
+  // Un mensaje cálido de Cata, que sirve de amortiguador cuando Will esté mal.
   const calido = await prisma.mensaje.create({
     data: {
       vinculoId: vinculo.id,
@@ -119,7 +119,7 @@ async function main() {
     },
   })
 
-  // Un mensaje guardado de Will, esperando a que Ana lo necesite.
+  // Un mensaje guardado de Will, esperando a que Cata lo necesite.
   await prisma.mensaje.create({
     data: {
       vinculoId: vinculo.id,
@@ -207,9 +207,9 @@ async function main() {
   ✓ Datos de prueba listos
 
     Will  ${CORREO_A}   ${CONTRASENA}
-    Ana   ${CORREO_B}   ${CONTRASENA}
+    Cata   ${CORREO_B}   ${CONTRASENA}
 
-  Entra como Will: hay un mensaje de Ana sin leer esperándote.
+  Entra como Will: hay un mensaje de Cata sin leer esperándote.
   `)
 }
 

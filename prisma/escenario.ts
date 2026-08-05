@@ -35,7 +35,7 @@ async function personas() {
     include: { membresia: true },
   })
   const ana = await prisma.usuario.findUnique({
-    where: { correo: "ana@pairapp.local" },
+    where: { correo: "cata@pairapp.local" },
     include: { membresia: true },
   })
 
@@ -232,7 +232,7 @@ const CASOS: Record<string, Caso> = {
       await entregar(vinculoId, dificil.id, will.id)
       return [
         "Entra como Will y abre Hoy.",
-        "Antes del mensaje difícil debe aparecer algo cálido de Ana (RF-3.0.7).",
+        "Antes del mensaje difícil debe aparecer algo cálido de Cata (RF-3.0.7).",
         '"Un rato más" debe aplazarlo de verdad, no devolverte al mismo sitio.',
       ]
     },
@@ -281,7 +281,7 @@ const CASOS: Record<string, Caso> = {
         "Lanza el cron:",
         '  curl -H "Authorization: Bearer $(grep ^CRON_SECRET= .env | cut -d= -f2-)" \\',
         "       http://localhost:3000/api/cron/despachar",
-        "Entra como Ana: debe tener el mensaje guardado esperándola (RF-2.2).",
+        "Entra como Cata: debe tener el mensaje guardado esperándola (RF-2.2).",
       ]
     },
   },
@@ -339,7 +339,7 @@ const CASOS: Record<string, Caso> = {
         `Zona horaria de los dos puesta a ${zona}: ahí son las 11:${ahora.minute}.`,
         `Te quedan unos ${16 - ahora.minute} minutos de ventana.`,
         "Entra como Will y abre Hoy: debe salir la tarjeta de los 11:11.",
-        "Pide un deseo, entra como Ana y pide otro: sale «Los dos pidieron a la vez».",
+        "Pide un deseo, entra como Cata y pide otro: sale «Los dos pidieron a la vez».",
         "",
         "Para devolverlo a la normalidad:  pnpm db:escenario zona-normal",
       ]
