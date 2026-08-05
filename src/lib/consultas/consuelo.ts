@@ -59,6 +59,10 @@ export async function algoParaUnDiaFlojo(): Promise<Consuelo | null> {
         destino: DestinoMensaje.CUANDO_LE_SIRVA,
         entrega: null,
         eliminadoEn: null,
+        // Una cápsula también es un «cuando le sirva» sin entregar, y sin esto
+        // el fallback la sacaría semanas antes de su plan — reventando la única
+        // cosa que la hace una cápsula (RF-7.6).
+        capsulaDe: { is: null },
       },
       orderBy: { creadoEn: "asc" },
       take: 1,

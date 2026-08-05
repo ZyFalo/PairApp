@@ -1,8 +1,9 @@
 import { DestinoMensaje } from "@/generated/prisma/enums"
 import { prismaCrudo } from "@/lib/db"
+import { limitesDelDia } from "@/lib/motor/calendario"
 import { leVendriaBienAlgoGuardado } from "@/lib/motor/entrega"
 import { participaEnLaVentana, ventanaOnceOnce } from "@/lib/motor/once"
-import { franjaActual, tocaPreguntaPeriodica } from "@/lib/motor/tiempo"
+import { diaLocal, franjaActual, tocaPreguntaPeriodica } from "@/lib/motor/tiempo"
 import { avisar } from "@/lib/push"
 
 export const dynamic = "force-dynamic"
@@ -23,7 +24,14 @@ export async function GET(peticion: Request) {
   }
 
   const ahora = new Date()
-  const hecho = { preguntas: 0, onceOnce: 0, guardados: 0, dedicatorias: 0, eventos: 0 }
+  const hecho = {
+    preguntas: 0,
+    onceOnce: 0,
+    guardados: 0,
+    capsulas: 0,
+    dedicatorias: 0,
+    eventos: 0,
+  }
 
   const usuarios = await prismaCrudo.usuario.findMany({ include: { membresia: true } })
 
@@ -103,6 +111,39 @@ export async function GET(peticion: Request) {
           hecho.guardados++
         }
       }
+    }
+
+    // 3.5 Cápsulas de un plan que es hoy (RF-7.6).
+    //
+    // Se busca por el día de quien la recibe, no por el del servidor: un plan
+    // de las once de la noche pertenece a su día, no al que diga UTC. Y llega
+    // sin haber avisado nunca de que existía — un reloj corriendo hacia una
+    // sorpresa la estropea (RF-3.0.13.1).
+    const { desde: arrancaHoy, hasta: acabaHoy } = limitesDelDia(
+      diaLocal(usuario.zonaHoraria, ahora),
+      usuario.zonaHoraria,
+    )
+    const conCapsula = await prismaCrudo.evento.findMany({
+      where: {
+        vinculoId,
+        inicio: { gte: arrancaHoy, lte: acabaHoy },
+        capsula: { is: { autorId: { not: usuario.id }, entrega: null, eliminadoEn: null } },
+      },
+      include: { capsula: true },
+    })
+
+    for (const plan of conCapsula) {
+      if (!plan.capsula) continue
+      await prismaCrudo.entrega.create({
+        data: {
+          vinculoId,
+          mensajeId: plan.capsula.id,
+          destinatarioId: usuario.id,
+          llegadaEn: ahora,
+        },
+      })
+      await avisar(usuario.id, "Hay algo que te dejó", plan.titulo, "/hoy")
+      hecho.capsulas++
     }
 
     // 4. Dedicatorias de la franja actual (RF-8.3)

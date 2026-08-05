@@ -333,6 +333,8 @@ model Mensaje {
   vinculo  Vinculo   @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
   checkin  Checkin?  @relation(fields: [checkinId], references: [id], onDelete: SetNull)
   entrega  Entrega?
+  /// El plan al que esta cápsula está atada, si lo es (RF-7.6).
+  capsulaDe Evento?  @relation("CapsulaDelPlan")
   adjunto  Adjunto?
   guardados Guardado[]
 
@@ -637,6 +639,17 @@ model Evento {
   /// Aviso previo en horas. Null = sin recordatorio.
   avisoHoras  Int?
   avisadoEn   DateTime?
+  /// Un mensaje escrito hoy que se entrega **el día del plan** (RF-7.6).
+  ///
+  /// Es un `Mensaje` normal y no un tipo nuevo, para que herede la entrega, la
+  /// respuesta y el cofre sin duplicar nada. Va con destino `CUANDO_LE_SIRVA`
+  /// y sin disparadores: quien decide cuándo sale es este plan, no una emoción.
+  ///
+  /// **Quien la recibe no sabe que existe** hasta que llega. Ni marca en el
+  /// calendario, ni cuenta atrás (RF-3.0.13.1): un reloj corriendo hacia una
+  /// sorpresa la estropea. Solo su autor ve que la dejó puesta.
+  capsulaId   String?  @unique
+  capsula     Mensaje? @relation("CapsulaDelPlan", fields: [capsulaId], references: [id], onDelete: SetNull)
   creadoEn    DateTime @default(now())
 
   vinculo Vinculo @relation(fields: [vinculoId], references: [id], onDelete: Cascade)

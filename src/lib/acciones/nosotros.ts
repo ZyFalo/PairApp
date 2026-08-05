@@ -3,7 +3,7 @@
 import { DateTime } from "luxon"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
-import type { FranjaDia } from "@/generated/prisma/enums"
+import { ClaseMensaje, DestinoMensaje, Emocion, type FranjaDia } from "@/generated/prisma/enums"
 import { LARGO_MAXIMO_DESEO, participaEnLaVentana, ventanaOnceOnce } from "@/lib/motor/once"
 import { diaLocal } from "@/lib/motor/tiempo"
 import { dbDeSesion } from "@/lib/sesion"
@@ -72,6 +72,8 @@ const esquemaEvento = z.object({
   anual: z.preprocess((v) => v === "true", z.boolean()),
   notas: z.string().trim().max(2000).optional(),
   avisoHoras: z.coerce.number().int().min(0).max(720).optional(),
+  /** La cápsula: algo escrito hoy que se entrega el día del plan (RF-7.6). */
+  capsula: z.string().trim().max(4000).optional(),
 })
 
 /** Crea un evento en el calendario compartido (RF-7.1). */
@@ -80,9 +82,33 @@ export async function crearEvento(_previo: Resultado, datos: FormData): Promise<
   if (!analizado.success) {
     return { error: analizado.error.issues[0]?.message ?? "Revisa los datos" }
   }
-  const { titulo, inicio, tipo, esDePareja, anual, notas, avisoHoras } = analizado.data
+  const { titulo, inicio, tipo, esDePareja, anual, notas, avisoHoras, capsula } = analizado.data
 
   const { db, sesion } = await dbDeSesion()
+
+  /**
+   * La cápsula es un `Mensaje` normal y no un tipo nuevo: así hereda la
+   * entrega, la respuesta y el cofre sin duplicar nada (RF-7.6).
+   *
+   * `CUANDO_LE_SIRVA` sin disparadores, que es lo más cerca que hay de «para un
+   * momento concreto» entre los tres destinos —y son tres, no cuatro (§2.0)—.
+   * Sin disparadores el cron nunca la manda por su cuenta: quien decide cuándo
+   * sale es el plan al que está atada.
+   */
+  const escrita = capsula?.trim()
+  const mensaje = escrita
+    ? await db.mensaje.create({
+        data: {
+          vinculoId: sesion.vinculoId,
+          autorId: sesion.usuarioId,
+          emocion: Emocion.AGRADECIDO,
+          clase: ClaseMensaje.PRESENCIA,
+          destino: DestinoMensaje.CUANDO_LE_SIRVA,
+          texto: escrita,
+        },
+      })
+    : null
+
   await db.evento.create({
     data: {
       vinculoId: sesion.vinculoId,
@@ -98,6 +124,7 @@ export async function crearEvento(_previo: Resultado, datos: FormData): Promise<
       anual,
       notas: notas || null,
       avisoHoras: avisoHoras || null,
+      capsulaId: mensaje?.id ?? null,
     },
   })
 

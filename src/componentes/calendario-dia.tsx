@@ -3,6 +3,7 @@ import {
   RiCalendarEventLine,
   RiCloseLine,
   RiImage2Line,
+  RiMailLine,
   RiRepeat2Line,
   RiSeedlingLine,
   RiSparkling2Line,
@@ -75,6 +76,9 @@ export function HojaDelDia({
                   <span className="flex flex-wrap items-center gap-2">
                     <Apunte>{horaDe(plan.inicio)}</Apunte>
                     {plan.anual && <Insignia Icono={RiRepeat2Line}>cada año</Insignia>}
+                    {/* Solo lo ve quien la dejó (RF-7.6). Sin cuenta atrás:
+                        un reloj corriendo hacia una sorpresa la estropea. */}
+                    {plan.capsulaMia && <Insignia Icono={RiMailLine}>le llega ese día</Insignia>}
                   </span>
                   {plan.notas && (
                     <p className="pt-0.5 text-[13.5px] text-[var(--color-tinta-tenue)]">

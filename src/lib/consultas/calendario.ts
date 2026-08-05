@@ -186,8 +186,12 @@ export async function elDia(dia: Dia): Promise<ElDia> {
       db.evento.findMany({
         where: { anual: false, inicio: { gte: desde, lte: hasta } },
         orderBy: { inicio: "asc" },
+        include: { capsula: { include: { entrega: true } } },
       }),
-      db.evento.findMany({ where: { anual: true } }),
+      db.evento.findMany({
+        where: { anual: true },
+        include: { capsula: { include: { entrega: true } } },
+      }),
       sesion.modulos.recuerdos
         ? db.recuerdo.findMany({ orderBy: { ocurrioEl: "desc" }, take: 200 })
         : Promise.resolve([]),
@@ -233,6 +237,9 @@ export async function elDia(dia: Dia): Promise<ElDia> {
       // Un anual nunca cuenta como pasado: su próxima vuelta siempre está por
       // venir, y guardarlo como recuerdo cada año sería un recuerdo al año.
       pasado: !p.anual && p.inicio < ahora,
+      // Solo se le enseña a quien la escribió, y solo mientras no haya salido.
+      capsulaMia:
+        p.capsula !== null && p.capsula.autorId === sesion.usuarioId && p.capsula.entrega === null,
     })),
     recuerdos: recuerdosDeHoy.map((r) => ({
       id: r.id,

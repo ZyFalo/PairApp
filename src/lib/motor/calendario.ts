@@ -118,6 +118,13 @@ export type ElDia = {
     anual: boolean
     /** Si ya ocurrió. Solo entonces se puede guardar como recuerdo (RF-7.7). */
     pasado: boolean
+    /**
+     * Si **yo** dejé una cápsula en este plan y sigue sin entregar (RF-7.6).
+     *
+     * Solo para su autor. Quien la va a recibir no puede enterarse de que
+     * existe: la gracia entera es que llegue sin haberla esperado.
+     */
+    capsulaMia: boolean
   }[]
   recuerdos: { id: string; titulo: string; nota: string | null; ocurrioEl: Date }[]
   deseos: { id: string; texto: string; mio: boolean }[]

@@ -41,6 +41,7 @@ export function FormularioEvento({ fechaSugerida }: { fechaSugerida?: string }) 
     notas: "",
     esDePareja: true,
     anual: false,
+    capsula: "",
   })
 
   // Al guardar se cierra y se olvida: dejarlo abierto invita a repetir sin querer.
@@ -121,6 +122,25 @@ export function FormularioEvento({ fechaSugerida }: { fechaSugerida?: string }) 
             className="accent-[var(--color-acento)]"
           />
           Es un plan de los dos
+        </label>
+
+        {/* La cápsula (RF-7.6): algo escrito hoy que llega el día del plan.
+            Quien la recibe no sabe que existe — ni marca en el calendario ni
+            cuenta atrás (RF-3.0.13.1): un reloj corriendo hacia una sorpresa
+            la estropea. */}
+        <label className="block">
+          <span className="mb-2 block text-[12.5px] font-medium uppercase tracking-[0.08em] text-[var(--color-tinta-tenue)]">
+            Algo para ese día (opcional)
+          </span>
+          <textarea
+            name="capsula"
+            rows={3}
+            maxLength={4000}
+            placeholder="Le llegará ese día, sin avisar antes…"
+            value={borrador.capsula}
+            onChange={(e) => actualizar({ capsula: e.target.value })}
+            className="carta w-full resize-none rounded-[var(--radius-suave)] border border-[var(--color-borde)] bg-[var(--color-papel)] p-3 text-[16px] outline-none transition-colors focus:border-[var(--color-acento-suave)]"
+          />
         </label>
 
         {/* Los aniversarios se repiten solos (RF-7.3): sin esto, un cumpleaños
