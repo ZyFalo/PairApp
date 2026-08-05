@@ -119,13 +119,17 @@ describe("las capas de la arquitectura", () => {
     // Los que existen para ser compartidos. Cualquier otro cruce entre módulos
     // significa que algo debería estar aquí dentro.
     //
+    // `formulario` salió de repetir cinco veces el mismo pie —y las cinco con
+    // el mismo fallo—; recibe callbacks, y eso solo es legal porque quien lo
+    // pinta es siempre un componente de cliente (§7).
+    //
     // `espera` y `esqueleto` están partidos de `base` a propósito y no por
     // tamaño: `espera` lleva hooks y `base` **no puede llevar `"use client"`
     // nunca** —`Seccion`, `Vacio` y `PastillaDeVista` reciben `Icono` como
     // función desde páginas de servidor (§7)—; y `esqueleto` lo pintan los
     // `loading.tsx`, que son de servidor, así que no puede vivir en un módulo
     // de cliente.
-    const comunes = new Set(["base", "iconos", "adjunto", "espera", "esqueleto"])
+    const comunes = new Set(["base", "iconos", "adjunto", "espera", "esqueleto", "formulario"])
 
     const culpables = ficheros("src/componentes", false)
       .flatMap((ruta) => importaDe(ruta).map((imp) => ({ ruta, imp })))

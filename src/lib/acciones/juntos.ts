@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import type { EstadoTitulo, TipoTitulo } from "@/generated/prisma/enums"
-import { anotar } from "@/lib/acciones/novedades"
+import { anotar, retirarAviso } from "@/lib/acciones/novedades"
 import { comoDiaSuelto } from "@/lib/motor/tiempo"
 import { dbDeSesion } from "@/lib/sesion"
 import { buscar, type Candidato, ficha } from "@/lib/tmdb"
@@ -33,7 +33,7 @@ export async function anadirTitulo(_previo: Resultado, datos: FormData): Promise
   const { nombre, tipo, soloJuntos, minutos } = analizado.data
 
   const { db, sesion } = await dbDeSesion()
-  await db.titulo.create({
+  const creado = await db.titulo.create({
     data: {
       vinculoId: sesion.vinculoId,
       propuestoPorId: sesion.usuarioId,
@@ -44,7 +44,7 @@ export async function anadirTitulo(_previo: Resultado, datos: FormData): Promise
     },
   })
 
-  await anotar("TITULO", nombre, "/nosotros?vista=ver")
+  await anotar("TITULO", nombre, "/nosotros?vista=ver", creado.id)
 
   revalidatePath("/nosotros")
   return { ok: true }
@@ -81,7 +81,7 @@ export async function anadirDesdeTmdb(
   const detalle = await ficha(tmdbId, tipo)
   const { db, sesion } = await dbDeSesion()
 
-  await db.titulo.create({
+  const creado = await db.titulo.create({
     data: {
       vinculoId: sesion.vinculoId,
       propuestoPorId: sesion.usuarioId,
@@ -94,7 +94,7 @@ export async function anadirDesdeTmdb(
     },
   })
 
-  await anotar("TITULO", detalle?.nombre || respaldo.nombre, "/nosotros?vista=ver")
+  await anotar("TITULO", detalle?.nombre || respaldo.nombre, "/nosotros?vista=ver", creado.id)
 
   revalidatePath("/nosotros")
   return { ok: true }
@@ -160,6 +160,9 @@ export async function votarTitulo(
 export async function borrarTitulo(id: string) {
   const { db } = await dbDeSesion()
   await db.titulo.deleteMany({ where: { id } })
+  // Y su aviso con él: un «Cata añadió a la lista» que lleva a una lista donde
+  // ya no está es peor que no haber avisado.
+  await retirarAviso(id)
   revalidatePath("/nosotros")
 }
 
@@ -186,7 +189,7 @@ export async function crearRecuerdo(_previo: Resultado, datos: FormData): Promis
   const { titulo, nota, ocurrioEl } = analizado.data
 
   const { db, sesion } = await dbDeSesion()
-  await db.recuerdo.create({
+  const creado = await db.recuerdo.create({
     data: {
       vinculoId: sesion.vinculoId,
       autorId: sesion.usuarioId,
@@ -196,7 +199,7 @@ export async function crearRecuerdo(_previo: Resultado, datos: FormData): Promis
     },
   })
 
-  await anotar("RECUERDO", titulo, "/nosotros?vista=recuerdos")
+  await anotar("RECUERDO", titulo, "/nosotros?vista=recuerdos", creado.id)
 
   revalidatePath("/nosotros")
   return { ok: true }
@@ -206,6 +209,7 @@ export async function crearRecuerdo(_previo: Resultado, datos: FormData): Promis
 export async function borrarRecuerdo(id: string) {
   const { db } = await dbDeSesion()
   await db.recuerdo.deleteMany({ where: { id } })
+  await retirarAviso(id)
   revalidatePath("/nosotros")
 }
 
@@ -234,7 +238,7 @@ export async function guardarPlanComoRecuerdo(eventoId: string): Promise<Resulta
   })
   if (yaGuardado) return { error: "Ese plan ya está entre los recuerdos" }
 
-  await db.recuerdo.create({
+  const guardado = await db.recuerdo.create({
     data: {
       vinculoId: sesion.vinculoId,
       autorId: sesion.usuarioId,
@@ -244,7 +248,7 @@ export async function guardarPlanComoRecuerdo(eventoId: string): Promise<Resulta
     },
   })
 
-  await anotar("RECUERDO", evento.titulo, "/nosotros?vista=recuerdos")
+  await anotar("RECUERDO", evento.titulo, "/nosotros?vista=recuerdos", guardado.id)
 
   revalidatePath("/nosotros")
   return { ok: true }

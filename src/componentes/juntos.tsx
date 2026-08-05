@@ -12,6 +12,7 @@ import {
   Seleccion,
   Tarjeta,
 } from "@/componentes/base"
+import { PieDeFormulario } from "@/componentes/formulario"
 import type { EstadoTitulo } from "@/generated/prisma/enums"
 import {
   alternarSoloJuntos,
@@ -95,14 +96,12 @@ export function FormularioTitulo() {
           <span>Esta no la vemos por separado</span>
         </label>
         <Aviso>{estado.error}</Aviso>
-        <div className="flex gap-2">
-          <Boton type="submit" disabled={pendiente} className="flex-1">
-            {pendiente ? "Guardando…" : "Añadir"}
-          </Boton>
-          <Boton variante="texto" type="button" onClick={olvidar}>
-            Cancelar
-          </Boton>
-        </div>
+        <PieDeFormulario
+          pendiente={pendiente}
+          texto="Añadir"
+          textoOcupado="Guardando…"
+          alCancelar={olvidar}
+        />
       </form>
     </Tarjeta>
   )
@@ -195,7 +194,11 @@ export function FilaTitulo({
         </div>
         <button
           type="button"
-          onClick={() => empezar(() => void borrarTitulo(id))}
+          onClick={() =>
+            empezar(async () => {
+              await borrarTitulo(id)
+            })
+          }
           aria-label={`Quitar ${nombre}`}
           className="pulsable shrink-0 rounded-full p-1.5 text-[var(--color-borde)] hover:text-[var(--color-acento)]"
         >
@@ -208,7 +211,11 @@ export function FilaTitulo({
           <Pastilla
             key={e.estado}
             activa={estado === e.estado}
-            onClick={() => empezar(() => void cambiarEstadoTitulo(id, e.estado))}
+            onClick={() =>
+              empezar(async () => {
+                await cambiarEstadoTitulo(id, e.estado)
+              })
+            }
           >
             {e.texto}
           </Pastilla>
@@ -218,7 +225,11 @@ export function FilaTitulo({
       {/* "No la veas sin mí" (RF-9.5). Suena tonto y evita discusiones reales. */}
       <button
         type="button"
-        onClick={() => empezar(() => void alternarSoloJuntos(id, !soloJuntos))}
+        onClick={() =>
+          empezar(async () => {
+            await alternarSoloJuntos(id, !soloJuntos)
+          })
+        }
         className="pulsable inline-flex items-center gap-1.5 text-[12.5px] text-[var(--color-tinta-tenue)] hover:text-[var(--color-acento)]"
       >
         {soloJuntos ? <RiLockUnlockLine size={14} /> : <RiLockLine size={14} />}
@@ -373,14 +384,12 @@ export function FormularioRecuerdo() {
           />
         </label>
         <Aviso>{estado.error}</Aviso>
-        <div className="flex gap-2">
-          <Boton type="submit" disabled={pendiente} className="flex-1">
-            {pendiente ? "Guardando…" : "Guardar"}
-          </Boton>
-          <Boton variante="texto" type="button" onClick={olvidar}>
-            Cancelar
-          </Boton>
-        </div>
+        <PieDeFormulario
+          pendiente={pendiente}
+          texto="Guardar"
+          textoOcupado="Guardando…"
+          alCancelar={olvidar}
+        />
       </form>
     </Tarjeta>
   )
@@ -393,7 +402,11 @@ export function BotonBorrarRecuerdo({ id, titulo }: { id: string; titulo: string
   return (
     <button
       type="button"
-      onClick={() => empezar(() => void borrarRecuerdo(id))}
+      onClick={() =>
+        empezar(async () => {
+          await borrarRecuerdo(id)
+        })
+      }
       aria-label={`Quitar ${titulo}`}
       className="pulsable shrink-0 rounded-full p-1.5 text-[var(--color-borde)] hover:text-[var(--color-acento)]"
     >

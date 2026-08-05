@@ -33,7 +33,9 @@ export function EleccionDeModulos({
 
   function alternar(clave: ClaveModulo, activo: boolean) {
     setPuestos((previos) => ({ ...previos, [clave]: activo }))
-    empezar(() => void cambiarModulo(clave, activo))
+    empezar(async () => {
+      await cambiarModulo(clave, activo)
+    })
   }
 
   return (

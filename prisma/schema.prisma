@@ -792,6 +792,16 @@ model Novedad {
   /// A dónde lleva «Ver», ya resuelto: la ruta depende del módulo y esta tabla
   /// no tiene por qué saber de rutas cada vez que se lee.
   enlace    String
+  /// El identificador de la cosa de la que habla, para poder retirar el aviso
+  /// cuando la cosa deja de estar.
+  ///
+  /// Sin esto, borrar un plan recién apuntado dejaba su aviso en pie llevando a
+  /// un día que decía «no hay nada apuntado». No es una relación de Prisma
+  /// porque apunta a cinco tablas distintas, y cinco columnas opcionales para
+  /// que solo una tenga valor sería peor que una columna sin integridad
+  /// referencial: aquí un identificador que ya no existe no rompe nada, solo
+  /// deja de encontrar a quién retirar.
+  refId     String?
   creadaEn  DateTime    @default(now())
   /// Cuándo la apartó quien la recibía. Null = sigue estando.
   ///
@@ -803,5 +813,6 @@ model Novedad {
   vinculo Vinculo @relation(fields: [vinculoId], references: [id], onDelete: Cascade)
 
   @@index([vinculoId, apartadaEn, creadaEn])
+  @@index([vinculoId, refId])
   @@map("novedad")
 }

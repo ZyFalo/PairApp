@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation"
 import { useActionState, useEffect } from "react"
 import { Apunte, Aviso, Boton, Pastilla, Separador } from "@/componentes/base"
+import { Acuse } from "@/componentes/formulario"
 import { ICONO_CIERRE, ICONO_EMOCION } from "@/componentes/iconos"
 import type { Emocion } from "@/generated/prisma/enums"
 import { responder } from "@/lib/acciones/entregas"
@@ -44,6 +45,16 @@ export function FormularioRespuesta({
     olvidar()
     router.refresh()
   }, [estado.ok, olvidar, router])
+
+  /**
+   * Un final, y no el mismo formulario otra vez.
+   *
+   * Aquí no faltaba un indicador de espera: faltaba el **estado terminal**.
+   * Entre que la acción vuelve y aterriza el refresco se veía el formulario en
+   * blanco y vivo, y la lectura obvia era «se borró y no se envió» — sobre una
+   * respuesta que la persona acababa de escribir a mano.
+   */
+  if (estado.ok) return <Acuse>Enviado.</Acuse>
 
   return (
     <section className="space-y-4">

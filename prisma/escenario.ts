@@ -52,6 +52,10 @@ async function limpiarMarcados(vinculoId: string) {
   await prisma.recuerdo.deleteMany({ where: { vinculoId, titulo: { startsWith: "[escenario]" } } })
   await prisma.evento.deleteMany({ where: { vinculoId, titulo: { startsWith: "[escenario]" } } })
   await prisma.novedad.deleteMany({ where: { vinculoId, titulo: { startsWith: "[escenario]" } } })
+  await prisma.titulo.deleteMany({ where: { vinculoId, nombre: { startsWith: "[escenario]" } } })
+  await prisma.dedicatoria.deleteMany({
+    where: { vinculoId, titulo: { startsWith: "[escenario]" } },
+  })
   // Los ciclos no tienen texto donde dejar la marca, así que se borran los que
   // caen en la ventana que usa el escenario del calendario: los tres meses
   // alrededor de hoy. Lo de más atrás, si lo hubiera, se queda.
@@ -597,7 +601,7 @@ const CASOS: Record<string, Caso> = {
 
   // -------------------------------------------------------------------------
   novedades: {
-    descripcion: "Cuatro cosas que hizo Cata en cuatro módulos: el panel «Lo último»",
+    descripcion: "Las cuatro clases de aviso, cada una con su cosa detrás",
     async montar() {
       const { will, cata, vinculoId } = await personas()
       await limpiarMarcados(vinculoId)
@@ -605,9 +609,16 @@ const CASOS: Record<string, Caso> = {
       const hoy = DateTime.now().setZone(ZONA_SEMILLA)
       const dia = hoy.plus({ days: 3 }).toFormat("yyyy-MM-dd")
 
-      // El plan existe de verdad, no solo su aviso: pulsar «Ver» abre su
-      // casilla del mes, y si el evento no estuviera ahí se vería un día vacío.
-      await prisma.evento.create({
+      /**
+       * **Cada aviso apunta a algo que existe de verdad.** Es lo único que
+       * permite comprobar el flujo entero: pulsar «Ver» y ver aquello de lo
+       * que hablaba, y no una vista donde no está.
+       *
+       * Sin esto el escenario probaba media función. Un aviso que lleva a una
+       * lista donde su cosa no aparece es peor que no haber avisado, y solo se
+       * ve montando las dos mitades.
+       */
+      const plan = await prisma.evento.create({
         data: {
           vinculoId,
           creadorId: cata.id,
@@ -616,22 +627,74 @@ const CASOS: Record<string, Caso> = {
         },
       })
 
+      const cancion = await prisma.dedicatoria.create({
+        data: {
+          vinculoId,
+          autorId: cata.id,
+          url: "https://www.youtube.com/watch?v=escenario",
+          titulo: "[escenario] Una canción para esta noche",
+          mensaje: "Esta me recordó a nosotros.",
+          franja: "NOCHE",
+          // Ya entregada: la novedad se anota al entregar, no al dedicar.
+          entregadaEn: hoy.minus({ hours: 2 }).toJSDate(),
+        },
+      })
+
+      const titulo = await prisma.titulo.create({
+        data: {
+          vinculoId,
+          propuestoPorId: cata.id,
+          nombre: "[escenario] La que dijiste el otro día",
+          tipo: "PELICULA",
+        },
+      })
+
+      const recuerdo = await prisma.recuerdo.create({
+        data: {
+          vinculoId,
+          autorId: cata.id,
+          titulo: "[escenario] El domingo en la playa",
+          ocurrioEl: hoy.minus({ days: 6 }).startOf("day").toUTC().toJSDate(),
+        },
+      })
+
       /**
-       * Las cuatro, de más antigua a más reciente y de módulos distintos: es la
-       * única forma de comprobar de un vistazo que el orden es el correcto y que
-       * cada línea lleva el icono de su pestaña.
-       *
-       * Una de ellas de hace seis días, al borde de la ventana de siete: la
-       * quinta que se añada la empuja fuera y así se ve que el tope funciona.
+       * De más reciente a más antigua. La última tiene seis días, al borde de
+       * la ventana de siete: mañana debe desaparecer sola sin que nadie la
+       * toque, que es lo que impide que esto sea una bandeja de entrada.
        */
-      const cuatro = [
-        { tipo: "CANCION" as const, titulo: "[escenario] Una canción para esta noche", enlace: "/nosotros?vista=musica", haceHoras: 2 },
-        { tipo: "PLAN" as const, titulo: "[escenario] Cena en el sitio de siempre", enlace: `/nosotros?mes=${dia.slice(0, 7)}&dia=${dia}`, haceHoras: 20 },
-        { tipo: "TITULO" as const, titulo: "[escenario] La que dijiste el otro día", enlace: "/nosotros?vista=ver", haceHoras: 50 },
-        { tipo: "RECUERDO" as const, titulo: "[escenario] El domingo en la playa", enlace: "/nosotros?vista=recuerdos", haceHoras: 6 * 24 },
+      const avisos = [
+        {
+          tipo: "CANCION" as const,
+          titulo: cancion.titulo ?? "",
+          enlace: "/nosotros?vista=musica",
+          refId: cancion.id,
+          haceHoras: 2,
+        },
+        {
+          tipo: "PLAN" as const,
+          titulo: plan.titulo,
+          enlace: `/nosotros?mes=${dia.slice(0, 7)}&dia=${dia}`,
+          refId: plan.id,
+          haceHoras: 20,
+        },
+        {
+          tipo: "TITULO" as const,
+          titulo: titulo.nombre,
+          enlace: "/nosotros?vista=ver",
+          refId: titulo.id,
+          haceHoras: 50,
+        },
+        {
+          tipo: "RECUERDO" as const,
+          titulo: recuerdo.titulo,
+          enlace: "/nosotros?vista=recuerdos",
+          refId: recuerdo.id,
+          haceHoras: 6 * 24,
+        },
       ]
 
-      for (const n of cuatro) {
+      for (const n of avisos) {
         await prisma.novedad.create({
           data: {
             vinculoId,
@@ -639,6 +702,7 @@ const CASOS: Record<string, Caso> = {
             tipo: n.tipo,
             titulo: n.titulo,
             enlace: n.enlace,
+            refId: n.refId,
             creadaEn: hoy.minus({ hours: n.haceHoras }).toJSDate(),
           },
         })
@@ -659,8 +723,9 @@ const CASOS: Record<string, Caso> = {
         "Entra como will@pairapp.local y abre Nosotros.",
         "Arriba del calendario salen CUATRO líneas, la canción primero.",
         "La quinta es tuya y NO debe aparecer: nadie se anuncia lo suyo.",
-        "«Ver» lleva a su módulo y la quita. El aspa la quita sin ir.",
-        "Nada de esto lleva número al lado, ni en la pestaña ni en el panel.",
+        "Pulsa cada una: debe llevarte a su módulo Y ver ahí la cosa concreta.",
+        "El aspa la quita sin ir. Nada lleva número al lado.",
+        "Apaga Música en Nosotros › ajustes: su aviso desaparece del panel.",
       ]
     },
   },

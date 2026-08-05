@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { DestinoMensaje } from "@/generated/prisma/enums"
-import { anotar } from "@/lib/acciones/novedades"
+import { anotar, retirarAviso } from "@/lib/acciones/novedades"
 import { claseDe } from "@/lib/motor/emociones"
 import { gestoDe } from "@/lib/motor/reparacion"
 import { dbDeSesion } from "@/lib/sesion"
@@ -133,7 +133,7 @@ export async function crearAcuerdo(_previo: Resultado, datos: FormData): Promise
   if (texto.length > 500) return { error: "Máximo 500 caracteres" }
 
   const { db, sesion } = await dbDeSesion()
-  await db.acuerdo.create({
+  const acuerdo = await db.acuerdo.create({
     data: { vinculoId: sesion.vinculoId, texto, creadorId: sesion.usuarioId },
   })
 
@@ -142,7 +142,7 @@ export async function crearAcuerdo(_previo: Resultado, datos: FormData): Promise
   // «Después» —los relatos de un conflicto, la reparación— no aparece nunca
   // ahí: eso se lee cuando se está listo para leerlo, no porque la app lo saque
   // a la pantalla de entrada con un aspa al lado.
-  await anotar("ACUERDO", texto, "/nosotros?vista=despues")
+  await anotar("ACUERDO", texto, "/nosotros?vista=despues", acuerdo.id)
 
   revalidatePath("/nosotros")
   return { ok: true }
@@ -158,5 +158,7 @@ export async function archivarAcuerdo(id: string) {
     where: { id, archivadoEn: null },
     data: { archivadoEn: new Date() },
   })
+  // Archivarlo lo quita de la lista, así que su aviso deja de llevar a nada.
+  await retirarAviso(id)
   revalidatePath("/nosotros")
 }

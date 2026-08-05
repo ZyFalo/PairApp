@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect } from "react"
 import { Aviso, Boton, Campo, Seleccion, Tarjeta } from "@/componentes/base"
+import { PieDeFormulario } from "@/componentes/formulario"
 import { dedicarCancion } from "@/lib/acciones/nosotros"
 import { useBorrador } from "@/lib/borrador"
 import { useEnfoqueQuieto } from "@/lib/enfoque"
@@ -69,14 +70,12 @@ export function FormularioCancion() {
           onCambio={(v) => actualizar({ franja: v })}
         />
         <Aviso>{estado.error}</Aviso>
-        <div className="flex gap-2">
-          <Boton type="submit" disabled={pendiente} className="flex-1">
-            {pendiente ? "Dedicando…" : "Dedicar"}
-          </Boton>
-          <Boton variante="texto" type="button" onClick={olvidar}>
-            Cancelar
-          </Boton>
-        </div>
+        <PieDeFormulario
+          pendiente={pendiente}
+          texto="Dedicar"
+          textoOcupado="Dedicando…"
+          alCancelar={olvidar}
+        />
       </form>
     </Tarjeta>
   )

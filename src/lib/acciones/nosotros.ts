@@ -4,7 +4,7 @@ import { DateTime } from "luxon"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { ClaseMensaje, DestinoMensaje, Emocion, type FranjaDia } from "@/generated/prisma/enums"
-import { anotar } from "@/lib/acciones/novedades"
+import { anotar, retirarAviso } from "@/lib/acciones/novedades"
 import { LARGO_MAXIMO_DESEO, participaEnLaVentana, ventanaOnceOnce } from "@/lib/motor/once"
 import { diaLocal } from "@/lib/motor/tiempo"
 import { dbDeSesion } from "@/lib/sesion"
@@ -112,7 +112,7 @@ export async function crearEvento(_previo: Resultado, datos: FormData): Promise<
 
   const cuando = DateTime.fromISO(inicio, { zone: sesion.zonaHoraria }).toJSDate()
 
-  await db.evento.create({
+  const evento = await db.evento.create({
     data: {
       vinculoId: sesion.vinculoId,
       creadorId: sesion.usuarioId,
@@ -134,7 +134,7 @@ export async function crearEvento(_previo: Resultado, datos: FormData): Promise<
   // Lleva al día del plan, no a la vista: quien pulsa quiere ver **cuándo** es,
   // y eso solo se lee en su casilla del mes.
   const dia = diaLocal(sesion.zonaHoraria, cuando)
-  await anotar("PLAN", titulo, `/nosotros?mes=${dia.slice(0, 7)}&dia=${dia}`)
+  await anotar("PLAN", titulo, `/nosotros?mes=${dia.slice(0, 7)}&dia=${dia}`, evento.id)
 
   // La cápsula no se anuncia. Quien la recibe no sabe que existe hasta que
   // llega (RF-7.6): decir aquí que hay algo esperando sería la cuenta atrás que
@@ -144,10 +144,18 @@ export async function crearEvento(_previo: Resultado, datos: FormData): Promise<
   return { ok: true }
 }
 
-/** Borra un evento del calendario. */
+/**
+ * Borra un evento del calendario, y con él su aviso.
+ *
+ * Sin lo segundo, quitar un plan recién apuntado dejaba en «Lo último» una
+ * línea que llevaba a un día diciendo «no hay nada apuntado en este día». Quien
+ * la pulsara no tenía forma de saber si el plan nunca existió o si acababa de
+ * desaparecer.
+ */
 export async function borrarEvento(id: string) {
   const { db } = await dbDeSesion()
   await db.evento.deleteMany({ where: { id } })
+  await retirarAviso(id)
   revalidatePath("/nosotros")
 }
 

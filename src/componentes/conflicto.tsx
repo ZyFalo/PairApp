@@ -4,6 +4,7 @@ import { RiCheckLine, RiEyeLine, RiLockLine } from "@remixicon/react"
 import { motion } from "motion/react"
 import { useActionState, useEffect, useState, useTransition } from "react"
 import { Apunte, Aviso, Boton, Insignia, Tarjeta } from "@/componentes/base"
+import { PieDeFormulario } from "@/componentes/formulario"
 import {
   archivarAcuerdo,
   compartirConflicto,
@@ -158,14 +159,12 @@ export function FormularioConflicto({ respondeAId }: { respondeAId?: string }) {
         </label>
 
         <Aviso>{estado.error}</Aviso>
-        <div className="flex gap-2">
-          <Boton type="submit" disabled={pendiente} className="flex-1">
-            {pendiente ? "Guardando…" : "Guardar"}
-          </Boton>
-          <Boton variante="texto" type="button" onClick={olvidar}>
-            Cancelar
-          </Boton>
-        </div>
+        <PieDeFormulario
+          pendiente={pendiente}
+          texto="Guardar"
+          textoOcupado="Guardando…"
+          alCancelar={olvidar}
+        />
       </form>
     </Tarjeta>
   )
@@ -192,7 +191,11 @@ export function EstadoConflicto({ id, compartido }: { id: string; compartido: bo
         </span>
         <button
           type="button"
-          onClick={() => empezar(() => void compartirConflicto(id))}
+          onClick={() =>
+            empezar(async () => {
+              await compartirConflicto(id)
+            })
+          }
           className="pulsable inline-flex items-center gap-1.5 rounded-[var(--radius-pildora)] bg-[var(--color-acento)] px-2.5 py-1 text-[12px] font-medium text-[var(--color-sobre-acento)]"
         >
           <RiCheckLine size={13} />
@@ -257,14 +260,12 @@ export function FormularioAcuerdo() {
           className="carta w-full resize-none rounded-[var(--radius-suave)] border border-[var(--color-borde)] bg-[var(--color-papel)] p-3 text-[16px] outline-none transition-colors focus:border-[var(--color-acento-suave)]"
         />
         <Aviso>{estado.error}</Aviso>
-        <div className="flex gap-2">
-          <Boton type="submit" disabled={pendiente} className="flex-1">
-            {pendiente ? "Guardando…" : "Guardar"}
-          </Boton>
-          <Boton variante="texto" type="button" onClick={olvidar}>
-            Cancelar
-          </Boton>
-        </div>
+        <PieDeFormulario
+          pendiente={pendiente}
+          texto="Guardar"
+          textoOcupado="Guardando…"
+          alCancelar={olvidar}
+        />
       </form>
     </Tarjeta>
   )
@@ -277,7 +278,11 @@ export function BotonArchivarAcuerdo({ id }: { id: string }) {
   return (
     <button
       type="button"
-      onClick={() => empezar(() => void archivarAcuerdo(id))}
+      onClick={() =>
+        empezar(async () => {
+          await archivarAcuerdo(id)
+        })
+      }
       className="pulsable shrink-0 text-[12.5px] text-[var(--color-tinta-tenue)] hover:text-[var(--color-acento)]"
     >
       Ya no

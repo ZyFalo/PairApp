@@ -38,7 +38,9 @@ export function InterruptorCiclo({ activo }: { activo: boolean }) {
       activo={puesto}
       alGuardar={(siguiente) => {
         setPuesto(siguiente)
-        empezar(() => void cambiarRegistroCiclo(siguiente))
+        empezar(async () => {
+          await cambiarRegistroCiclo(siguiente)
+        })
       }}
     />
   )
@@ -183,7 +185,9 @@ export function InterruptorCompartirAnimo({
       activo={puesto}
       alGuardar={(siguiente) => {
         setPuesto(siguiente)
-        empezar(() => void cambiarCompartirAnimo(siguiente))
+        empezar(async () => {
+          await cambiarCompartirAnimo(siguiente)
+        })
       }}
     />
   )

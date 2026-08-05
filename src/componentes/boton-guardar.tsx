@@ -47,16 +47,22 @@ export function BotonGuardar({ mensajeId, guardado }: { mensajeId: string; guard
  * tiene que ser posible, o guardar da miedo.
  */
 export function BotonRetirar({ mensajeId }: { mensajeId: string }) {
-  const [, empezar] = useTransition()
+  const [retirando, empezar] = useTransition()
 
   return (
     <button
       type="button"
-      onClick={() => empezar(() => void retirarGuardado(mensajeId))}
-      className="pulsable inline-flex items-center gap-1.5 text-[13px] text-[var(--color-tinta-tenue)] hover:text-[var(--color-acento)]"
+      disabled={retirando}
+      aria-busy={retirando || undefined}
+      onClick={() =>
+        empezar(async () => {
+          await retirarGuardado(mensajeId)
+        })
+      }
+      className="pulsable inline-flex items-center gap-1.5 text-[13px] text-[var(--color-tinta-tenue)] hover:text-[var(--color-acento)] disabled:opacity-100"
     >
       <RiInboxUnarchiveLine size={15} />
-      Retirarlo
+      {retirando ? "Retirándolo…" : "Retirarlo"}
     </button>
   )
 }
@@ -79,17 +85,23 @@ export function DeshacerEnvio({
   puedeRetirar: boolean
 }) {
   const [confirmando, setConfirmando] = useState(false)
-  const [, empezar] = useTransition()
+  const [yendo, empezar] = useTransition()
 
   if (puedeRetirar) {
     return (
       <button
         type="button"
-        onClick={() => empezar(() => void retirarEnviado(mensajeId))}
-        className="pulsable inline-flex items-center gap-1.5 text-[13px] text-[var(--color-acento)]"
+        disabled={yendo}
+        aria-busy={yendo || undefined}
+        onClick={() =>
+          empezar(async () => {
+            await retirarEnviado(mensajeId)
+          })
+        }
+        className="pulsable inline-flex items-center gap-1.5 text-[13px] text-[var(--color-acento)] disabled:opacity-100"
       >
         <RiArrowGoBackLine size={15} />
-        Retirarlo
+        {yendo ? "Retirándolo…" : "Retirarlo"}
       </button>
     )
   }
@@ -110,17 +122,27 @@ export function DeshacerEnvio({
   return (
     <span className="inline-flex flex-wrap items-center gap-2">
       <span className="text-[12.5px] text-[var(--color-tinta-tenue)]">Verá que lo borraste.</span>
+      {/* Una vez lanzado ya no hay nada que cancelar, así que el «No» se apaga
+          con él. Y el que se pulsó **no** se atenúa: es el que dice qué está
+          pasando. */}
       <button
         type="button"
-        onClick={() => empezar(() => void eliminarConRastro(mensajeId))}
-        className="pulsable rounded-[var(--radius-pildora)] bg-[var(--color-acento-tenue)] px-2.5 py-1 text-[12px] font-medium text-[var(--color-acento-hondo)]"
+        disabled={yendo}
+        aria-busy={yendo || undefined}
+        onClick={() =>
+          empezar(async () => {
+            await eliminarConRastro(mensajeId)
+          })
+        }
+        className="pulsable rounded-[var(--radius-pildora)] bg-[var(--color-acento-tenue)] px-2.5 py-1 text-[12px] font-medium text-[var(--color-acento-hondo)] disabled:opacity-100"
       >
-        Eliminar igual
+        {yendo ? "Eliminando…" : "Eliminar igual"}
       </button>
       <button
         type="button"
+        disabled={yendo}
         onClick={() => setConfirmando(false)}
-        className="pulsable text-[12.5px] text-[var(--color-tinta-tenue)]"
+        className="pulsable text-[12.5px] text-[var(--color-tinta-tenue)] disabled:opacity-40"
       >
         No
       </button>

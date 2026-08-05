@@ -1,4 +1,5 @@
 import type { TipoNovedad } from "@/generated/prisma/enums"
+import type { ClaveModulo, ModulosDelVinculo } from "@/lib/motor/modulos"
 
 /**
  * «Lo último» (RF-7.10): lo que la otra persona añadió y todavía no has visto.
@@ -64,4 +65,36 @@ const VERBO: Record<TipoNovedad, string> = {
 
 export function queHizo(tipo: TipoNovedad, nombre: string): string {
   return `${nombre} ${VERBO[tipo]}`
+}
+
+/**
+ * De qué módulo depende cada aviso. `null` = de ninguno.
+ *
+ * El plan vive en el calendario y el acuerdo en «Después», y ninguna de las dos
+ * se puede apagar: el calendario es la pantalla de entrada, y los acuerdos son
+ * un freno, no un extra (P9).
+ */
+const MODULO_DE: Record<TipoNovedad, ClaveModulo | null> = {
+  PLAN: null,
+  ACUERDO: null,
+  CANCION: "musica",
+  TITULO: "titulos",
+  RECUERDO: "recuerdos",
+}
+
+/**
+ * Si este aviso todavía lleva a algún sitio.
+ *
+ * Apagar un módulo esconde su pestaña, y una vista escondida **no se pinta
+ * aunque se escriba su URL a mano**: se cae al calendario. Así que un aviso de
+ * una canción con la música apagada te dejaba en el mes, sin explicación y sin
+ * que pareciera que hubieras pulsado nada.
+ *
+ * Se esconde, no se aparta. Apagar no borra —las canciones siguen guardadas y
+ * vuelven intactas al encender (RF-0.7)—, y su aviso hace lo mismo: si el
+ * módulo vuelve dentro de dos días y el aviso sigue siendo reciente, reaparece.
+ */
+export function sigueLlevandoAAlgunSitio(tipo: TipoNovedad, modulos: ModulosDelVinculo): boolean {
+  const modulo = MODULO_DE[tipo]
+  return modulo === null || modulos[modulo]
 }

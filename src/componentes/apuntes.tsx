@@ -23,26 +23,36 @@ export function AccionesApunte({
   mensajeId: string
   hayPareja: boolean
 }) {
-  const [, empezar] = useTransition()
+  const [enviando, empezar] = useTransition()
   const [confirmando, setConfirmando] = useState(false)
 
   // Enviar es irreversible: un toque de más no debería bastar para que salga.
   if (confirmando) {
     return (
       <div className="flex items-center gap-2">
+        {/* Es el mismo verbo que ya dice «Enviando…» en el compositor: se
+            copia, no se inventa uno nuevo. Y la X se apaga con él — una vez
+            lanzado no queda nada que cancelar. */}
         <button
           type="button"
-          onClick={() => empezar(() => void decirloAhora(mensajeId))}
-          className="pulsable inline-flex items-center gap-1.5 rounded-[var(--radius-pildora)] bg-[var(--color-acento)] px-3 py-1.5 text-[12.5px] font-medium text-[var(--color-sobre-acento)]"
+          disabled={enviando}
+          aria-busy={enviando || undefined}
+          onClick={() =>
+            empezar(async () => {
+              await decirloAhora(mensajeId)
+            })
+          }
+          className="pulsable inline-flex items-center gap-1.5 rounded-[var(--radius-pildora)] bg-[var(--color-acento)] px-3 py-1.5 text-[12.5px] font-medium text-[var(--color-sobre-acento)] disabled:opacity-100"
         >
           <RiSendPlaneLine size={14} />
-          Enviárselo
+          {enviando ? "Enviando…" : "Enviárselo"}
         </button>
         <button
           type="button"
+          disabled={enviando}
           onClick={() => setConfirmando(false)}
           aria-label="Cancelar"
-          className="pulsable rounded-full p-1 text-[var(--color-tinta-tenue)]"
+          className="pulsable rounded-full p-1 text-[var(--color-tinta-tenue)] disabled:opacity-40"
         >
           <RiCloseLine size={16} />
         </button>
@@ -62,9 +72,17 @@ export function AccionesApunte({
           Decirlo ahora
         </button>
       )}
+      {/* Sin texto y sin atenuar, solo apagado: archivar y recuperar son la
+          misma acción en dos direcciones, y una asimetría sugeriría que una
+          pesa más que la otra. */}
       <button
         type="button"
-        onClick={() => empezar(() => void archivarApunte(mensajeId))}
+        disabled={enviando}
+        onClick={() =>
+          empezar(async () => {
+            await archivarApunte(mensajeId)
+          })
+        }
         className="pulsable inline-flex items-center gap-1.5 text-[var(--color-tinta-tenue)] hover:text-[var(--color-tinta-suave)]"
       >
         <RiArchiveLine size={14} />
@@ -81,7 +99,11 @@ export function BotonDesarchivar({ mensajeId }: { mensajeId: string }) {
   return (
     <button
       type="button"
-      onClick={() => empezar(() => void desarchivarApunte(mensajeId))}
+      onClick={() =>
+        empezar(async () => {
+          await desarchivarApunte(mensajeId)
+        })
+      }
       className="pulsable inline-flex items-center gap-1.5 text-[13px] text-[var(--color-tinta-tenue)] hover:text-[var(--color-acento)]"
     >
       <RiInboxUnarchiveLine size={14} />

@@ -33,7 +33,9 @@ export function ControlPausa({ hasta, zonaHoraria }: { hasta: Date | null; zonaH
 
   function poner(dias: number) {
     setPausa(dias > 0 ? finDePausa(dias, zonaHoraria, new Date()) : null)
-    empezar(() => void cambiarPausa(dias))
+    empezar(async () => {
+      await cambiarPausa(dias)
+    })
   }
 
   if (pausa && pausa > new Date()) {

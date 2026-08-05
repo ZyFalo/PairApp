@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest"
-import { CUANTAS_CABEN, DIAS_QUE_DURA, desdeCuandoCuenta, queHizo } from "./novedades"
+import type { ModulosDelVinculo } from "./modulos"
+import {
+  CUANTAS_CABEN,
+  DIAS_QUE_DURA,
+  desdeCuandoCuenta,
+  queHizo,
+  sigueLlevandoAAlgunSitio,
+} from "./novedades"
 
 describe("cuánto dura una novedad", () => {
   const ahora = new Date("2026-08-04T15:00:00Z")
@@ -40,5 +47,44 @@ describe("qué se lee de cada novedad", () => {
       expect(texto).not.toMatch(/pendiente|tienes que|debes|recuerda/i)
       expect(texto.startsWith("Cata ")).toBe(true)
     }
+  })
+})
+
+describe("un aviso que ya no lleva a ningún sitio", () => {
+  const todos: ModulosDelVinculo = { musica: true, titulos: true, recuerdos: true, once: true }
+
+  /**
+   * Apagar un módulo esconde su pestaña, y su vista **no se pinta aunque se
+   * escriba la URL a mano**: se cae al calendario. Así que el aviso de una
+   * canción con la música apagada dejaba a quien lo pulsara en el mes, sin
+   * explicación y sin que pareciera que hubiera tocado nada.
+   */
+  it("desaparece cuando su módulo se apaga", () => {
+    expect(sigueLlevandoAAlgunSitio("CANCION", todos)).toBe(true)
+    expect(sigueLlevandoAAlgunSitio("CANCION", { ...todos, musica: false })).toBe(false)
+    expect(sigueLlevandoAAlgunSitio("TITULO", { ...todos, titulos: false })).toBe(false)
+    expect(sigueLlevandoAAlgunSitio("RECUERDO", { ...todos, recuerdos: false })).toBe(false)
+  })
+
+  /**
+   * El calendario es la pantalla de entrada y los acuerdos son un freno, no un
+   * extra (P9). Ninguno de los dos se puede apagar, así que sus avisos no
+   * dependen de nada.
+   */
+  it("el plan y el acuerdo no dependen de ningún módulo", () => {
+    const nada: ModulosDelVinculo = {
+      musica: false,
+      titulos: false,
+      recuerdos: false,
+      once: false,
+    }
+    expect(sigueLlevandoAAlgunSitio("PLAN", nada)).toBe(true)
+    expect(sigueLlevandoAAlgunSitio("ACUERDO", nada)).toBe(true)
+  })
+
+  /** Se esconde, no se aparta: si el módulo vuelve, el aviso reciente vuelve. */
+  it("apagar no es apartar", () => {
+    expect(sigueLlevandoAAlgunSitio("CANCION", { ...todos, musica: false })).toBe(false)
+    expect(sigueLlevandoAAlgunSitio("CANCION", todos)).toBe(true)
   })
 })

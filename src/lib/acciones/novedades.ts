@@ -26,7 +26,7 @@ import { dbDeSesion } from "@/lib/sesion"
  * Anota que alguien añadió algo. La ve **la otra persona**, nunca su autor:
  * nadie necesita que le anuncien lo suyo.
  */
-export async function anotar(tipo: TipoNovedad, titulo: string, enlace: string) {
+export async function anotar(tipo: TipoNovedad, titulo: string, enlace: string, refId?: string) {
   const { db, sesion } = await dbDeSesion()
 
   // Mientras se está sola no hay a quién contárselo, y la fila quedaría ahí
@@ -40,7 +40,31 @@ export async function anotar(tipo: TipoNovedad, titulo: string, enlace: string) 
       tipo,
       titulo: titulo.slice(0, 200),
       enlace,
+      refId,
     },
+  })
+}
+
+/**
+ * Retira el aviso de algo que ha dejado de estar.
+ *
+ * La llaman los borrados. Sin esto, quitar un plan recién apuntado dejaba su
+ * aviso en pie: quien lo pulsara acababa en un día que dice «no hay nada
+ * apuntado en este día», sin ninguna forma de saber por qué.
+ *
+ * Se aparta y no se borra la fila, igual que cuando lo aparta una persona: son
+ * dos formas de que el aviso deje de estar, no dos cosas distintas.
+ *
+ * No falla si no encuentra nada. Lo normal es que no haya nada que retirar
+ * —quien borra suele ser el mismo que lo creó, y a su autor nunca se le
+ * anuncia lo suyo—, y eso no es un error.
+ */
+export async function retirarAviso(refId: string) {
+  const { db } = await dbDeSesion()
+
+  await db.novedad.updateMany({
+    where: { refId, apartadaEn: null },
+    data: { apartadaEn: new Date() },
   })
 }
 
