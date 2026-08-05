@@ -5,6 +5,7 @@ import { z } from "zod"
 import type { EstadoTitulo, TipoTitulo } from "@/generated/prisma/enums"
 import { comoDiaSuelto } from "@/lib/motor/tiempo"
 import { dbDeSesion } from "@/lib/sesion"
+import { buscar, type Candidato, ficha } from "@/lib/tmdb"
 
 export type Resultado = { error?: string; ok?: boolean }
 
@@ -39,6 +40,54 @@ export async function anadirTitulo(_previo: Resultado, datos: FormData): Promise
       tipo: tipo as TipoTitulo,
       soloJuntos,
       minutos: minutos ?? null,
+    },
+  })
+
+  revalidatePath("/nosotros")
+  return { ok: true }
+}
+
+/**
+ * Busca en TMDB para la pantalla (RF-9.6).
+ *
+ * Es una acción y no una consulta porque la escribe el navegador mientras se
+ * teclea: no hay página que la cargue por ella. No escribe en la base — es la
+ * única de este fichero que no lo hace, y se queda aquí porque `consultas/` es
+ * para lo que carga una pantalla desde el servidor.
+ *
+ * Sin clave devuelve lista vacía y la pantalla ni ofrece buscar.
+ */
+export async function buscarEnTmdb(consulta: string): Promise<Candidato[]> {
+  await dbDeSesion() // Exige sesión: es una llamada a un tercero desde nuestra clave.
+  return buscar(consulta)
+}
+
+/**
+ * Añade un título elegido de la búsqueda, con sus metadatos (RF-9.6).
+ *
+ * Pide el detalle a TMDB en este momento y no antes: la búsqueda no trae los
+ * minutos, y pedirlos para los ocho resultados serían ocho llamadas para
+ * enseñar una lista. Si TMDB falla ahora, se guarda igual con lo que ya se
+ * sabía — un título sin póster sigue siendo un título.
+ */
+export async function anadirDesdeTmdb(
+  tmdbId: number,
+  tipo: "SERIE" | "PELICULA",
+  respaldo: { nombre: string; anio: number | null; posterUrl: string | null },
+): Promise<Resultado> {
+  const detalle = await ficha(tmdbId, tipo)
+  const { db, sesion } = await dbDeSesion()
+
+  await db.titulo.create({
+    data: {
+      vinculoId: sesion.vinculoId,
+      propuestoPorId: sesion.usuarioId,
+      nombre: detalle?.nombre || respaldo.nombre,
+      tipo: tipo as TipoTitulo,
+      anio: detalle?.anio ?? respaldo.anio,
+      posterUrl: detalle?.posterUrl ?? respaldo.posterUrl,
+      sinopsis: detalle?.sinopsis ?? null,
+      minutos: detalle?.minutos ?? null,
     },
   })
 

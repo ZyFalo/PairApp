@@ -51,9 +51,13 @@ CRON_SECRET=
 TZ=UTC
 ```
 
-**Cloudinary es opcional.** Sin sus tres variables la app funciona entera y solo
-desaparece la opción de adjuntar: `credenciales()` devuelve `null` y nada se cae.
-Si las quieres, salen del panel de Cloudinary → Settings → API Keys.
+**Dos son opcionales**, y las dos degradan igual: si faltan, la app funciona
+entera y solo desaparece esa función. Ninguna pantalla se cae.
+
+| | De dónde | Qué se pierde sin ella |
+|---|---|---|
+| `CLOUDINARY_*` | Cloudinary → Settings → API Keys | Adjuntar fotos y audios |
+| `TMDB_API_KEY` | themoviedb.org → Ajustes → API → «API Key (v3 auth)» | Buscar series y películas; se escriben a mano |
 
 `AUTH_SECRET` no aparece en el código porque lo lee Auth.js del entorno. Si
 falta, la app arranca y falla al iniciar sesión.

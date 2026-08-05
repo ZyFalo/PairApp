@@ -1,7 +1,9 @@
 import { RiFilmLine } from "@remixicon/react"
 import { Vacio } from "@/componentes/base"
 import { EligeTu, FilaTitulo, FormularioTitulo } from "@/componentes/juntos"
+import { BuscarTitulo } from "@/componentes/juntos-buscar"
 import { dbDeSesion } from "@/lib/sesion"
+import { hayBusqueda } from "@/lib/tmdb"
 
 /**
  * Series y películas (M9): la lista compartida y el sorteo de la noche.
@@ -19,6 +21,10 @@ export async function VistaVerJuntos() {
 
   return (
     <div className="space-y-3">
+      {/* Solo si hay clave (RF-9.6). Sin ella se escribe a mano, igual que
+          hasta ahora: una integración opcional no quita una función. */}
+      {hayBusqueda() && <BuscarTitulo />}
+
       <EligeTu candidatas={titulos} />
 
       {titulos.length === 0 ? (
